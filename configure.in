@@ -104,7 +104,6 @@ AC_CONFIG_FILES([
            fcitx.spec
            doc/Makefile
            data/Makefile
-           debian/Makefile
            xpm/Makefile
            lib/Makefile
            src/version.h
