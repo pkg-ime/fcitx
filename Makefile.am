@@ -1,5 +1,5 @@
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = doc data xpm lib src tools
+SUBDIRS = doc tools data xpm lib src
 EXTRA_DIST = autogen.sh fcitx.spec
 
 MAINTAINERCLEANFILES = \
