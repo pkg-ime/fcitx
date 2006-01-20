@@ -1,3 +1,16 @@
+fcitx (3.1.1-1.1) unstable; urgency=high
+
+  * Non-maintainer upload.
+  * High-urgency upload for RC bugfix.
+  * Build-depend on libx11-dev, libxft-dev, and x-dev instead of on the
+    obsolete xlibs-dev; thanks to Justin Pryzby <justinpryzby@users.sf.net>
+    for testing.  Closes: #346744.
+  * Re-run autoconf to pick up a version of AC_PATH_X that doesn't depend on
+    libxt-dev.  Also add AM_MAINTAINER_MODE to configure.in, which seems to
+    have been left out previously.
+
+ -- Steve Langasek <vorlon@debian.org>  Fri, 20 Jan 2006 08:03:06 -0800
+
 fcitx (3.1.1-1) unstable; urgency=low
 
   * New upstream release
