@@ -55,6 +55,7 @@ endif
 ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 	cp -f /usr/share/misc/config.guess config.guess
 endif
+	rm -f cj.mb erbi.mb pybase.mb pyphrase.mb wbx.mb 
 
 
 	dh_clean 
@@ -81,6 +82,9 @@ binary-arch: build install
 	dh_installdocs
 	install -m 644 data/*.dat data/*.mb data/tables.conf $(CURDIR)/debian/fcitx/usr/share/fcitx/data/
 	install -m 644 xpm/logo.xpm $(CURDIR)/debian/fcitx/usr/share/fcitx/xpm/
+	install -d $(CURDIR)/debian/fcitx/etc/X11/xinit/xinput.d/
+	install -m 644 $(CURDIR)/debian/im-switch/fcitx $(CURDIR)/debian/fcitx/etc/X11/xinit/xinput.d/
+
 	dh_installexamples
 #	dh_install
 #	dh_installmenu

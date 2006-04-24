@@ -1,3 +1,22 @@
+/***************************************************************************
+ *   Copyright (C) 2002~2005 by Yuking                                     *
+ *   yuking_net@sohu.com                                                   *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
 #include "pyParser.h"
 #include "ime.h"
 
@@ -126,9 +145,9 @@ void ParsePY (char *strPY, ParsePYStruct * parsePY, PYPARSEINPUTMODE mode)
 		strcpy (parsePY->strPYParsed[parsePY->iHZCount++], strJP);
 	    }
 
-	    if (*strP == PY_SEPERATOR) {
-		strcat (parsePY->strPYParsed[parsePY->iHZCount - 1], PY_SEPERATOR_S);
-		while (*strP == PY_SEPERATOR )
+	    if (*strP == PY_SEPARATOR) {
+		strcat (parsePY->strPYParsed[parsePY->iHZCount - 1], PY_SEPARATOR_S);
+		while (*strP == PY_SEPARATOR )
 		    strP++;
 	    }
 	}
@@ -167,7 +186,7 @@ void ParsePY (char *strPY, ParsePYStruct * parsePY, PYPARSEINPUTMODE mode)
 
 		if (bSeperator) {
 		    bSeperator = False;
-		    parsePY->strPYParsed[parsePY->iHZCount][0] = PY_SEPERATOR;
+		    parsePY->strPYParsed[parsePY->iHZCount][0] = PY_SEPARATOR;
 		    parsePY->strPYParsed[parsePY->iHZCount][1] = '\0';
 		}
 		else
@@ -175,7 +194,7 @@ void ParsePY (char *strPY, ParsePYStruct * parsePY, PYPARSEINPUTMODE mode)
 		strcat (parsePY->strPYParsed[parsePY->iHZCount++], strTemp);
 	    }
 	    else {
-		if (bFullPY && *strP != PY_SEPERATOR)
+		if (bFullPY && *strP != PY_SEPARATOR)
 		    parsePY->iMode = PARSE_ERROR;
 
 		iIndex = IsConsonant (strP, 1);
@@ -184,7 +203,7 @@ void ParsePY (char *strPY, ParsePYStruct * parsePY, PYPARSEINPUTMODE mode)
 
 		    if (bSeperator) {
 			bSeperator = False;
-			parsePY->strPYParsed[parsePY->iHZCount][0] = PY_SEPERATOR;
+			parsePY->strPYParsed[parsePY->iHZCount][0] = PY_SEPARATOR;
 			parsePY->strPYParsed[parsePY->iHZCount][1] = '\0';
 		    }
 		    else
@@ -199,7 +218,7 @@ void ParsePY (char *strPY, ParsePYStruct * parsePY, PYPARSEINPUTMODE mode)
 		    if (-1 != iIndex) {
 			if (bSeperator) {
 			    bSeperator = False;
-			    parsePY->strPYParsed[parsePY->iHZCount][0] = PY_SEPERATOR;
+			    parsePY->strPYParsed[parsePY->iHZCount][0] = PY_SEPARATOR;
 			    parsePY->strPYParsed[parsePY->iHZCount][1] = '\0';
 			}
 			else
@@ -215,7 +234,7 @@ void ParsePY (char *strPY, ParsePYStruct * parsePY, PYPARSEINPUTMODE mode)
 		    else {	//必定是分隔符
 			strP++;
 			bSeperator = True;
-			parsePY->strPYParsed[parsePY->iHZCount][0] = PY_SEPERATOR;
+			parsePY->strPYParsed[parsePY->iHZCount][0] = PY_SEPARATOR;
 			parsePY->strPYParsed[parsePY->iHZCount][1] = '\0';
 			parsePY->strMap[parsePY->iHZCount][0] = '0';
 			parsePY->strMap[parsePY->iHZCount][1] = '0';
@@ -226,7 +245,7 @@ void ParsePY (char *strPY, ParsePYStruct * parsePY, PYPARSEINPUTMODE mode)
 	} while (*strP);
     }
 
-    if (strPY[strlen (strPY) - 1] == PY_SEPERATOR && !bSP)
+    if (strPY[strlen (strPY) - 1] == PY_SEPARATOR && !bSP)
 	parsePY->iHZCount++;
 
     if (parsePY->iMode != PARSE_ERROR) {
@@ -305,7 +324,7 @@ Bool MapToPY (char strMap[3], char *strPY)
     int             i;
 
     strPY[0] = '\0';
-    if (strMap[0] != '0') {
+    if (strMap[0] != ' ') {
 	i = 0;
 	while (syllabaryMapTable[i].cMap) {
 	    if (syllabaryMapTable[i].cMap == strMap[0]) {
@@ -318,7 +337,7 @@ Bool MapToPY (char strMap[3], char *strPY)
 	    return False;
     }
 
-    if (strMap[1] != '0') {
+    if (strMap[1] != ' ') {
 	i = 0;
 	while (consonantMapTable[i].cMap) {
 	    if (consonantMapTable[i].cMap == strMap[1]) {
@@ -328,6 +347,8 @@ Bool MapToPY (char strMap[3], char *strPY)
 	    i++;
 	}
     }
+    else
+	    return True;
 
     return False;
 }

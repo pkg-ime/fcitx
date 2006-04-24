@@ -309,7 +309,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE RANLIB ac_ct_RANLIB LIBICONV LTLIBICONV CPP EGREP X_LIBS X_CFLAGS PKG_CONFIG ac_pt_PKG_CONFIG XFT_CFLAGS XFT_LIBS HAVE_XFT_TRUE HAVE_XFT_FALSE LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE RANLIB ac_ct_RANLIB LIBICONV LTLIBICONV CPP EGREP X_LIBS X_CFLAGS PKG_CONFIG ac_pt_PKG_CONFIG XFT_CFLAGS XFT_LIBS HAVE_XFT_TRUE HAVE_XFT_FALSE LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1638,7 +1638,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=fcitx
- VERSION=3.1.1
+ VERSION=3.2-060108
 
 
 cat >>confdefs.h <<_ACEOF
@@ -3272,6 +3272,7 @@ with_gnu_ld=$acl_cv_prog_gnu_ld
 
 
 
+
                                                 echo "$as_me:$LINENO: checking for shared library run path origin" >&5
 echo $ECHO_N "checking for shared library run path origin... $ECHO_C" >&6
 if test "${acl_cv_rpath+set}" = set; then
@@ -4882,6 +4883,11 @@ else
 echo "${ECHO_T}libraries $x_libraries, headers $ac_out_x_includes" >&6
 fi
 
+if test "x$x_includes" = "xNONE" ; then
+    { { echo "$as_me:$LINENO: error: You must install XFree86 or xorg first!" >&5
+echo "$as_me: error: You must install XFree86 or xorg first!" >&2;}
+   { (exit 1); exit 1; }; }
+fi
 #AC_PATH_XTRA
 test -n "$x_libraries" && X_LIBS="-L$x_libraries"
 test -n "$x_includes" && X_CFLAGS="-I$x_includes"
@@ -5019,9 +5025,6 @@ echo "$as_me:$LINENO: checking for XFT" >&5
 echo $ECHO_N "checking for XFT... $ECHO_C" >&6
 
 if test -n "$PKG_CONFIG"; then
-    if test -n "$XFT_CFLAGS"; then
-        pkg_cv_XFT_CFLAGS="$XFT_CFLAGS"
-    else
         if test -n "$PKG_CONFIG" && \
     { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"xft >= 0.0.0\"") >&5
   ($PKG_CONFIG --exists --print-errors "xft >= 0.0.0") 2>&5
@@ -5032,14 +5035,10 @@ if test -n "$PKG_CONFIG"; then
 else
   pkg_failed=yes
 fi
-    fi
 else
 	pkg_failed=untried
 fi
 if test -n "$PKG_CONFIG"; then
-    if test -n "$XFT_LIBS"; then
-        pkg_cv_XFT_LIBS="$XFT_LIBS"
-    else
         if test -n "$PKG_CONFIG" && \
     { (echo "$as_me:$LINENO: \$PKG_CONFIG --exists --print-errors \"xft >= 0.0.0\"") >&5
   ($PKG_CONFIG --exists --print-errors "xft >= 0.0.0") 2>&5
@@ -5050,27 +5049,14 @@ if test -n "$PKG_CONFIG"; then
 else
   pkg_failed=yes
 fi
-    fi
 else
 	pkg_failed=untried
 fi
 
-
-
 if test $pkg_failed = yes; then
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        XFT_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "xft >= 0.0.0"`
-        else
-	        XFT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "xft >= 0.0.0"`
-        fi
+	XFT_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "xft >= 0.0.0"`
 	# Put the nasty error message in config.log where it belongs
-	echo "$XFT_PKG_ERRORS" >&5
+	echo "$XFT_PKG_ERRORS" 1>&5
 
 	:
 elif test $pkg_failed = untried; then

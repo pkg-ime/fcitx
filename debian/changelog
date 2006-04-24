@@ -1,3 +1,14 @@
+fcitx (3.2.060108-1) unstable; urgency=high
+
+  * New upstream release
+  * Fixed RC bug. Closes: #357551
+  * Add im-switch support. Thank Hou ZhengPeng <zhengpeng.hou@gmail.com>'s
+    patch. Closes: #314743
+  * Move Arphic fonts to Recommanded. Maybe it's time to packages other
+    free chinese fonts. Closes: #293624
+
+ -- Yu Guanghui <ygh@debian.org>  Mon, 24 Apr 2006 22:38:26 +0800
+
 fcitx (3.1.1-1.1) unstable; urgency=high
 
   * Non-maintainer upload.

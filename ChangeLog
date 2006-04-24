@@ -1,3 +1,85 @@
+2006-01-08: Yuking <yukig_net@sohu.com>
+	   * src/ime.c: 修正无法输入半角分号的问题
+
+2006-01-02: Yuking <yukig_net@sohu.com>
+	   * src/ime.c: 修正某些GBK汉字上屏不正常的错误(KanKer)
+	   * configure.in: 如果没有安装X开发包，将不能make
+	   
+2005-12-30: Tao Liu<liutao1980@gmail.com>
+	   * src/ui.c:修正一处笔误
+	   * src/ui.c:将非xft版本的字体改为先英文后中文
+
+2005-12-25: Yuking <yukig_net@sohu.com>
+	   * 添加快速输入的功能
+	   * 去掉LumaQQ支持，因为新的Lumaqq已经不需要这个了
+	   
+2005-11-03: Yuking <yukig_net@sohu.com>
+	   * 合并拼音佳佳4.0词库（经作者许可）
+	   * 3.2-20051108
+
+2005-11-03: Yuking <yukig_net@sohu.com>
+	   * 加入wpyh@linuxsir的几个补丁，包括：
+	       输入条显示补丁
+	       配置文件错误修正
+	       tools/Makefile.in tools/Makefile.am的修正
+	   
+2005-10-23: Yuking <yukig_net@sohu.com>
+	   * table.c:解决二笔标点符号需要按空格的问题
+
+2005-10-09: Yuking <yukig_net@sohu.com>
+	   * 使用来自linuxfans上的极点二笔码表
+	   * 3.2-051010
+	   
+2005-9-23: Yuking <yukig_net@sohu.com>
+	   * 为码表输入法增加固定输入条的功能，为拼音增加要麻烦一些，因此暂时不做了
+
+2005-9-10: Yuking <yukig_net@sohu.com>
+	   * 修改字体将不必再重新启动，按ctrl_5即可
+	   * 修正编译不成功的问题
+	   * 3.2-050910
+	   
+2005-9-9: Yuking <yukig_net@sohu.com>
+	   * 增加粗略计算打字速度的功能
+
+2005-9-7: Yuking <yukig_net@sohu.com>
+	   * src/vk.c:修正一个重要的内存溢出问题
+	   * 增加yunfan@linuxfans的关于窗口
+	   
+2005-8-27: Yuking <yukig_net@sohu.com>
+	   * src/vk.c:完善虚拟键盘功能
+	   * src/table.c:更改反查拼音的方式
+	   * 3.2-050827
+
+2005-8-24: Yuking <yukig_net@sohu.com>
+	   * src/table.c:解决输入法切换时，可能会导致拼音无法输入词组的问题
+
+2005-8-21: Yuking <yukig_net@sohu.com>
+	   * 增加了N个虚拟键盘方案
+
+2005-8-19: Yuking <yukig_net@sohu.com>
+	   * 发布3.2第一公开测试版3.2-050819
+
+2005-8-17: Yuking <yukig_net@sohu.com>
+	   * src/ime.c,src/punc.c:将中文输入状态下按大写键/回车的英文输出中的标点设置为全角（中文标点状态）
+
+2005-8-15: Yuking <yukig_net@sohu.com>
+	   * 增加虚拟键盘的功能
+	   * 其它一些小的BUG修正
+	   * 版本为3.2
+
+2005-7-23: Yuking <yukig_net@sohu.com>
+	   * 修正“角色”的拼音错误。 （Archetype@linuxsir）
+
+2005-7-7: Yuking <yukig_net@sohu.com>
+	   * src/xim.c,src/InputWindow.c,src/tools.c:将输入条一直居中（非光标跟随状态下）
+	   
+2005-5-4 jeff_yecnYuking <sinomac.net>
+	   * 修正无法在Mac OS X(Darwin)编译的问题
+	   
+2005-4-23 Yuking <yukig_net@sohu.com>
+	   * src/tools.c:遗漏了光标跟随键的设置
+	   * 将输入条数字后的点设置为可选
+
 2005-3-24 Yuking <yukig_net@sohu.com>
 	   * 版本为3.1.1
 	   

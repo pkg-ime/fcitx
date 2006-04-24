@@ -25,5 +25,9 @@ fcitx_SOURCES = IC.c IC.h \
                 version.h \
                 table.c table.h \
                 xim.c xim.h \
-                qw.c qw.h
+                qw.c qw.h \
+		vk.c vk.h \
+		about.c about,h \
+		QuickInput.c QuickInput.h
 fcitx_LDADD = ../lib/libXimd.a
+fcitx_LDFLAGS = -lXpm

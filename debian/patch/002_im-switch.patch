@@ -1,0 +1,48 @@
+diff -Nru /tmp/e3tOTxFKe6/fcitx-3.1.1/debian/im-switch/fcitx /tmp/WbE9IeAfm2/fcitx-3.1.1/debian/im-switch/fcitx
+--- /tmp/e3tOTxFKe6/fcitx-3.1.1/debian/im-switch/fcitx	1970-01-01 00:00:00.000000000 +0000
++++ /tmp/WbE9IeAfm2/fcitx-3.1.1/debian/im-switch/fcitx	2006-03-15 06:04:04.000000000 +0000
+@@ -0,0 +1,6 @@
++XIM=fcitx
++XIM_PROGRAM=/usr/bin/fcitx
++XIM_ARGS=""
++GTK_IM_MODULE=fcitx
++QT_IM_MODULE=fcitx
++DEPENDS="fcitx"
+diff -Nru /tmp/e3tOTxFKe6/fcitx-3.1.1/debian/postinst /tmp/WbE9IeAfm2/fcitx-3.1.1/debian/postinst
+--- /tmp/e3tOTxFKe6/fcitx-3.1.1/debian/postinst	1970-01-01 00:00:00.000000000 +0000
++++ /tmp/WbE9IeAfm2/fcitx-3.1.1/debian/postinst	2006-03-15 06:04:04.000000000 +0000
+@@ -0,0 +1,9 @@
++#!/bin/sh
++set -e
++
++update-alternatives \
++        --install /etc/X11/xinit/xinput.d/zh_CN xinput-zh_CN \
++        /etc/X11/xinit/xinput.d/fcitx 40
++
++#DEBHELPER#
++
+diff -Nru /tmp/e3tOTxFKe6/fcitx-3.1.1/debian/prerm /tmp/WbE9IeAfm2/fcitx-3.1.1/debian/prerm
+--- /tmp/e3tOTxFKe6/fcitx-3.1.1/debian/prerm	1970-01-01 00:00:00.000000000 +0000
++++ /tmp/WbE9IeAfm2/fcitx-3.1.1/debian/prerm	2006-03-15 06:04:04.000000000 +0000
+@@ -0,0 +1,7 @@
++#!/bin/sh
++set -e
++
++update-alternatives --remove xinput-zh_CN /etc/X11/xinit/xinput.d/fcitx
++
++#DEBHELPER#
++
+diff -Nru /tmp/e3tOTxFKe6/fcitx-3.1.1/debian/rules /tmp/WbE9IeAfm2/fcitx-3.1.1/debian/rules
+--- /tmp/e3tOTxFKe6/fcitx-3.1.1/debian/rules	2006-03-15 06:04:03.000000000 +0000
++++ /tmp/WbE9IeAfm2/fcitx-3.1.1/debian/rules	2006-03-15 06:04:04.000000000 +0000
+@@ -81,6 +81,9 @@
+ 	dh_installdocs
+ 	install -m 644 data/*.dat data/*.mb data/tables.conf $(CURDIR)/debian/fcitx/usr/share/fcitx/data/
+ 	install -m 644 xpm/logo.xpm $(CURDIR)/debian/fcitx/usr/share/fcitx/xpm/
++	install -d $(CURDIR)/debian/fcitx/etc/X11/xinit/xinput.d/
++	install -m 644 $(CURDIR)/debian/im-switch/fcitx $(CURDIR)/debian/fcitx/etc/X11/xinit/xinput.d/
++
+ 	dh_installexamples
+ #	dh_install
+ #	dh_installmenu
+
