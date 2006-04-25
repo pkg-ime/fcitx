@@ -2,7 +2,7 @@ Source: fcitx
 Section: utils
 Priority: optional
 Maintainer: Yu Guanghui <ygh@debian.org>
-Build-Depends: debhelper (>> 3.0.0), libx11-dev, libxft-dev, x-dev
+Build-Depends: debhelper (>> 3.0.0), libx11-dev, libxft-dev, x-dev, libxpm-dev
 Standards-Version: 3.5.8
 
 Package: fcitx

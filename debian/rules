@@ -55,7 +55,7 @@ endif
 ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 	cp -f /usr/share/misc/config.guess config.guess
 endif
-	rm -f cj.mb erbi.mb pybase.mb pyphrase.mb wbx.mb 
+	rm -f data/cj.mb data/erbi.mb data/pybase.mb data/pyphrase.mb data/wbx.mb 
 
 
 	dh_clean 

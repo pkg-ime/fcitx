@@ -1,3 +1,9 @@
+fcitx (3.2.060108-2) unstable; urgency=low
+
+  * Add missing dependency libxpm-dev. Closes: #364670 
+
+ -- Yu Guanghui <ygh@debian.org>  Tue, 25 Apr 2006 12:20:52 +0800
+
 fcitx (3.2.060108-1) unstable; urgency=high
 
   * New upstream release
