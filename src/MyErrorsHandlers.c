@@ -57,11 +57,11 @@ void SetMyExceptionHandler (void)
 
 void OnException (int signo)
 {
-    fprintf (stderr, "\nFCITX -- Get Signal No.: %d\n", signo);
+    fprintf (stdout, "\nFCITX -- Get Signal No.: %d\n", signo);
 
     if (signo == SIGHUP) {
-	SetIM ();
 	LoadConfig (False);
+	SetIM ();	
 /*
 	if (bLumaQQ)
 	    ConnectIDResetReset ();*/
@@ -69,11 +69,12 @@ void OnException (int signo)
 	return;
     }
 
-    if (signo != SIGSEGV)	//出现SIGSEGV表明程序自己有问题，此时如果还执行保存操作，可能会损坏输入法文件
+    //出现SIGSEGV表明程序自己有问题，此时如果还执行保存操作，可能会损坏输入法文件
+    if (signo != SIGSEGV)
 	SaveIM ();
-
+    
     if (signo != SIGCHLD && signo != SIGQUIT && signo != SIGWINCH && signo != SIGTTIN && signo != SIGSTOP && signo != SIGTSTP) {
-	fprintf (stderr, "FCITX -- Exit Signal No.: %d\n\n", signo);
+	fprintf (stdout, "FCITX -- Exit Signal No.: %d\n\n", signo);
 	exit (0);
     }
 }
@@ -85,13 +86,12 @@ void SetMyXErrorHandler (void)
 
 int MyXErrorHandler (Display * dpy, XErrorEvent * event)
 {
+    /*这个错误信息没有任何用处，去掉好了
     char            str[256];
 
-    SaveIM ();
-
     XGetErrorText (dpy, event->error_code, str, 255);
-    fprintf (stderr, "fcitx: %s\n", str);
-
+    fprintf (stdout, "fcitx: %s\n", str);
+    */
     if (event->error_code != 3 && event->error_code != BadMatch)	// xterm will generate 3
 	oldXErrorHandler (dpy, event);
 
