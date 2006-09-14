@@ -39,6 +39,8 @@
 #include "lock-0.xpm"
 #include "lock-1.xpm"
 #include "vk-1.xpm"
+#include "ft-0.xpm"
+#include "ft-1.xpm"
 
 #include "ui.h"
 #include "vk.h"
@@ -49,8 +51,8 @@ int             MAINWND_WIDTH = _MAINWND_WIDTH;
 int             iMainWindowX = MAINWND_STARTX;
 int             iMainWindowY = MAINWND_STARTY;
 
-WINDOW_COLOR    mainWindowColor = { NULL, NULL, {0, 220 << 8, 220 << 8, 220 << 8} };
-MESSAGE_COLOR   mainWindowLineColor = { NULL, {0, 100 << 8, 180 << 8, 255 << 8} };	//线条色
+WINDOW_COLOR    mainWindowColor = { NULL, NULL, {0, 255 << 8, 240 << 8, 255 << 8} };
+MESSAGE_COLOR   mainWindowLineColor = { NULL, {0, 220 << 8, 0, 0} };	//线条色
 MESSAGE_COLOR   IMNameColor[3] = {	//输入法名称的颜色
     {NULL, {0, 170 << 8, 170 << 8, 170 << 8}},
     {NULL, {0, 150 << 8, 200 << 8, 150 << 8}},
@@ -70,6 +72,9 @@ XImage         *pLX[2] = { NULL, NULL };
 char          **LXLogo[2] = { lx_0_xpm, lx_1_xpm };
 XImage         *pLock[2] = { NULL, NULL };
 char          **LockLogo[2] = { lock_0_xpm, lock_1_xpm };
+
+XImage         *pGBKT[2] = { NULL, NULL };
+char          **GBKTLogo[2] = { ft_0_xpm, ft_1_xpm };
 
 XImage         *pVK = NULL;
 
@@ -91,6 +96,8 @@ extern Bool     bSP;
 extern Bool     bUseLegend;
 extern IM      *im;
 extern CARD16   connect_id;
+
+extern Bool     bUseGBKT;
 
 #ifdef _USE_XFT
 extern XftFont *xftMainWindowFont;
@@ -186,6 +193,13 @@ void DisplayMainWindow (void)
 	    }
 	    XPutImage (dpy, mainWindow, mainWindowColor.backGC, pLX[bUseLegend], 0, 0, iPos, 2, 15, 16);
 	    iPos += 18;
+
+	    if (!pGBKT[bUseGBKT]) {
+		pGBKT[bUseGBKT] = XGetImage (dpy, mainWindow, 0, 0, 15, 16, AllPlanes, XYPixmap);
+		FillImageByXPMData (pGBKT[bUseGBKT], GBKTLogo[bUseGBKT]);
+	    }
+	    XPutImage (dpy, mainWindow, mainWindowColor.backGC, pGBKT[bUseGBKT], 0, 0, iPos, 2, 15, 16);
+	    iPos += 18;
 	}
 
 	if (!pLock[bLocked]) {
@@ -251,7 +265,8 @@ void DisplayMainWindow (void)
 		XDrawLine (dpy, mainWindow, mainWindowLineColor.gc, 54, 4, 54, MAINWND_HEIGHT - 4);
 		XDrawLine (dpy, mainWindow, mainWindowLineColor.gc, 72, 4, 72, MAINWND_HEIGHT - 4);
 		XDrawLine (dpy, mainWindow, mainWindowLineColor.gc, 89, 4, 89, MAINWND_HEIGHT - 4);
-		iPos = 90;
+		XDrawLine (dpy, mainWindow, mainWindowLineColor.gc, 107, 4, 107, MAINWND_HEIGHT - 4);
+		iPos = 108;
 	    }
 	    iPos += 11;
 	    if (bShowVK || !bCompactMainWindow) {
