@@ -25,6 +25,7 @@
 
 #include <X11/Xlocale.h>
 #include <X11/Xutil.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,7 +57,8 @@ XftFont        *xftMainWindowFont = NULL;
 XftFont        *xftMainWindowFontEn = NULL;
 XftFont        *xftVKWindowFont = NULL;
 Bool            bUseAA = True;
-int             iMainWindowFontSize = 11;
+Bool            bUseBold = True;
+int             iMainWindowFontSize = 12;
 int             iVKWindowFontSize = 11;
 int             iFontSize = 12;
 char            strUserLocale[50] = "zh_CN.UTF-8";
@@ -78,6 +80,7 @@ GC              lightGC;
 Bool            bIsUtf8 = False;
 
 char            strFontName[100] = "*";
+
 #ifdef _USE_XFT
 char            strFontEnName[100] = "Courier New";
 #else
@@ -237,11 +240,13 @@ void CreateFont (void)
 
     if (xftMainWindowFont)
 	XftFontClose (dpy, xftMainWindowFont);
-    xftMainWindowFont = XftFontOpen (dpy, iScreen, XFT_FAMILY, XftTypeString, strFontName, XFT_SIZE, XftTypeDouble, (double) iMainWindowFontSize, XFT_ANTIALIAS, XftTypeBool, bUseAA, XFT_WEIGHT, XftTypeInteger, XFT_WEIGHT_BOLD, NULL);
+    xftMainWindowFont =
+	XftFontOpen (dpy, iScreen, XFT_FAMILY, XftTypeString, strFontName, XFT_SIZE, XftTypeDouble, (double) iMainWindowFontSize, XFT_ANTIALIAS, XftTypeBool, bUseAA, XFT_WEIGHT, XftTypeInteger, (bUseBold) ? XFT_WEIGHT_BOLD : XFT_WEIGHT_MEDIUM, NULL);
 
     if (xftMainWindowFontEn)
 	XftFontClose (dpy, xftMainWindowFontEn);
-    xftMainWindowFontEn = XftFontOpen (dpy, iScreen, XFT_FAMILY, XftTypeString, strFontEnName, XFT_SIZE, XftTypeDouble, (double) iMainWindowFontSize, XFT_ANTIALIAS, XftTypeBool, bUseAA, XFT_WEIGHT, XftTypeInteger, XFT_WEIGHT_BOLD, NULL);
+    xftMainWindowFontEn =
+	XftFontOpen (dpy, iScreen, XFT_FAMILY, XftTypeString, strFontEnName, XFT_SIZE, XftTypeDouble, (double) iMainWindowFontSize, XFT_ANTIALIAS, XftTypeBool, bUseAA, XFT_WEIGHT, XftTypeInteger, (bUseBold) ? XFT_WEIGHT_BOLD : XFT_WEIGHT_MEDIUM, NULL);
 
     if (xftVKWindowFont)
 	XftFontClose (dpy, xftVKWindowFont);
@@ -265,14 +270,20 @@ void CreateFont (void)
     if (strUserLocale[0])
 	setlocale (LC_CTYPE, strUserLocale);
 
-    sprintf (strFont, "-*-%s-medium-r-normal--%d-*-*-*-*-*-*-*,-*-%s-medium-r-normal--%d-*-*-*-*-*-*-*", strFontEnName, iMainWindowFontSize, strFontName, iMainWindowFontSize);
+    if (bUseBold)
+	sprintf (strFont, "-*-%s-bold-r-normal--%d-*-*-*-*-*-*-*,-*-%s-bold-r-normal--%d-*-*-*-*-*-*-*", strFontEnName, iMainWindowFontSize, strFontName, iMainWindowFontSize);
+    else
+	sprintf (strFont, "-*-%s-medium-r-normal--%d-*-*-*-*-*-*-*,-*-%s-medium-r-normal--%d-*-*-*-*-*-*-*", strFontEnName, iMainWindowFontSize, strFontName, iMainWindowFontSize);
     if (fontSetMainWindow)
 	XFreeFontSet (dpy, fontSetMainWindow);
     fontSetMainWindow = XCreateFontSet (dpy, strFont, &missing_charsets, &num_missing_charsets, &default_string);
     if (num_missing_charsets > 0) {
 	fprintf (stderr, "Error: Cannot Create Chinese Fonts:\n\t%s\nUsing Default ...\n", strFont);
 	iMainWindowFontSize = 14;
-	sprintf (strFont, "-*-*-medium-r-normal--%d-*-*-*-*-*-*-*,-*-*-medium-r-normal--%d-*-*-*-*-*-*-*", iMainWindowFontSize, iMainWindowFontSize);
+	if (bUseBold)
+	    sprintf (strFont, "-*-*-medium-r-normal--%d-*-*-*-*-*-*-*,-*-*-medium-r-normal--%d-*-*-*-*-*-*-*", iMainWindowFontSize, iMainWindowFontSize);
+	else
+	    sprintf (strFont, "-*-*-bold-r-normal--%d-*-*-*-*-*-*-*,-*-*-bold-r-normal--%d-*-*-*-*-*-*-*", iMainWindowFontSize, iMainWindowFontSize);
 	fontSetMainWindow = XCreateFontSet (dpy, strFont, &missing_charsets, &num_missing_charsets, &default_string);
 	if (num_missing_charsets > 0)
 	    fprintf (stderr, "Error: Cannot Create Chinese Fonts!\n\n");
@@ -351,22 +362,25 @@ void MyXEventHandler (XEvent * event)
     case ClientMessage:
 	if ((event->xclient.message_type == about_protocol_atom) && ((Atom) event->xclient.data.l[0] == about_kill_atom)) {
 	    XUnmapWindow (dpy, aboutWindow);
-	    DisplayMainWindow ();
+	    DrawMainWindow ();
 	}
 	break;
 	//*********************
     case Expose:
+#ifdef _DEBUG
+	fprintf (stderr, "XEvent--Expose\n");
+#endif
 	if (event->xexpose.count > 0)
 	    break;
 	if (event->xexpose.window == mainWindow)
-	    DisplayMainWindow ();
+	    DrawMainWindow ();
 	else if (event->xexpose.window == VKWindow)
-	    DisplayVKWindow ();
+	    DrawVKWindow ();
 	else if (event->xexpose.window == inputWindow)
-	    DisplayInputWindow ();
+	    DrawInputWindow ();
 	//added by yunfan
 	else if (event->xexpose.window == aboutWindow)
-	    DisplayAboutWindow ();
+	    DrawAboutWindow ();
 	//******************************
 	break;
     case DestroyNotify:
@@ -378,7 +392,7 @@ void MyXEventHandler (XEvent * event)
 		iInputWindowX = event->xbutton.x;
 		iInputWindowY = event->xbutton.y;
 		MouseClick (&iInputWindowX, &iInputWindowY, inputWindow);
-		DisplayInputWindow ();
+		DrawInputWindow ();
 	    }
 	    else if (event->xbutton.window == mainWindow) {
 		if (IsInBox (event->xbutton.x, event->xbutton.y, 1, 1, 16, 17)) {
@@ -397,13 +411,13 @@ void MyXEventHandler (XEvent * event)
 		    iVKWindowX = event->xbutton.x;
 		    iVKWindowY = event->xbutton.y;
 		    MouseClick (&iVKWindowX, &iVKWindowY, VKWindow);
-		    DisplayVKWindow ();
+		    DrawVKWindow ();
 		}
 	    }
 	    //added by yunfan
 	    else if (event->xbutton.window == aboutWindow) {
 		XUnmapWindow (dpy, aboutWindow);
-		DisplayMainWindow ();
+		DrawMainWindow ();
 	    }
 	    //****************************
 	    SaveProfile ();
@@ -605,7 +619,7 @@ void OutputString (Window window, XFontSet font, char *str, int x, int y, GC gc)
 /*
  * 从xpm图形文件中图形数据填入到XImage变量中
  */
-int FillImageByXPMData (XImage * pImage, char **apcData)
+/*int FillImageByXPMData (XImage * pImage, char **apcData)
 {
     int             iWidth, iHeight;
     int             iColorCount;
@@ -684,6 +698,7 @@ int FillImageByXPMData (XImage * pImage, char **apcData)
     }
     return 0;
 }
+*/
 
 Bool MouseClick (int *x, int *y, Window window)
 {

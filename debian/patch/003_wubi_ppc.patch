@@ -1,0 +1,33 @@
+--- /tmp/table.c	2007-02-07 16:05:06.000000000 +0800
++++ ./src/table.c	2007-02-07 16:05:23.000000000 +0800
+@@ -1933,7 +1933,7 @@
+ {
+     unsigned char   i;
+     unsigned char   i1, i2;
+-    int             iLen;
++    size_t             iLen;
+     char            strTemp[3];
+     RECORD         *recTemp;
+ 
+--- src/tools.h	2006-09-01 16:08:46.000000000 +0800
++++ /tmp/tools.h	2007-02-08 23:00:37.000000000 +0800
+@@ -35,7 +35,7 @@
+ void            SetTriggerKeys (char *str);
+ Bool            CheckHZCharset (char *strHZ);
+ Bool            MyStrcmp (char *str1, char *str2);
+-int             CalHZIndex (char *strHZ);
++int             CalHZIndex (signed char *strHZ);
+ 
+ char           *ConvertGBKSimple2Tradition (char *text);
+ 
+--- src/tools.c	2006-12-30 22:02:12.000000000 +0800
++++ /tmp/tools.c	2007-02-08 23:00:17.000000000 +0800
+@@ -1227,7 +1227,7 @@
+     return ret;
+ }
+ 
+-int CalHZIndex (char *strHZ)
++int CalHZIndex (signed char *strHZ)
+ {
+     return (strHZ[0] + 127) * 255 + strHZ[1] + 128;
+ }

@@ -46,7 +46,8 @@ IC             *CurrentIC = NULL;
 char            strLocale[201] = "zh_CN.GB18030,zh_CN.GB2312,zh_CN,zh_CN.GBK,zh_CN.UTF-8,zh_CN.UTF8,en_US.UTF-8,en_US.UTF8";
 
 //该变量是GTK+ OverTheSpot光标跟随的临时解决方案
-INT8            iOffsetY = 12;
+INT8            iOffsetX = 0;
+INT8            iOffsetY = 16;
 
 //extern Bool     bLumaQQ;
 
@@ -77,10 +78,10 @@ extern uint     uMessageUp;
 extern Bool     bVK;
 extern Bool     bAutoHideInputWindow;
 
-/* 计算打字速度
+//计算打字速度
 extern Bool     bStartRecordType;
 extern uint     iHZInputed;
-*/
+
 extern Bool     bShowInputWindowTriggering;
 
 extern Bool     bUseGBKT;
@@ -162,13 +163,16 @@ Bool MySetICValuesHandler (IMChangeICStruct * call_data)
 
 		if (iTempInputWindowX < 0)
 		    iTempInputWindowX = 0;
-		else if ((iTempInputWindowX + iInputWindowWidth) > DisplayWidth (dpy, iScreen))
+		else if ((iTempInputWindowX + iInputWindowWidth + iOffsetX) > DisplayWidth (dpy, iScreen))
 		    iTempInputWindowX = DisplayWidth (dpy, iScreen) - iInputWindowWidth;
+		else
+		    iTempInputWindowX += iOffsetX;
 
 		if (iTempInputWindowY < 0)
 		    iTempInputWindowY = 0;
 		else if ((iTempInputWindowY + iInputWindowHeight + iOffsetY) > DisplayHeight (dpy, iScreen))
-		    iTempInputWindowY = DisplayHeight (dpy, iScreen) - 2 * iInputWindowHeight;
+		    //iTempInputWindowY = DisplayHeight (dpy, iScreen) - 2 * iInputWindowHeight;
+		    iTempInputWindowY -= iInputWindowHeight;
 		else
 		    iTempInputWindowY += iOffsetY;
 
@@ -196,43 +200,10 @@ Bool MySetFocusHandler (IMChangeFocusStruct * call_data)
     connect_id = call_data->connect_id;
     icid = call_data->icid;
 
-    /* It seems this section is useless
-       if (bTrackCursor) {
-       int             i;
-       Window          window;
-       XICAttribute   *pre_attr = ((IMChangeICStruct *) call_data)->preedit_attr;
-
-       for (i = 0; i < (int) ((IMChangeICStruct *) call_data)->preedit_attr_num; i++, pre_attr++) {
-       if (!strcmp (XNSpotLocation, pre_attr->name)) {
-       if (CurrentIC->focus_win)
-       XTranslateCoordinates (dpy, CurrentIC->client_win, RootWindow (dpy, iScreen), (*(XPoint *) pre_attr->value).x, (*(XPoint *) pre_attr->value).y, &iTempInputWindowX, &iTempInputWindowY, &window);
-       else if (CurrentIC->client_win)
-       XTranslateCoordinates (dpy, CurrentIC->client_win, RootWindow (dpy, iScreen), (*(XPoint *) pre_attr->value).x, (*(XPoint *) pre_attr->value).y, &iTempInputWindowX, &iTempInputWindowY, &window);
-       else
-       return True;
-
-       if (iTempInputWindowX < 0)
-       iTempInputWindowX = 0;
-       else if ((iTempInputWindowX + iInputWindowWidth) > DisplayWidth (dpy, iScreen))
-       iTempInputWindowX = DisplayWidth (dpy, iScreen) - iInputWindowWidth;
-       else
-       iTempInputWindowX += 5;
-
-       if (iTempInputWindowY < 0)
-       iTempInputWindowY = 0;
-       else if ((iTempInputWindowY + iInputWindowHeight) > DisplayHeight (dpy, iScreen))
-       iTempInputWindowY = DisplayHeight (dpy, iScreen) - iInputWindowHeight;
-
-       XMoveWindow (dpy, inputWindow, iTempInputWindowX, iTempInputWindowY);
-
-       ConnectIDSetTrackCursor (call_data->connect_id, True);
-       }
-       }
-       } */
-    /* ************************************************************************ */
     if (ConnectIDGetState (connect_id) != IS_CLOSED) {
 	IMPreeditStart (ims, (XPointer) call_data);
 	EnterChineseMode (lastConnectID == connect_id);
+
 	if (ConnectIDGetState (connect_id) == IS_CHN) {
 	    if (bVK)
 		DisplayVKWindow ();
@@ -266,10 +237,9 @@ Bool MySetFocusHandler (IMChangeFocusStruct * call_data)
        } */
 
     //When application gets the focus, rerecord the time.
-    /*
-       bStartRecordType = False;
-       iHZInputed = 0;
-     */
+    bStartRecordType = False;
+    iHZInputed = 0;
+    DrawMainWindow ();
 
     return True;
 }
@@ -341,6 +311,7 @@ Bool MyTriggerNotifyHandler (IMTriggerNotifyStruct * call_data)
 	 */
 	SetConnectID (call_data->connect_id, IS_CHN);
 	EnterChineseMode (False);
+	DrawMainWindow ();
 
 	if (ConnectIDGetTrackCursor (connect_id))
 	    XMoveWindow (dpy, inputWindow, iTempInputWindowX, iTempInputWindowY);
@@ -354,68 +325,62 @@ Bool MyTriggerNotifyHandler (IMTriggerNotifyStruct * call_data)
     return True;
 }
 
-/*
-#define _PRINT_MESSAGE
-*/
 Bool MyProtoHandler (XIMS _ims, IMProtocol * call_data)
 {
     switch (call_data->major_code) {
     case XIM_OPEN:
-#ifdef _PRINT_MESSAGE
+#ifdef _DEBUG
 	printf ("XIM_OPEN\n");
 #endif
 	return MyOpenHandler ((IMOpenStruct *) call_data);
     case XIM_CLOSE:
-#ifdef _PRINT_MESSAGE
+#ifdef _DEBUG
 	printf ("XIM_CLOSE\n");
 #endif
 	return MyCloseHandler ((IMOpenStruct *) call_data);
     case XIM_CREATE_IC:
-#ifdef _PRINT_MESSAGE
+#ifdef _DEBUG
 	printf ("XIM_CREATE_IC\n");
 #endif
 	return MyCreateICHandler ((IMChangeICStruct *) call_data);
     case XIM_DESTROY_IC:
-#ifdef _PRINT_MESSAGE
+#ifdef _DEBUG
 	printf ("XIM_DESTROY_IC:%d\n", ((IMForwardEventStruct *) call_data)->icid);
 #endif
 	return MyDestroyICHandler ((IMChangeICStruct *) call_data);
     case XIM_SET_IC_VALUES:
-#ifdef _PRINT_MESSAGE
+#ifdef _DEBUG
 //      printf ("XIM_SET_IC_VALUES:%d\n", ((IMForwardEventStruct *) call_data)->icid);
 #endif
 	return MySetICValuesHandler ((IMChangeICStruct *) call_data);
     case XIM_GET_IC_VALUES:
-#ifdef _PRINT_MESSAGE
+#ifdef _DEBUG
 	printf ("XIM_GET_IC_VALUES\n");
 #endif
 	return MyGetICValuesHandler ((IMChangeICStruct *) call_data);
     case XIM_FORWARD_EVENT:
-#ifdef _PRINT_MESSAGE
+#ifdef _DEBUG
 	printf ("XIM_FORWARD_EVENT: %d  %d\n", ((IMForwardEventStruct *) call_data)->icid, ((IMForwardEventStruct *) call_data)->connect_id);
 #endif
-	//if ( connect_id == ((IMForwardEventStruct *)call_data)->connect_id )
 	ProcessKey ((IMForwardEventStruct *) call_data);
-	XSync (dpy, False);
-
 	return True;
     case XIM_SET_IC_FOCUS:
-#ifdef _PRINT_MESSAGE
+#ifdef _DEBUG
 	printf ("XIM_SET_IC_FOCUS:conn=%d   ic=%d\n", ((IMForwardEventStruct *) call_data)->icid, ((IMForwardEventStruct *) call_data)->connect_id);
 #endif
 	return MySetFocusHandler ((IMChangeFocusStruct *) call_data);
     case XIM_UNSET_IC_FOCUS:
-#ifdef _PRINT_MESSAGE
+#ifdef _DEBUG
 	printf ("XIM_UNSET_IC_FOCUS:%d\n", ((IMForwardEventStruct *) call_data)->icid);
 #endif
 	return MyUnsetFocusHandler ((IMChangeICStruct *) call_data);;
     case XIM_RESET_IC:
-#ifdef _PRINT_MESSAGE
+#ifdef _DEBUG
 	printf ("XIM_RESET_IC\n");
 #endif
 	return True;
     case XIM_TRIGGER_NOTIFY:
-#ifdef _PRINT_MESSAGE
+#ifdef _DEBUG
 	printf ("XIM_TRIGGER_NOTIFY\n");
 #endif
 	return MyTriggerNotifyHandler ((IMTriggerNotifyStruct *) call_data);
@@ -531,7 +496,7 @@ void SetIMState (Bool bState)
 	if (bState) {
 	    IMPreeditStart (ims, (XPointer) & call_data);
 	    SetConnectID (connect_id, IS_CHN);
-	    DisplayMainWindow ();
+	    DrawMainWindow ();
 	}
 	else {
 	    IMPreeditEnd (ims, (XPointer) & call_data);

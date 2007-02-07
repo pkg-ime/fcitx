@@ -31,7 +31,7 @@ typedef enum _KEYCODE_LIST {
     R_CTRL = 109,
     L_SHIFT = 50,
     R_SHIFT = 62
-} KEYCODE;
+} KEY_CODE;
 
 enum {
     K_LCTRL = 227,
@@ -69,6 +69,7 @@ typedef enum _KEY_STATE {
 } KEY_STATE;
 
 typedef enum _KEY {
+    TAB = 9,
     ENTER = 13,
     ESC = 27,
     DELETE = 255,
@@ -146,6 +147,7 @@ typedef enum _KEY {
     CTRL_DELETE = 1255,
 
     SHIFT_SPACE = 2032,
+    SHIFT_TAB = 11032,
     SHIFT_INSERT = 11099,
     SHIFT_DELETE = 2255,
 

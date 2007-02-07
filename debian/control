@@ -8,7 +8,7 @@ Standards-Version: 3.7.2
 Package: fcitx
 Architecture: any
 Depends: ${shlibs:Depends}
-Recommends: im-switch, ttf-arphic-gbsn00lp | ttf-arphic-gkai00m
+Recommends: im-switch, ttf-arphic-gbsn00lp | ttf-arphic-gkai00mp
 Description: Free Chinese Input Toy for X (XIM)
  fcitx is a simplified Chinese input server. It supports WuBi,
  Pinyin and QuWei input method. It's small and fast.
