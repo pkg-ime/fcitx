@@ -5,7 +5,12 @@ It was downloaded from  http://www.fcitx.org
 
 Upstream Author: Yuking <yuking_net@sohu.com>
 
-Copyright:
+Copyright: Copyright (C) 2002~2005 by Yuking
+
+lib/*:
+	Copyright (C) 1994, 1995 by Sun Microsystems, Inc.
+	Copyright (C) 1993, 1994 by Hewlett-Packard Company
+
 
 The programs in this package may be copied under the terms of the GNU
 General Public Licence (see below).

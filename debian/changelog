@@ -1,3 +1,20 @@
+fcitx (1:3.4.3-1.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  [ LI Daobing ]
+  * fix lintian error:
+    - build-depends-on-obsolete-package build-depends: x-dev
+    - declares-possibly-conflicting-debhelper-compat-versions rules=5 compat=5
+  * fix im-switch conf file (Closes: #454363)
+  [ Barry deFreese ]
+  * Make clean not ignore errors.
+  * Add copyright holders in debian/copyright.
+  * Add watch file.
+  * Add Homepage in source stanza.
+  * Bump Standards Version to 3.8.0. (No changes needed).
+
+ -- Barry deFreese <bdefreese@debian.org>  Wed, 19 Nov 2008 12:31:10 -0500
+
 fcitx (1:3.4.3-1) unstable; urgency=medium
 
   * New upstream release
