@@ -17,9 +17,20 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+/**
+ * @file   MainWindow.c
+ * @author Yuking yuking_net@sohu.com
+ * @date   2008-1-16
+ * 
+ * @brief  主窗口
+ * 
+ * 
+ */
+
 #include "MainWindow.h"
 
 #include <stdio.h>
+#include <ctype.h>
 #include <X11/xpm.h>
 
 #include "IC.h"
@@ -83,6 +94,9 @@ HIDE_MAINWINDOW hideMainWindow = HM_SHOW;
 
 Bool            bCompactMainWindow = False;
 Bool            bShowVK = False;
+Bool		bMainWindow_Hiden = False;
+
+char           *strFullCorner = "全角模式";
 
 extern Display *dpy;
 extern GC       dimGC;
@@ -145,7 +159,8 @@ void DisplayMainWindow (void)
     fprintf (stderr, "DISPLAY MainWindow\n");
 #endif
 
-    XMapRaised (dpy, mainWindow);
+    if (!IsWindowVisible(mainWindow) && !bMainWindow_Hiden)
+	XMapRaised (dpy, mainWindow);
 }
 
 void DrawMainWindow (void)
@@ -164,11 +179,15 @@ void DrawMainWindow (void)
 #endif
     char           *strGBKT;
 
+    if ( bMainWindow_Hiden )
+    	return;
+	
     iIndex = IS_CLOSED;
     attrib.valuemask = 0;
 #ifdef _DEBUG
     fprintf (stderr, "DRAW MainWindow\n");
 #endif
+
     if (hideMainWindow == HM_SHOW || (hideMainWindow == HM_AUTO && (ConnectIDGetState (connect_id) != IS_CLOSED))) {
 	if (!pLogo) {
 	    rv = XpmCreateImageFromData (dpy, logo_xpm, &pLogo, &mask, &attrib);
@@ -244,7 +263,14 @@ void DrawMainWindow (void)
 	XClearArea (dpy, mainWindow, iPos, 2, MAINWND_WIDTH - iPos - 2, MAINWND_HEIGHT - 4, False);
 #ifdef _USE_XFT
 	iPos += 2;
-	p1 = (bVK) ? vks[iCurrentVK].strName : im[iIMIndex].strName;
+
+	if (bVK)
+	    p1 = vks[iCurrentVK].strName;
+	else if (bCorner)
+	    p1 = strFullCorner;
+	else
+	    p1 = im[iIMIndex].strName;
+
 	while (*p1) {
 	    p2 = strTemp;
 	    if (isprint (*p1))	//使用中文字体
@@ -270,7 +296,7 @@ void DrawMainWindow (void)
 	    *p2 = '\0';
 
 	    strGBKT = bUseGBKT ? ConvertGBKSimple2Tradition (strTemp) : strTemp;
-	    OutputString (mainWindow, (bEn) ? xftMainWindowFontEn : xftMainWindowFont, strGBKT, iPos, FontHeight (xftMainWindowFont) + (MAINWND_HEIGHT - FontHeight (xftMainWindowFont)) / 2 - 1, IMNameColor[iIndex].color);
+	    OutputString (mainWindow, (bEn) ? xftMainWindowFontEn : xftMainWindowFont, strGBKT, iPos, (MAINWND_HEIGHT + FontHeight (xftMainWindowFont)) / 2 - 1, IMNameColor[iIndex].color);
 	    iPos += StringWidth (strGBKT, (bEn) ? xftMainWindowFontEn : xftMainWindowFont);
 
 	    if (bUseGBKT)
@@ -278,7 +304,7 @@ void DrawMainWindow (void)
 	}
 #else
 	strGBKT = bUseGBKT ? ConvertGBKSimple2Tradition ((bVK) ? vks[iCurrentVK].strName : im[iIMIndex].strName) : ((bVK) ? vks[iCurrentVK].strName : im[iIMIndex].strName);
-	OutputString (mainWindow, fontSetMainWindow, strGBKT, iPos, FontHeight (fontSetMainWindow) + (MAINWND_HEIGHT - FontHeight (fontSetMainWindow)) / 2 - 1, IMNameColor[iIndex].gc);
+	OutputString (mainWindow, fontSetMainWindow, strGBKT, iPos, (MAINWND_HEIGHT + FontHeight (fontSetMainWindow)) / 2 - 1, IMNameColor[iIndex].gc);
 	if (bUseGBKT)
 	    free (strGBKT);
 #endif
@@ -291,8 +317,9 @@ void DrawMainWindow (void)
 		Draw3DEffect (mainWindow, 37, 1, 18, 18, _3D_UPPER);
 		Draw3DEffect (mainWindow, 55, 1, 18, 18, _3D_UPPER);
 		Draw3DEffect (mainWindow, 73, 1, 18, 18, _3D_UPPER);
-		Draw3DEffect (mainWindow, 91, 1, 11, 18, _3D_UPPER);
-		Draw3DEffect (mainWindow, 102, 1, 22, 18, _3D_UPPER);
+		Draw3DEffect (mainWindow, 91, 1, 18, 18, _3D_UPPER);
+		Draw3DEffect (mainWindow, 109, 1, 11, 18, _3D_UPPER);
+		Draw3DEffect (mainWindow, 120, 1, 22, 18, _3D_UPPER);
 	    }
 	}
 	else {
@@ -314,7 +341,7 @@ void DrawMainWindow (void)
 	    XDrawLine (dpy, mainWindow, mainWindowLineColor.gc, iPos, 4, iPos, MAINWND_HEIGHT - 4);
 	}
     }
-    else
+    else if (IsWindowVisible(mainWindow))
 	XUnmapWindow (dpy, mainWindow);
 }
 
@@ -324,6 +351,8 @@ void InitMainWindowColor (void)
     int             iPixel;
     int             i;
 
+    if (mainWindowLineColor.gc)
+	XFreeGC (dpy, mainWindowLineColor.gc);
     mainWindowLineColor.gc = XCreateGC (dpy, mainWindow, 0, &values);
     if (XAllocColor (dpy, DefaultColormap (dpy, DefaultScreen (dpy)), &(mainWindowLineColor.color)))
 	iPixel = mainWindowLineColor.color.pixel;
@@ -332,6 +361,8 @@ void InitMainWindowColor (void)
     XSetForeground (dpy, mainWindowLineColor.gc, iPixel);
 
     for (i = 0; i < 3; i++) {
+	if (IMNameColor[i].gc)
+	    XFreeGC (dpy, IMNameColor[i].gc);
 	IMNameColor[i].gc = XCreateGC (dpy, mainWindow, 0, &values);
 	if (XAllocColor (dpy, DefaultColormap (dpy, DefaultScreen (dpy)), &(IMNameColor[i].color)))
 	    iPixel = IMNameColor[i].color.pixel;

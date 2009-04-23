@@ -17,6 +17,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+/**
+ * @file   KeyList.h
+ * @author Yuking yuking_net@sohu.com
+ * @date   2008-1-16
+ * 
+ * @brief  º¸≈Ã…®√Ë¬Î¡–±Ì
+ * 
+ * 
+ */
+
 #ifndef _KEYLIST_H
 #define _KETLIST_H
 
@@ -30,7 +40,9 @@ typedef enum _KEYCODE_LIST {
     L_CTRL = 37,
     R_CTRL = 109,
     L_SHIFT = 50,
-    R_SHIFT = 62
+    R_SHIFT = 62,
+    L_SUPER = 115,
+    R_SUPER = 116
 } KEY_CODE;
 
 enum {
@@ -51,7 +63,7 @@ typedef struct _KEY_LIST {
     char           *strKey;
     int             code;
 } KEY_LIST;
-typedef struct _KEY_LIST KEYCODE_LIST;
+// typedef struct _KEY_LIST KEYCODE_LIST;
 
 typedef enum _KEY_STATE {
     KEY_NONE = 0,
@@ -64,6 +76,7 @@ typedef enum _KEY_STATE {
     KEY_CTRL_ALT_COMP = 12,
     KEY_CTRL_ALT_SHIFT_COMP = 13,
     KEY_NUMLOCK = 16,
+    KEY_SUPER_COMP =64,
     KEY_SCROLLLOCK = 128,
     KEY_MOUSE_PRESSED = 256
 } KEY_STATE;
@@ -343,6 +356,6 @@ typedef enum _KEY {
 int             GetKey (unsigned char iKeyCode, int iKeyState, int iCount);
 int             ParseKey (char *strKey);
 int             GetKeyList (char *strKey);
-int             GetKeyCodeList (char *strKey);
+//int             GetKeyCodeList (char *strKey);
 
 #endif

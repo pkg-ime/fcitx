@@ -33,7 +33,11 @@
 #define STRBUFLEN 64
 
 #ifndef ICONV_CONST
-	#define ICONV_CONST
+#define ICONV_CONST
+#endif
+
+#ifndef FALSE
+#define FALSE	0
 #endif
 
 typedef enum _IME_STATE {
@@ -42,33 +46,42 @@ typedef enum _IME_STATE {
     IS_CHN
 } IME_STATE;
 
+typedef struct _POSITION {
+    int	x;
+    int	y;
+} position;
+
 typedef struct _CONNECT_ID {
-    struct _CONNECT_ID *next;
-    CARD16          connect_id;
-    IME_STATE       imState;
-    /* 该变量用于lumaqq支持
-    Bool            bReset:1;
-    */
-    Bool	    bTrackCursor:1;	//if in 'over the spot' mode
-    //char      *strLocale;
+    struct _CONNECT_ID	*next;
+    CARD16		connect_id;
+    IME_STATE		imState;
+    Bool		bTrackCursor:1;	//if in 'over the spot' mode
+    position		pos;
 } CONNECT_ID;
 
-Bool            InitXIM (char *, Window);
+Bool            InitXIM (Window, char *);
 void            SendHZtoClient (IMForwardEventStruct * call_data, char *strHZ);
 void            EnterChineseMode (Bool bState);
 void            CreateConnectID (IMOpenStruct * call_data);
 void            DestroyConnectID (CARD16 connect_id);
 void            SetConnectID (CARD16 connect_id, IME_STATE imState);
 IME_STATE       ConnectIDGetState (CARD16 connect_id);
+
 /* 用于lumaqq支持
 Bool            ConnectIDGetReset (CARD16 connect_id);
 void            ConnectIDSetReset (CARD16 connect_id, Bool bReset);
 void            ConnectIDResetReset (void);
 */
-void		ConnectIDSetTrackCursor (CARD16 connect_id, Bool bTrack);
-Bool		ConnectIDGetTrackCursor (CARD16 connect_id);
-void		SetIMState (Bool bState);
+void            ConnectIDSetPos (CARD16 connect_id, int x, int y);
+position	*ConnectIDGetPos (CARD16 connect_id);
+void            ConnectIDSetTrackCursor (CARD16 connect_id, Bool bTrack);
+Bool            ConnectIDGetTrackCursor (CARD16 connect_id);
+void            SetIMState (Bool bState);
+void            MyIMForwardEvent (CARD16 connectId, CARD16 icId, int keycode);
 
-//char           *ConnectIDGetLocale(CARD16 connect_id);
+/* char           *ConnectIDGetLocale(CARD16 connect_id); */
+#ifndef __USE_GNU
+extern char    *strcasestr (__const char *__haystack, __const char *__needle);
+#endif
 
 #endif

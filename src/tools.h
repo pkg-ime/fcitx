@@ -17,10 +17,21 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+/**
+ * @file   tools.h
+ * @author Yuking yuking_net@sohu.com
+ * @date   2008-1-16
+ * 
+ * @brief  ≈‰÷√Œƒº˛∂¡–¥
+ * 
+ * 
+ */
+
 #ifndef _TOOLS_H
 #define _TOOLS_H
 
 #include <stdio.h>
+#include <errno.h>
 #include "ime.h"
 
 #define TABLE_GBKS2T "gbks2t.tab"
@@ -35,7 +46,7 @@ void            SetSwitchKey (char *str);
 void            SetTriggerKeys (char *str);
 Bool            CheckHZCharset (char *strHZ);
 Bool            MyStrcmp (char *str1, char *str2);
-int             CalHZIndex (signed char *strHZ);
+int             CalHZIndex (char *strHZ);
 
 char           *ConvertGBKSimple2Tradition (char *text);
 

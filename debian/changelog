@@ -1,3 +1,34 @@
+fcitx (1:3.6.0~rc-0.1) unstable; urgency=low
+
+  * Non-maintainer upload (with the bless of the origin maintainer).
+  * new upstream release.
+  * debian/watch: rewrite.
+  * debian/control:
+    - bump standards version to 3.8.1.
+    - bump debhelper version to 7.
+    - add ${misc:Depends} to depends.
+    - add automake and autoconf to build-depends.
+  * debian/compat:
+    - bump debhelper version to 7.
+  * debian/fcitx.lintian-overrides: added.
+  * debian/source.lintian-overrides: added. 
+  * debian/rules: rewrite with debhelper 7.
+  * debian/clean: added. 
+  * debian/fcitx.install: added, install im-switch.
+  * debian/dirs: remove usr/share/fcitx/xpm.
+
+ -- LI Daobing <lidaobing@debian.org>  Thu, 23 Apr 2009 23:21:13 +0800
+
+fcitx (1:3.4.99+svn163-0ubuntu1) jaunty; urgency=low
+
+  * New upstream svn snapshot, upstream will release
+    3.5 soon, so need more feedbacks.
+  * Change Homepage to where the project is being hosted now.
+  * Replace the old arphic fonts in Recommends.
+  * Use QT_IM_MODULE=xim in im-switch conffile.
+
+ -- Zhengpeng Hou <zhengpeng-hou@ubuntu.com>  Sun, 07 Dec 2008 12:30:20 +0000
+
 fcitx (1:3.4.3-1.1) unstable; urgency=low
 
   * Non-maintainer upload.

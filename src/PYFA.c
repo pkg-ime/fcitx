@@ -185,8 +185,6 @@ PYTABLE         PYTable[] = {
     ,
     {"xuang", &MHPY_C[5].bMode}
     ,
-    {"xuang", &MHPY_C[5].bMode}
-    ,
     {"xuan", NULL}
     ,
     {"xu", NULL}
@@ -286,6 +284,8 @@ PYTABLE         PYTable[] = {
     {"sui", NULL}
     ,
     {"suang", &MHPY_S[3].bMode}
+    ,
+    {"suang", &MHPY_C[5].bMode}
     ,
     {"suan", NULL}
     ,
@@ -463,6 +463,8 @@ PYTABLE         PYTable[] = {
     ,
     {"nuang", &MHPY_C[5].bMode}
     ,
+    {"nuang", &MHPY_S[2].bMode}
+    ,
     {"nuan", NULL}
     ,
     {"nu", NULL}
@@ -562,6 +564,8 @@ PYTABLE         PYTable[] = {
     {"lue", NULL}
     ,
     {"luang", &MHPY_C[5].bMode}
+    ,
+    {"luang", &MHPY_S[2].bMode}
     ,
     {"luan", NULL}
     ,
@@ -837,6 +841,8 @@ PYTABLE         PYTable[] = {
     ,
     {"cuang", &MHPY_C[5].bMode}
     ,
+    {"cuang", &MHPY_S[0].bMode}
+    ,
     {"cuan", NULL}
     ,
     {"cu", NULL}
@@ -961,13 +967,13 @@ int GetMHIndex_C (char map)
     return -1;
 }
 
-int GetMHIndex_S (char map)
+int GetMHIndex_S (char map, Bool bMode)
 {
     int             i;
 
     for (i = 0; MHPY_S[i].strMap[0]; i++) {
 	if (map == MHPY_S[i].strMap[0] || map == MHPY_S[i].strMap[1]) {
-	    if (MHPY_S[i].bMode)
+	    if (MHPY_S[i].bMode || bMode)
 		return i;
 	    else
 		return -1;
@@ -977,3 +983,11 @@ int GetMHIndex_S (char map)
     return -1;
 
 }
+
+Bool IsZ_C_S (char map)
+{
+    if (map=='c' || map=='H'|| map=='B')
+	return True;
+    return False;
+}
+

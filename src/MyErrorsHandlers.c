@@ -57,36 +57,34 @@ void SetMyExceptionHandler (void)
 
 void OnException (int signo)
 {
+
     fprintf (stdout, "\nFCITX -- Get Signal No.: %d\n", signo);
 
     switch (signo) {
 	/* 出现SIGSEGV表明程序自己有问题，此时如果还执行保存操作，可能会损坏输入法文件，所以不能调用SaveIM () */
     case SIGSEGV:
+    case SIGFPE:
 	break;
     case SIGHUP:
 	LoadConfig (False);
 	SetIM ();
-	/*if (bLumaQQ)
-	   ConnectIDResetReset ();
-	 */
-	return;    
+	break;
+    case SIGINT:
+    	SaveIM ();
+    	exit (1);
     case SIGUSR1:
     case SIGCHLD:
-    case SIGQUIT:
     case SIGWINCH:
     case SIGTTIN:
+    case SIGTSTP:	
     case SIGSTOP:
-    case SIGTSTP:
-	return;
-    case SIGINT:
     case SIGTERM:
+    case SIGQUIT:
     case SIGKILL:
     default:
-	SaveIM ();
+    	SaveIM ();
+	break;
     }
-
-    fprintf (stdout, "FCITX -- Exit Signal No.: %d\n\n", signo);
-    exit (0);
 }
 
 void SetMyXErrorHandler (void)

@@ -17,6 +17,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+/**
+ * @file   InputWindow.h
+ * @author Yuking yuking_net@sohu.com
+ * @date   2008-1-16
+ * 
+ * @brief  输入条窗口
+ * 
+ * 
+ */
+
 #ifndef _INPUT_WINDOW_H
 #define _INPUT_WINDOW_H
 
@@ -27,7 +37,7 @@
 #define INPUTWND_STARTY	420
 #define INPUTWND_HEIGHT	40
 
-#define INPUTWND_START_POS_UP	8
+/* #define INPUTWND_START_POS_UP	8 */
 #define INPUTWND_START_POS_DOWN	8
 
 #define MESSAGE_MAX_LENGTH	300	//输入条上显示的最长长度，以字符计

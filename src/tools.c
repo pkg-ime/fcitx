@@ -17,6 +17,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+/**
+ * @file   tools.c
+ * @author Yuking yuking_net@sohu.com
+ * @date   2008-1-16
+ *
+ * @brief  配置文件读写
+ *
+ *
+ */
+
 #include "tools.h"
 
 #include <stdio.h>
@@ -47,7 +57,6 @@ extern int      iTempInputWindowY;
 extern int      iInputWindowWidth;
 extern int      iInputWindowHeight;
 
-extern char     strUserLocale[];
 extern int      iMaxCandWord;
 extern Bool     _3DEffectMainWindow;
 extern _3D_EFFECT _3DEffectInputWindow;
@@ -79,6 +88,7 @@ extern HOTKEYS  hkLegend[];
 extern HOTKEYS  hkTrack[];
 extern HOTKEYS  hkGetPY[];
 extern HOTKEYS  hkGBT[];
+extern HOTKEYS	hkHideMainWindow[];
 
 extern KEY_CODE switchKey;
 extern XIMTriggerKey *Trigger_Keys;
@@ -86,7 +96,8 @@ extern INT8     iTriggerKeyCount;
 
 extern Bool     bUseGBK;
 extern Bool     bEngPuncAfterNumber;
-extern Bool     bAutoHideInputWindow;
+
+//extern Bool     bAutoHideInputWindow;
 extern XColor   colorArrow;
 extern Bool     bTrackCursor;
 extern Bool     bCenterInputWindow;
@@ -146,23 +157,29 @@ extern SP_FROM  iSPFrom;
 
 //extern Bool     bLumaQQ;
 extern char     cPYYCDZ[];
+extern char	strExternIM[];
 
 extern Bool     bDoubleSwitchKey;
 extern Bool     bPointAfterNumber;
 extern Bool     bConvertPunc;
 extern unsigned int iTimeInterval;
-extern uint     iFixedInputWindowWidth;
+extern int     iFixedInputWindowWidth;
 extern Bool     bShowInputWindowTriggering;
 
 #ifdef _USE_XFT
 extern Bool     bUseAA;
-#else
-extern char     strUserLocale[];
 #endif
+extern char     strUserLocale[];
+
 extern Bool     bUseBold;
 
-extern INT8     iOffsetX;
-extern INT8     iOffsetY;
+extern int      iOffsetX;
+extern int      iOffsetY;
+
+/*
+extern Bool     bStaticXIM;
+extern Bool     bNoReleaseKey;
+*/
 
 /*
 #if defined(DARWIN)*/
@@ -186,504 +203,1091 @@ Bool MyStrcmp (char *str1, char *str2)
     return !strncmp (str1, str2, strlen (str2));
 }
 
+/* 其他函数需要知道传递给 LoadConfig 的参数 */
+Bool    bIsReloadConfig = True;
+/* 在载入 profile 文件过程中传递状态信息 */
+Bool    bIsNeedSaveConfig = True;
+
 /*
- * 读取用户的设置文件
+ * 配置项值的类型：
+ *
+ * 整数(integer)、字符串(string)、颜色(color) 都可以用通用读写函数来读写。
+ * 但是其他(other)类型，则需要提供专门的读写函数。
+ */
+
+#define CONFIG_INTEGER  1
+#define CONFIG_STRING   2
+#define CONFIG_COLOR    3
+#define CONFIG_SWITCHKEY    4
+#define CONFIG_HOTKEY   5
+#define CONFIG_OTHER    6
+
+/*
+ * int(*configure_readwrite)(Configure *c, void *str_file, int isread)
+ *
+ * 用来读取或者写入对应的配置项
+ *
+ * c        -   读取/写入的配置项
+ * str_file - 如果是读取，则为 char *；如果是写入，则为 FILE *
+ * isread   - 如果是读取，则为 True，否则为 False
+ *
+ * configure_readwrite 返回零表示成功，其他值为失败。
+ */
+
+typedef struct Configure Configure;
+typedef int(*config_readwrite)(Configure *, void *, int);
+
+struct Configure {
+    char *name;         /* configure name */
+    char *comment;      /* configure comment */
+    config_readwrite config_rw; /* read/write configure */
+    int value_type;     /* type of this configure's value */
+    union {
+        struct {
+            char *string;
+            int string_length;
+        } str_value;
+        int *integer;
+        XColor *color;
+        HOTKEYS *hotkey;
+    } value;
+};
+
+typedef struct Configure_group {
+    char *name;     /* configure group's name */
+    char *comment;  /* configure group's comment */
+    struct Configure *configure;    /* configures belong to this group */
+} Configure_group;
+
+static int generic_config_integer(Configure *c, void *a, int isread)
+ {
+    if(isread)
+        *(c->value.integer) = atoi(a);
+    else
+        fprintf((FILE *)a, "%s=%d\n", c->name, *(c->value.integer));
+
+    return 0;
+}
+
+static int generic_config_string(Configure *c, void *a, int isread)
+{
+    if(isread){
+        strncpy(c->value.str_value.string, (char *)a, c->value.str_value.string_length);
+        c->value.str_value.string[c->value.str_value.string_length - 1] = '\0';
+    } else
+        fprintf((FILE *)a, "%s=%s\n", c->name, c->value.str_value.string);
+
+    return 0;
+}
+
+static int generic_config_color(Configure *c, void *a, int isread)
+{
+    int r, g, b;
+
+    if(isread){
+        if(sscanf((char *)a, "%d %d %d", &r, &g, &b) != 3){
+            fprintf(stderr, "error: configure file: color\n");
+            exit(1);
+        }
+        c->value.color->red   = r << 8;
+        c->value.color->green = g << 8;
+        c->value.color->blue  = b << 8;
+    }else
+        fprintf((FILE *)a, "%s=%d %d %d\n", c->name,
+                c->value.color->red   >> 8,
+                c->value.color->green >> 8,
+                c->value.color->blue  >> 8);
+
+    return 0;
+}
+
+/* FIXME: 实现通用读写设置 switch key 的配置 */
+#if 0
+static int generic_config_switchkey(Configure *c, void *a, int isread)
+{
+    return -1;
+}
+#endif
+
+/* FIXME: 实现通用读写设置 hot key 的配置 */
+#if 0
+static int generic_config_hotkey(Configure *c, void *a, int isread)
+{
+    return -1;
+}
+#endif
+
+/** 将 configures 中的配置信息写入 fp */
+static int write_configures(FILE *fp, Configure *configures)
+{
+    Configure *tc;
+
+    for(tc = configures; tc->name; tc++){
+        if(tc->comment)
+            fprintf(fp, "# %s\n", tc->comment);
+        if(tc->config_rw)
+            tc->config_rw(tc, fp, 0);
+        else{
+            switch(tc->value_type){
+                case CONFIG_INTEGER:
+                    generic_config_integer(tc, fp, 0);
+                    break;
+                case CONFIG_STRING:
+                    generic_config_string(tc, fp, 0);
+                    break;
+                case CONFIG_COLOR:
+                    generic_config_color(tc, fp, 0);
+                    break;
+                default:
+                    fprintf(stderr, "error: shouldn't be here\n");
+                    exit(1);
+            }
+        }
+     }
+    return 0;
+}
+
+/* 从 str 读取配置信息 */
+static int read_configure(Configure *config, char *str)
+{
+    if(config->config_rw)
+        config->config_rw(config, str, 1);
+    else{
+        switch(config->value_type){
+            case CONFIG_INTEGER:
+                generic_config_integer(config, str, 1);
+                break;
+            case CONFIG_STRING:
+                generic_config_string(config, str, 1);
+                break;
+            case CONFIG_COLOR:
+                generic_config_color(config, str, 1);
+                break;
+            default:
+                fprintf(stderr, "error: shouldn't be here\n");
+                exit(1);
+        }
+    }
+    return 0;
+}
+
+/* 主窗口输入法名称色 */
+inline static int main_window_input_method_name_color(Configure *c, void *a, int isread)
+{
+    int r[3], b[3], g[3], i;
+    FILE *fp;
+
+    if(isread){
+        if(sscanf((char *)a, "%d %d %d %d %d %d %d %d %d",
+                    &r[0], &g[0], &b[0], &r[1], &g[1], &b[1], &r[2], &g[2], &b[2]) != 9)
+        {
+            fprintf(stderr, "error: invalid configure format\n");
+            exit(1);
+        }
+
+        for(i = 0; i < 3; i++){
+            IMNameColor[i].color.red   = r[i] << 8;
+            IMNameColor[i].color.green = g[i] << 8;
+            IMNameColor[i].color.blue  = b[i] << 8;
+        }
+    }else{
+        fp = (FILE *)a;
+        fprintf(fp, "%s=", c->name);
+        for(i = 0; i < 3; i++)
+            fprintf(fp, "%d %d %d ",
+                    IMNameColor[i].color.red   >> 8,
+                    IMNameColor[i].color.green >> 8,
+                    IMNameColor[i].color.blue  >> 8);
+        fprintf(fp, "\n");
+    }
+
+    return 0;
+}
+
+/* 打开/关闭输入法 */
+inline static int trigger_input_method(Configure *c, void *a, int isread)
+{
+    if(isread){
+        if(bIsReloadConfig){
+            SetTriggerKeys((char *)a);
+            SetHotKey((char *)a, hkTrigger);
+        }
+    }else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "CTRL_SPACE");
+
+    return 0;
+}
+
+/* 中英文快速切换键 */
+inline static int fast_chinese_english_switch(Configure *c, void *a, int isread)
+{
+    if(isread)
+        SetSwitchKey((char *)a);
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "L_SHIFT");
+
+    return 0;
+}
+
+/* 光标跟随 */
+inline static int cursor_follow(Configure *c, void *a, int isread)
+{
+    if(isread)
+        SetHotKey((char *)a, hkTrack);
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "CTRL_K");
+    return 0;
+}
+
+/* 隐藏主窗口 */
+inline static int hide_main_window(Configure *c, void *a, int isread)
+{
+    if(isread)
+        SetHotKey((char *)a, hkHideMainWindow);
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "CTRL_ALT_H");
+    return 0;
+}
+
+/* GBK支持 */
+inline static int gbk_support(Configure *c, void *a, int isread)
+{
+    if(isread)
+        SetHotKey((char *)a, hkGBK);
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "CTRL_M");
+
+    return 0;
+}
+
+/* GBK繁体切换键 */
+inline static int gbk_traditional_simplified_switch(Configure *c, void *a, int isread)
+{
+    if(isread)
+        SetHotKey((char *)a, hkGBT);
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "CTRL_ALT_F");
+
+    return 0;
+}
+
+/* 联想 */
+inline static int association(Configure *c, void *a, int isread)
+{
+    if(isread)
+        SetHotKey((char *)a, hkLegend);
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "CTRL_L");
+
+    return 0;
+}
+
+/* 反查拼音 */
+inline static int lookup_pinyin(Configure *c, void *a, int isread)
+{
+    if(isread)
+        SetHotKey((char *)a, hkGetPY);
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "CTRL_ALT_E");
+
+    return 0;
+}
+
+/*
+ * DBC case = Double Byte Character case
+ * SBC case = Single Byte Character case
+ */
+
+/* 全半角 */
+inline static int sbc_dbc_switch(Configure *c, void *a, int isread)
+{
+    if(isread)
+        SetHotKey((char *)a, hkCorner);
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "SHIFT_SPACE");
+
+    return 0;
+}
+
+/* 中文标点 */
+inline static int chinese_punctuation(Configure *c, void *a, int isread)
+{
+    if(isread)
+        SetHotKey((char *)a, hkPunc);
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "ALT_SPACE");
+
+    return 0;
+}
+
+/* 上一页 */
+inline static int prev_page(Configure *c, void *a, int isread)
+{
+    if(isread)
+        SetHotKey((char *)a, hkPrevPage);
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "-");
+
+    return 0;
+}
+
+/* 下一页 */
+inline static int next_page(Configure *c, void *a, int isread)
+{
+    if(isread)
+        SetHotKey((char *)a, hkNextPage);
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "=");
+
+    return 0;
+}
+
+/* 第二三候选词选择键 */
+inline static int second_third_candidate_word(Configure *c, void *a, int isread)
+{
+    char *pstr = a;
+
+    if(isread){
+        if (!strcasecmp (pstr, "SHIFT")) {
+            i2ndSelectKey = 50;        //左SHIFT的扫描码
+            i3rdSelectKey = 62;        //右SHIFT的扫描码
+        }
+        else if (!strcasecmp (pstr, "CTRL")) {
+            i2ndSelectKey = 37;        //左CTRL的扫描码
+            i3rdSelectKey = 109;       //右CTRL的扫描码
+        }
+        else {
+            i2ndSelectKey = pstr[0] ^ 0xFF;
+            i3rdSelectKey = pstr[1] ^ 0xFF;
+        }
+    }else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "0");
+
+    return 0;
+}
+
+/* 默认双拼方案 */
+inline static int default_shuangpin_scheme(Configure *c, void *a, int isread)
+{
+    if(isread){
+        strncpy(strDefaultSP, (char *)a, 100);  /* FIXME: 不应在此硬编码字符串长度，下同 */
+        iSPFrom = SP_FROM_SYSTEM_CONFIG;
+    }
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, strDefaultSP);
+
+    return 0;
+}
+
+/* 增加拼音常用字 */
+inline static int add_pinyin_frequently_used_word(Configure *c, void *a, int isread)
+{
+    if(isread)
+        SetHotKey((char *)a, hkPYAddFreq);
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "CTRL_8");
+
+    return 0;
+}
+
+/* 删除拼音常用字 */
+inline static int delete_pinyin_frequently_used_word(Configure *c, void *a, int isread)
+{
+    if(isread)
+        SetHotKey((char *)a, hkPYDelFreq);
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "CTRL_7");
+
+    return 0;
+}
+
+/* 删除拼音用户词组 */
+inline static int delete_pinyin_user_create_phrase(Configure *c, void *a, int isread)
+{
+    if(isread)
+        SetHotKey((char *)a, hkPYDelUserPhr);
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "CTRL_DELETE");
+
+    return 0;
+}
+
+/* 拼音以词定字键 */
+inline static int pinyin_get_word_from_phrase(Configure *c, void *a, int isread)
+{
+    char *pstr = a;
+    if(isread){
+        cPYYCDZ[0] = pstr[0];
+        cPYYCDZ[1] = pstr[1];
+    }else
+        fprintf((FILE *)a, "%s=%c%c\n", c->name, cPYYCDZ[0], cPYYCDZ[1]);
+
+    return 0;
+}
+
+/* 模糊an和ang */
+inline static int blur_an_ang(Configure *c, void *a, int isread)
+{
+    if(isread){
+        MHPY_C[0].bMode = MHPY_S[5].bMode = atoi(a);
+    }else
+        fprintf((FILE *)a, "%s=%d\n", c->name, MHPY_C[0].bMode);
+
+    return 0;
+}
+
+Configure program_config[] = {
+    {
+        .name = "显示字体(中)",
+        .value_type = CONFIG_STRING,
+        .value.str_value.string = strFontName,
+        .value.str_value.string_length = 100,   /* FIXME: 不应在此硬编码字符串的长度，下同 */
+    },
+    {
+        .name = "显示字体(英)",
+        .value_type = CONFIG_STRING,
+        .value.str_value.string = strFontEnName,
+        .value.str_value.string_length = 100,
+    },
+    {
+        .name = "显示字体大小",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &iFontSize,
+    },
+    {
+        .name = "主窗口字体大小",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &iMainWindowFontSize,
+    },
+    {
+        .name = "字体区域",
+        .value_type = CONFIG_STRING,
+        .value.str_value.string = strUserLocale,
+        .value.str_value.string_length = 50,
+    },
+ #ifdef _USE_XFT
+    {
+        .name = "使用AA字体",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bUseAA,
+    },
+ #endif
+    {
+        .name = "使用粗体",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bUseBold,
+    },
+    {
+        .name = NULL,
+    },
+};
+
+/* piaoairy: gcc 默认enum 类型使用int */
+Configure output_config[] = {
+    {
+        .name = "数字后跟半角符号",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bEngPuncAfterNumber,
+    },
+    {
+        .name = "Enter键行为",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = (int *)&enterToDo, /* FIXME: 这种转换方式也许并不是个好主意，下同 */
+    },
+    {
+        .name = "分号键行为",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = (int *)&semicolonToDo,
+    },
+    {
+        .name = "大写字母输入英文",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bEngAfterCap,
+    },
+    {
+        .name = "转换英文中的标点",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bConvertPunc,
+    },
+    {
+        .name = "联想方式禁止翻页",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bDisablePagingInLegend,
+    },
+    {
+        .name = NULL,
+    },
+};
+
+Configure interface_config[] = {
+    {
+        .name = "候选词个数",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &iMaxCandWord,
+    },
+    {
+        .name = "主窗口使用3D界面",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &_3DEffectMainWindow,
+    },
+    {
+        .name = "输入条使用3D界面",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = (int *)&_3DEffectInputWindow,
+    },
+    {
+        .name = "主窗口隐藏模式",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = (int *)&hideMainWindow,
+    },
+    {
+        .name = "显示虚拟键盘",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bShowVK,
+    },
+    {
+        .name = "输入条居中",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bCenterInputWindow,
+    },
+    {
+        .name = "首次显示输入条",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bShowInputWindowTriggering,
+    },
+    {
+        .name = "输入条固定宽度",
+        .comment = "输入条固定宽度(仅适用于码表输入法)，0表示不固定宽度",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &iFixedInputWindowWidth,
+    },
+    {
+        .name = "输入条偏移量X",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &iOffsetX,
+    },
+    {
+        .name = "输入条偏移量Y",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &iOffsetY,
+    },
+    {
+        .name = "序号后加点",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bPointAfterNumber,
+    },
+    {
+        .name = "显示打字速度",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bShowUserSpeed,
+    },
+    {
+        .name = "显示版本",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bShowVersion,
+    },
+    {
+        .name = "光标色",
+        .value_type = CONFIG_COLOR,
+        .value.color = &(cursorColor.color),
+    },
+    {
+        .name = "主窗口背景色",
+        .value_type = CONFIG_COLOR,
+        .value.color = &(mainWindowColor.backColor),
+    },
+    {
+        .name = "主窗口线条色",
+        .value_type = CONFIG_COLOR,
+        .value.color = &(mainWindowLineColor.color),
+    },
+    {
+        .name = "主窗口输入法名称色",
+        .value_type = CONFIG_OTHER,
+        .config_rw = main_window_input_method_name_color,
+    },
+    {
+        .name = "输入窗背景色",
+        .value_type = CONFIG_COLOR,
+        .value.color = &(inputWindowColor.backColor),
+    },
+    {
+        .name = "输入窗提示色",
+        .value_type = CONFIG_COLOR,
+        .value.color = &(messageColor[0].color),
+    },
+    {
+        .name = "输入窗用户输入色",
+        .value_type = CONFIG_COLOR,
+        .value.color = &(messageColor[1].color),
+    },
+    {
+        .name = "输入窗序号色",
+        .value_type = CONFIG_COLOR,
+        .value.color = &(messageColor[2].color),
+    },
+    {
+        .name = "输入窗第一个候选字色",
+        .value_type = CONFIG_COLOR,
+        .value.color = &(messageColor[3].color),
+    },
+    {
+        .name = "输入窗用户词组色",
+        .comment = "该颜色值只用于拼音中的用户自造词",
+        .value_type = CONFIG_COLOR,
+        .value.color = &(messageColor[4].color),
+    },
+    {
+        .name = "输入窗提示编码色",
+        .value_type = CONFIG_COLOR,
+        .value.color = &(messageColor[5].color),
+    },
+    {
+        .name = "输入窗其它文本色",
+        .comment = "五笔、拼音的单字/系统词组均使用该颜色",
+        .value_type = CONFIG_COLOR,
+        .value.color = &(messageColor[6].color),
+    },
+    {
+        .name = "输入窗线条色",
+        .value_type = CONFIG_COLOR,
+        .value.color = &(inputWindowLineColor.color),
+    },
+    {
+        .name = "输入窗箭头色",
+        .value_type = CONFIG_COLOR,
+        .value.color = &(colorArrow),
+    },
+    {
+        .name = "虚拟键盘窗背景色",
+        .value_type = CONFIG_COLOR,
+        .value.color = &(VKWindowColor.backColor),
+    },
+    {
+        .name = "虚拟键盘窗字母色",
+        .value_type = CONFIG_COLOR,
+        .value.color = &(VKWindowAlphaColor.color),
+    },
+    {
+        .name = "虚拟键盘窗符号色",
+        .value_type = CONFIG_COLOR,
+        .value.color = &(VKWindowFontColor.color),
+    },
+    {
+        .name = NULL,
+    },
+};
+
+Configure hotkey_config[] = {
+    {
+        .name = "打开/关闭输入法",
+        .value_type = CONFIG_OTHER,
+        .config_rw = trigger_input_method,
+    },
+    {
+        .name = "中英文快速切换键",
+        .comment = "中英文快速切换键 可以设置为L_CTRL R_CTRL L_SHIFT R_SHIFT L_SUPER R_SUPER",
+        .value_type = CONFIG_OTHER, /* FIXME: 应该为 CONFIG_SWITCHKEY */
+        .config_rw = fast_chinese_english_switch,
+    },
+    {
+        .name = "双击中英文切换",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bDoubleSwitchKey,
+    },
+    {
+        .name = "击键时间间隔",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = (int *)&iTimeInterval,
+    },
+    {
+        .name = "光标跟随",
+        .value_type = CONFIG_HOTKEY,
+        .config_rw = cursor_follow,
+    },
+    {
+        .name = "隐藏主窗口",
+        .value_type = CONFIG_HOTKEY,
+        .config_rw = hide_main_window,
+    },
+    {
+        .name = "GBK支持",
+        .value_type = CONFIG_HOTKEY,
+        .config_rw = gbk_support,
+    },
+    {
+        .name = "GBK繁体切换键",
+        .value_type = CONFIG_HOTKEY,
+        .config_rw = gbk_traditional_simplified_switch,
+    },
+    {
+        .name = "联想",
+        .value_type = CONFIG_HOTKEY,
+        .config_rw = association,
+    },
+    {
+        .name = "反查拼音",
+        .value_type = CONFIG_HOTKEY,
+        .config_rw = lookup_pinyin,
+    },
+    {
+        .name = "全半角",
+        .value_type = CONFIG_HOTKEY,
+        .config_rw = sbc_dbc_switch,
+    },
+    {
+        .name = "中文标点",
+        .value_type = CONFIG_HOTKEY,
+        .config_rw = chinese_punctuation,
+    },
+    {
+        .name = "上一页",
+        .value_type = CONFIG_HOTKEY,
+        .config_rw = prev_page,
+    },
+    {
+        .name = "下一页",
+        .value_type = CONFIG_HOTKEY,
+        .config_rw = next_page,
+    },
+    {
+        .name = "第二三候选词选择键",
+        .value_type = CONFIG_HOTKEY,
+        .config_rw = second_third_candidate_word,
+    },
+    {
+        .name = NULL,
+    },
+};
+
+Configure input_method_config[] = {
+    {
+        .name = "使用拼音",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bUsePinyin,
+    },
+    {
+        .name = "拼音名称",
+        .value_type = CONFIG_STRING,
+        .value.str_value.string = strNameOfPinyin,
+        .value.str_value.string_length = 41,    /* FIXME: 不应在此硬编码字符串长度，下同 */
+    },
+    {
+        .name = "使用双拼",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bUseSP,
+    },
+    {
+        .name = "双拼名称",
+        .value_type = CONFIG_STRING,
+        .value.str_value.string = strNameOfShuangpin,
+        .value.str_value.string_length = 41,
+    },
+    {
+        .name = "默认双拼方案",
+        .value_type = CONFIG_OTHER,
+        .config_rw = default_shuangpin_scheme,
+    },
+    {
+        .name = "使用区位",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bUseQW,
+    },
+    {
+        .name = "区位名称",
+        .value_type = CONFIG_STRING,
+        .value.str_value.string = strNameOfQuwei,
+        .value.str_value.string_length = 41,
+    },
+    {
+        .name = "使用码表",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bUseTable,
+    },
+    {
+        .name = "提示词库中的词组",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bPhraseTips,
+    },
+    {
+        .name = "其他输入法",
+        .value_type = CONFIG_STRING,
+        .value.str_value.string = strExternIM,
+        .value.str_value.string_length = PATH_MAX,
+    },
+    {
+        .name = NULL,
+    },
+};
+
+Configure pinyin_config[] = {
+    {
+        .name = "使用全拼",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bFullPY,
+    },
+    {
+        .name = "拼音自动组词",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bPYCreateAuto,
+    },
+    {
+        .name = "保存自动组词",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bPYSaveAutoAsPhrase,
+    },
+    {
+       .name = "增加拼音常用字",
+        .value_type = CONFIG_HOTKEY,
+        .config_rw = add_pinyin_frequently_used_word,
+    },
+    {
+        .name = "删除拼音常用字",
+        .value_type = CONFIG_HOTKEY,
+        .config_rw = delete_pinyin_frequently_used_word,
+    },
+    {
+        .name = "删除拼音用户词组",
+        .value_type = CONFIG_HOTKEY,
+        .config_rw = delete_pinyin_user_create_phrase,
+    },
+    {
+        .name = "拼音以词定字键",
+        .comment = "拼音以词定字键，等号后面紧接键，不要有空格",
+        .value_type = CONFIG_OTHER,
+        .config_rw = pinyin_get_word_from_phrase,
+    },
+    {
+        .name = "拼音单字重码调整方式",
+        .comment = "重码调整方式说明：0-->不调整  1-->快速调整  2-->按频率调整",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = (int *)&baseOrder,
+    },
+    {
+        .name = "拼音词组重码调整方式",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = (int *)&phraseOrder,
+    },
+    {
+        .name = "拼音常用词重码调整方式",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = (int *)&freqOrder,
+    },
+    {
+        .name = "模糊an和ang",
+        .value_type = CONFIG_OTHER,
+        .config_rw = blur_an_ang,
+    },
+    {
+        .name = "模糊en和eng",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &(MHPY_C[1].bMode),
+    },
+    {
+        .name = "模糊ian和iang",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &(MHPY_C[2].bMode),
+    },
+    {
+        .name = "模糊in和ing",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &(MHPY_C[3].bMode),
+    },
+    {
+        .name = "模糊ou和u",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &(MHPY_C[4].bMode),
+    },
+    {
+        .name = "模糊uan和uang",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &(MHPY_C[5].bMode),
+    },
+    {
+        .name = "模糊c和ch",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &(MHPY_S[0].bMode),
+    },
+    {
+        .name = "模糊f和h",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &(MHPY_S[1].bMode),
+    },
+    {
+        .name = "模糊l和n",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &(MHPY_S[2].bMode),
+    },
+    {
+        .name = "模糊s和sh",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &(MHPY_S[3].bMode),
+    },
+    {
+        .name = "模糊z和zh",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &(MHPY_S[4].bMode),
+    },
+    {
+        .name = NULL,
+    },
+};
+
+Configure_group configure_groups[] = {
+    {
+        .name = "程序",
+        .configure = program_config,
+    },
+    {
+        .name = "输出",
+        .configure = output_config,
+    },
+    {
+        .name = "界面",
+        .configure = interface_config,
+    },
+    {
+        .name = "热键",
+        .comment = "除了“中英文快速切换键”外，其它的热键均可设置为两个，中间用空格分隔",
+        .configure = hotkey_config,
+    },
+    {
+        .name = "输入法",
+        .configure = input_method_config,
+    },
+    {
+        .name = "拼音",
+        .configure = pinyin_config,
+    },
+    {
+        .name = NULL,
+    },
+};
+
+/**
+ * @brief 读取用户的配置文件
+ * @param bMode 标识配置文件是用户家目录下的，还是从安装目录下拷贝过来的
+ * @return void
  */
 void LoadConfig (Bool bMode)
 {
-    FILE           *fp;
-    char            str[PATH_MAX], *pstr;
-    char            strPath[PATH_MAX];
-    int             i;
-    int             r, g, b;	//代表红绿蓝
-    Bool            bFromUser = True;
+    FILE    *fp;
+    char    buf[PATH_MAX], *pbuf, *pbuf1;
+    Bool    bFromUser = True;
+    //用于标示group的index，在配置文件里面配置是分组的，类似与ini文件的分组
+    int     group_idx;
+    int		i;
+    Configure   *tmpconfig;
 
-    strcpy (strPath, (char *) getenv ("HOME"));
-    strcat (strPath, "/.fcitx/config");
+    //用以标识配置文件是用户家目录下的，还是从安装目录下拷贝过来的
+    bIsReloadConfig = bMode;	// 全局变量，定义于“src/tool.c[193]"
 
-    if (access (strPath, 0)) {
-	strcpy (strPath, PKGDATADIR "/data/config");
-	bFromUser = False;
+    pbuf = getenv("HOME");		// 从环境变量中获取当前用户家目录的绝对路径
+    if(!pbuf){
+        fprintf(stderr, "error: get environment variable HOME\n");
+        exit(1);	// 此时可以不退出，但直接退出处理起来明了简单
+    }
+    //获取配置文件的绝对路径
+    snprintf(buf, PATH_MAX, "%s/.fcitx/config", pbuf);
+
+    fp = fopen(buf, "r");
+    if(!fp && errno == ENOENT){ /* $HOME/.fcitx/config does not exist */
+        snprintf(buf, PATH_MAX, PKGDATADIR "/data/config");
+        bFromUser = False;
+        fp = fopen(buf, "r");
+        if(!fp){
+            perror("fopen");
+            exit(1);	/* 如果安装目录里面也没有配置文件，那就没办法了。
+						 * 只好告诉用户，无法运行了*/
+        }
     }
 
-    fp = fopen (strPath, "rt");
+    if(!bFromUser) /* create default configure file */
+        SaveConfig();
 
-    if (!fp || !bFromUser)
-	SaveConfig ();
+    group_idx = -1;
 
-    if (!fp) {
-	LoadConfig (True);	//读入默认值
-	return;
+    /* FIXME: 也许应该用另外更恰当的缓冲区长度 */
+    while(fgets(buf, PATH_MAX, fp)){		//每次最多读入PATH_MAX大小的数据
+        i = strlen(buf);
+
+        /*fcitx的配置文件每行最多是PATH_MAX个字符，因此有上面的FIXME*/
+        if(buf[i-1] != '\n'){
+            fprintf(stderr, "error: configure file: line length\n");
+            exit(1);
+        }else
+            buf[i-1] = '\0';
+
+        pbuf = buf;
+        while(*pbuf && isspace(*pbuf))	//将pbuf指向第一个非空字符
+            pbuf++;
+        if(!*pbuf || *pbuf == '#')		//如果改行是空数据或者是注释(以#开头为注释)
+            continue;
+
+        if(*pbuf == '['){ /* get a group name(组名的格式为"[组名]")*/
+            pbuf++;
+            pbuf1 = strchr(pbuf, ']');
+            if(!pbuf1){
+                fprintf(stderr, "error: configure file: configure group name\n");
+                exit(1);
+            }
+
+            //根据group的名字找到其在全局变量configure_groups中的index
+            group_idx = -1;
+            for(i = 0; configure_groups[i].name; i++)
+                if(strncmp(configure_groups[i].name, pbuf, pbuf1-pbuf) == 0){
+                    group_idx = i;
+                    break;
+                }
+            if(group_idx < 0){
+                fprintf(stderr, "error: invalid configure group name\n");
+                exit(1); /* 我认为这儿没有必要退出。此处完全可以忽略这个错误，
+                          * 并且在后面也忽略这个组的配置即可。
+                          * 因为这儿退出只会带来一个坏处，那就是扩展性。
+                          * 以后再添加新的组的时候，老版本的程序就无法使用
+                          * 新版本的配置文件了。或者，添加了一个可选扩展，
+                          * 该扩展新添加一个组等等。所以，此处应该给一个警告，
+                          * 而不是退出。*/
+            }
+            continue;
+        }
+
+        //pbuf1指向第一个非空字符与=之间的字符
+        pbuf1 = strchr(pbuf, '=');
+        if(!pbuf1){
+            fprintf(stderr, "error: configure file: configure entry name\n");
+            exit(1);	// 和前面一样，这儿也应该是一个警告而不应该是提示出错并退出。
+        }
+
+        /*
+         * 这儿避免的是那样一种情况，即从文件头到第一个配置项(即类似与“配置名=配置值”
+         * 的一行字符串)并没有任何分组。也就是防止出现下面的“配置1”和“配置2”
+         * #文件头
+         * 配置1=123 配置2=123
+         * [组名]
+         * ...
+         * #文件尾
+         */
+
+
+        if(group_idx < 0){
+            fprintf(stderr, "error: configure file: no group name at beginning\n");
+            exit(1);
+        }
+
+        //找到该组中的配置项，并将其保存到对应的全局变量里面去
+        for(tmpconfig = configure_groups[group_idx].configure;
+                tmpconfig->name; tmpconfig++)
+        {
+            if(strncmp(tmpconfig->name, pbuf, pbuf1-pbuf) == 0)
+                read_configure(tmpconfig, ++pbuf1);
+        }
     }
 
-    for (;;) {
-	if (!fgets (str, PATH_MAX, fp))
-	    break;
+    fclose(fp);
 
-	i = strlen (str) - 1;
-	while (str[i] == ' ' || str[i] == '\n')
-	    str[i--] = '\0';
-
-	pstr = str;
-	if (*pstr == ' ')
-	    pstr++;
-	if (pstr[0] == '#')
-	    continue;
-
-	if (MyStrcmp (pstr, "字体区域=")) {
-	    pstr += 9;
-	    if (*pstr == ' ')
-		pstr++;
-	    strcpy (strUserLocale, pstr);
-	}
-	else if (MyStrcmp (pstr, "显示字体(中)=")) {
-	    pstr += 13;
-	    strcpy (strFontName, pstr);
-	}
-	else if (MyStrcmp (pstr, "显示字体(英)=")) {
-	    pstr += 13;
-	    strcpy (strFontEnName, pstr);
-	}
-	else if (MyStrcmp (pstr, "显示字体大小=")) {
-	    pstr += 13;
-	    iFontSize = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "主窗口字体大小=")) {
-	    pstr += 15;
-	    iMainWindowFontSize = atoi (pstr);
-	}
-#ifdef _USE_XFT
-	else if (MyStrcmp (pstr, "是否使用AA字体=")) {
-	    pstr += 15;
-	    bUseAA = atoi (pstr);
-	}
-#else
-	else if (MyStrcmp (pstr, "字体区域=")) {
-	    pstr += 9;
-	    strcpy (strUserLocale, pstr);
-	}
-#endif
-	else if (MyStrcmp (pstr, "是否使用粗体=")) {
-	    pstr += 13;
-	    bUseBold = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "候选词个数=")) {
-	    pstr += 11;
-	    iMaxCandWord = atoi (pstr);
-	    if (iMaxCandWord > 10)
-		iMaxCandWord = MAX_CAND_WORD;
-	}
-	else if (MyStrcmp (pstr, "数字后跟半角符号=")) {
-	    pstr += 17;
-	    bEngPuncAfterNumber = atoi (pstr);
-	}
-	/*else if (MyStrcmp (pstr, "LumaQQ支持=")) {
-	   pstr += 11;
-	   bLumaQQ = atoi (pstr);
-	   } */
-	else if (MyStrcmp (pstr, "主窗口是否使用3D界面=")) {
-	    pstr += 21;
-	    _3DEffectMainWindow = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "输入条使用3D界面=")) {
-	    pstr += 17;
-	    _3DEffectInputWindow = (_3D_EFFECT) atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "是否自动隐藏输入条=")) {
-	    pstr += 19;
-	    bAutoHideInputWindow = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "输入条是否居中=")) {
-	    pstr += 15;
-	    bCenterInputWindow = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "输入条固定宽度=")) {
-	    pstr += 15;
-	    iFixedInputWindowWidth = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "首次显示输入条=")) {
-	    pstr += 15;
-	    bShowInputWindowTriggering = atoi (pstr);
-	}
-	// 临时解决方案
-	else if (MyStrcmp (pstr, "输入条偏移量X=")) {
-	    pstr += 14;
-	    iOffsetX = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "输入条偏移量Y=")) {
-	    pstr += 14;
-	    iOffsetY = atoi (pstr);
-	}
-	//********************************************
-	else if (MyStrcmp (pstr, "序号后加点=")) {
-	    pstr += 11;
-	    bPointAfterNumber = atoi (pstr);
-	}
-	//显示速度
-	else if (MyStrcmp (pstr, "显示打字速度=")) {
-	    pstr += 13;
-	    bShowUserSpeed = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "显示版本=")) {
-	    pstr += 13;
-	    bShowVersion = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "主窗口隐藏模式=")) {
-	    pstr += 15;
-	    hideMainWindow = (HIDE_MAINWINDOW) atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "显示虚拟键盘=")) {
-	    pstr += 13;
-	    bShowVK = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "光标色=") && bMode) {
-	    pstr += 7;
-	    sscanf (pstr, "%d %d %d\n", &r, &g, &b);
-	    cursorColor.color.red = (r << 8);
-	    cursorColor.color.green = (g << 8);
-	    cursorColor.color.blue = (b << 8);
-	}
-	else if (MyStrcmp (pstr, "主窗口背景色=") && bMode) {
-	    pstr += 13;
-	    sscanf (pstr, "%d %d %d\n", &r, &g, &b);
-	    mainWindowColor.backColor.red = (r << 8);
-	    mainWindowColor.backColor.green = (g << 8);
-	    mainWindowColor.backColor.blue = (b << 8);
-	}
-	else if (MyStrcmp (pstr, "主窗口线条色=") && bMode) {
-	    pstr += 13;
-	    sscanf (pstr, "%d %d %d\n", &r, &g, &b);
-	    mainWindowLineColor.color.red = (r << 8);
-	    mainWindowLineColor.color.green = (g << 8);
-	    mainWindowLineColor.color.blue = (b << 8);
-	}
-	else if (MyStrcmp (pstr, "主窗口输入法名称色=") && bMode) {
-	    int             r1, r2, g1, g2, b1, b2;
-
-	    pstr += 19;
-	    sscanf (pstr, "%d %d %d %d %d %d %d %d %d", &r, &g, &b, &r1, &g1, &b1, &r2, &g2, &b2);
-	    IMNameColor[0].color.red = (r << 8);
-	    IMNameColor[0].color.green = (g << 8);
-	    IMNameColor[0].color.blue = (b << 8);
-	    IMNameColor[1].color.red = (r1 << 8);
-	    IMNameColor[1].color.green = (g1 << 8);
-	    IMNameColor[1].color.blue = (b1 << 8);
-	    IMNameColor[2].color.red = (r2 << 8);
-	    IMNameColor[2].color.green = (g2 << 8);
-	    IMNameColor[2].color.blue = (b2 << 8);
-	}
-	else if (MyStrcmp (pstr, "输入窗背景色=") && bMode) {
-	    pstr += 13;
-	    sscanf (pstr, "%d %d %d\n", &r, &g, &b);
-	    inputWindowColor.backColor.red = (r << 8);
-	    inputWindowColor.backColor.green = (g << 8);
-	    inputWindowColor.backColor.blue = (b << 8);
-	}
-	else if (MyStrcmp (pstr, "输入窗提示色=") && bMode) {
-	    pstr += 13;
-	    sscanf (pstr, "%d %d %d\n", &r, &g, &b);
-	    messageColor[0].color.red = (r << 8);
-	    messageColor[0].color.green = (g << 8);
-	    messageColor[0].color.blue = (b << 8);
-	}
-	else if (MyStrcmp (pstr, "输入窗用户输入色=") && bMode) {
-	    pstr += 17;
-	    sscanf (pstr, "%d %d %d\n", &r, &g, &b);
-	    messageColor[1].color.red = (r << 8);
-	    messageColor[1].color.green = (g << 8);
-	    messageColor[1].color.blue = (b << 8);
-	}
-	else if (MyStrcmp (pstr, "输入窗序号色=") && bMode) {
-	    pstr += 13;
-	    sscanf (pstr, "%d %d %d\n", &r, &g, &b);
-	    messageColor[2].color.red = (r << 8);
-	    messageColor[2].color.green = (g << 8);
-	    messageColor[2].color.blue = (b << 8);
-	}
-	else if (MyStrcmp (pstr, "输入窗第一个候选字色=") && bMode) {
-	    pstr += 21;
-	    sscanf (pstr, "%d %d %d\n", &r, &g, &b);
-	    messageColor[3].color.red = (r << 8);
-	    messageColor[3].color.green = (g << 8);
-	    messageColor[3].color.blue = (b << 8);
-	}
-	else if (MyStrcmp (pstr, "输入窗用户词组色=") && bMode) {
-	    pstr += 17;
-	    sscanf (pstr, "%d %d %d\n", &r, &g, &b);
-	    messageColor[4].color.red = (r << 8);
-	    messageColor[4].color.green = (g << 8);
-	    messageColor[4].color.blue = (b << 8);
-	}
-	else if (MyStrcmp (pstr, "输入窗提示编码色=") && bMode) {
-	    pstr += 17;
-	    sscanf (pstr, "%d %d %d\n", &r, &g, &b);
-	    messageColor[5].color.red = (r << 8);
-	    messageColor[5].color.green = (g << 8);
-	    messageColor[5].color.blue = (b << 8);
-	}
-	else if (MyStrcmp (pstr, "输入窗其它文本色=") && bMode) {
-	    pstr += 17;
-	    sscanf (pstr, "%d %d %d\n", &r, &g, &b);
-	    messageColor[6].color.red = (r << 8);
-	    messageColor[6].color.green = (g << 8);
-	    messageColor[6].color.blue = (b << 8);
-	}
-	else if (MyStrcmp (pstr, "输入窗线条色=") && bMode) {
-	    pstr += 13;
-	    sscanf (pstr, "%d %d %d\n", &r, &g, &b);
-	    inputWindowLineColor.color.red = (r << 8);
-	    inputWindowLineColor.color.green = (g << 8);
-	    inputWindowLineColor.color.blue = (b << 8);
-	}
-	else if (MyStrcmp (pstr, "输入窗箭头色=") && bMode) {
-	    pstr += 13;
-	    sscanf (pstr, "%d %d %d\n", &r, &g, &b);
-	    colorArrow.red = (r << 8);
-	    colorArrow.green = (g << 8);
-	    colorArrow.blue = (b << 8);
-	}
-	else if (MyStrcmp (pstr, "虚拟键盘窗背景色=") && bMode) {
-	    pstr += 17;
-	    sscanf (pstr, "%d %d %d\n", &r, &g, &b);
-	    VKWindowColor.backColor.red = (r << 8);
-	    VKWindowColor.backColor.green = (g << 8);
-	    VKWindowColor.backColor.blue = (b << 8);
-	}
-	else if (MyStrcmp (pstr, "虚拟键盘窗字母色=") && bMode) {
-	    pstr += 17;
-	    sscanf (pstr, "%d %d %d\n", &r, &g, &b);
-	    VKWindowAlphaColor.color.red = (r << 8);
-	    VKWindowAlphaColor.color.green = (g << 8);
-	    VKWindowAlphaColor.color.blue = (b << 8);
-	}
-	else if (MyStrcmp (pstr, "虚拟键盘窗符号色=") && bMode) {
-	    pstr += 17;
-	    sscanf (pstr, "%d %d %d\n", &r, &g, &b);
-	    VKWindowFontColor.color.red = (r << 8);
-	    VKWindowFontColor.color.green = (g << 8);
-	    VKWindowFontColor.color.blue = (b << 8);
-	}
-
-	else if (MyStrcmp (pstr, "打开/关闭输入法=") && bMode) {
-	    pstr += 16;
-	    SetTriggerKeys (pstr);
-	    SetHotKey (pstr, hkTrigger);
-	}
-	else if (MyStrcmp (pstr, "中英文快速切换键=")) {
-	    pstr += 17;
-	    SetSwitchKey (pstr);
-	}
-	else if (MyStrcmp (pstr, "GBK繁体切换键=")) {
-	    pstr += 14;
-	    SetHotKey (pstr, hkGBT);
-	}
-	else if (MyStrcmp (pstr, "双击中英文切换=")) {
-	    pstr += 15;
-	    bDoubleSwitchKey = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "击键时间间隔=")) {
-	    pstr += 13;
-	    iTimeInterval = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "光标跟随=")) {
-	    pstr += 9;
-	    SetHotKey (pstr, hkTrack);
-	}
-	else if (MyStrcmp (pstr, "GBK支持=")) {
-	    pstr += 8;
-	    SetHotKey (pstr, hkGBK);
-	}
-	else if (MyStrcmp (pstr, "分号键行为=")) {
-	    pstr += 11;
-	    semicolonToDo = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "大写字母输入英文=")) {
-	    pstr += 17;
-	    bEngAfterCap = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "转换英文中的标点=")) {
-	    pstr += 17;
-	    bConvertPunc = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "联想方式禁止翻页=")) {
-	    pstr += 17;
-	    bDisablePagingInLegend = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "联想支持=")) {
-	    pstr += 9;
-	    SetHotKey (pstr, hkLegend);
-	}
-	else if (MyStrcmp (pstr, "反查拼音=")) {
-	    pstr += 9;
-	    SetHotKey (pstr, hkGetPY);
-	}
-	else if (MyStrcmp (pstr, "Enter键行为=")) {
-	    pstr += 12;
-	    enterToDo = (ENTER_TO_DO) atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "全半角=")) {
-	    pstr += 7;
-	    SetHotKey (pstr, hkCorner);
-	}
-	else if (MyStrcmp (pstr, "中文标点=")) {
-	    pstr += 9;
-	    SetHotKey (pstr, hkPunc);
-	}
-	else if (MyStrcmp (pstr, "上一页=")) {
-	    pstr += 7;
-	    SetHotKey (pstr, hkPrevPage);
-	}
-	else if (MyStrcmp (pstr, "下一页=")) {
-	    pstr += 7;
-	    SetHotKey (pstr, hkNextPage);
-	}
-	else if (MyStrcmp (pstr, "第二三候选词选择键=")) {
-	    pstr += 19;
-	    if (!strcasecmp (pstr, "SHIFT")) {
-		i2ndSelectKey = 50;	//左SHIFT的扫描码
-		i3rdSelectKey = 62;	//右SHIFT的扫描码
-	    }
-	    else if (!strcasecmp (pstr, "CTRL")) {
-		i2ndSelectKey = 37;	//左CTRL的扫描码
-		i3rdSelectKey = 109;	//右CTRL的扫描码
-	    }
-	    else {
-		i2ndSelectKey = pstr[0];
-		i3rdSelectKey = pstr[1];
-	    }
-	}
-
-	else if (MyStrcmp (pstr, "使用拼音=")) {
-	    pstr += 9;
-	    bUsePinyin = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "拼音名称=")) {
-	    pstr += 9;
-	    strcpy (strNameOfPinyin, pstr);
-	}
-
-	else if (MyStrcmp (pstr, "使用双拼=")) {
-	    pstr += 9;
-	    bUseSP = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "双拼名称=")) {
-	    pstr += 9;
-	    strcpy (strNameOfShuangpin, pstr);
-	}
-	else if (MyStrcmp (pstr, "默认双拼方案=")) {
-	    pstr += 13;
-	    if (*pstr == ' ')
-		pstr++;
-	    strcpy (strDefaultSP, pstr);
-	    iSPFrom = SP_FROM_SYSTEM_CONFIG;
-	}
-	else if (MyStrcmp (pstr, "使用区位=")) {
-	    pstr += 9;
-	    bUseQW = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "区位名称=")) {
-	    pstr += 9;
-	    strcpy (strNameOfQuwei, pstr);
-	}
-	else if (MyStrcmp (pstr, "使用码表=")) {
-	    pstr += 9;
-	    bUseTable = atoi (pstr);
-	}
-	else if (MyStrcmp (pstr, "提示词库中的词组=")) {
-	    pstr += 17;
-	    bPhraseTips = atoi (pstr);
-	}
-
-	else if (MyStrcmp (str, "使用全拼=")) {
-	    pstr += 9;
-	    bFullPY = atoi (pstr);
-	}
-	else if (MyStrcmp (str, "拼音自动组词=")) {
-	    pstr += 13;
-	    bPYCreateAuto = atoi (pstr);
-	}
-	else if (MyStrcmp (str, "保存自动组词=")) {
-	    pstr += 13;
-	    bPYSaveAutoAsPhrase = atoi (pstr);
-	}
-	else if (MyStrcmp (str, "增加拼音常用字=")) {
-	    pstr += 15;
-	    SetHotKey (pstr, hkPYAddFreq);
-	}
-	else if (MyStrcmp (str, "删除拼音常用字=")) {
-	    pstr += 15;
-	    SetHotKey (pstr, hkPYDelFreq);
-	}
-	else if (MyStrcmp (str, "删除拼音用户词组=")) {
-	    pstr += 17;
-	    SetHotKey (pstr, hkPYDelUserPhr);
-	}
-	else if (MyStrcmp (str, "拼音以词定字键=")) {
-	    pstr += 15;
-	    cPYYCDZ[0] = pstr[0];
-	    cPYYCDZ[1] = pstr[1];
-	}
-	else if (MyStrcmp (str, "拼音单字重码调整方式=")) {
-	    pstr += 21;
-	    baseOrder = (ADJUSTORDER) atoi (pstr);
-	}
-	else if (MyStrcmp (str, "拼音词组重码调整方式=")) {
-	    pstr += 21;
-	    phraseOrder = (ADJUSTORDER) atoi (pstr);
-	}
-	else if (MyStrcmp (str, "拼音常用词重码调整方式=")) {
-	    pstr += 23;
-	    freqOrder = (ADJUSTORDER) atoi (pstr);
-	}
-	else if (MyStrcmp (str, "是否模糊an和ang=")) {
-	    pstr += 16;
-	    MHPY_C[0].bMode = atoi (pstr);
-	    MHPY_S[5].bMode = atoi (pstr);
-	}
-	else if (MyStrcmp (str, "是否模糊en和eng=")) {
-	    pstr += 16;
-	    MHPY_C[1].bMode = atoi (pstr);
-	}
-	else if (MyStrcmp (str, "是否模糊ian和iang=")) {
-	    pstr += 18;
-	    MHPY_C[2].bMode = atoi (pstr);
-	}
-	else if (MyStrcmp (str, "是否模糊in和ing=")) {
-	    pstr += 16;
-	    MHPY_C[3].bMode = atoi (pstr);
-	}
-	else if (MyStrcmp (str, "是否模糊ou和u=")) {
-	    pstr += 14;
-	    MHPY_C[4].bMode = atoi (pstr);
-	}
-	else if (MyStrcmp (str, "是否模糊uan和uang=")) {
-	    pstr += 18;
-	    MHPY_C[5].bMode = atoi (pstr);
-	}
-	else if (MyStrcmp (str, "是否模糊c和ch=")) {
-	    pstr += 14;
-	    MHPY_S[0].bMode = atoi (pstr);
-	}
-	else if (MyStrcmp (str, "是否模糊f和h=")) {
-	    pstr += 13;
-	    MHPY_S[1].bMode = atoi (pstr);
-	}
-	else if (MyStrcmp (str, "是否模糊l和n=")) {
-	    pstr += 13;
-	    MHPY_S[2].bMode = atoi (pstr);
-	}
-	else if (MyStrcmp (str, "是否模糊s和sh=")) {
-	    pstr += 14;
-	    MHPY_S[3].bMode = atoi (pstr);
-	}
-	else if (MyStrcmp (str, "是否模糊z和zh=")) {
-	    pstr += 14;
-	    MHPY_S[4].bMode = atoi (pstr);
-	}
-    }
-
-    fclose (fp);
-
+    /* Ctrl+Space就是fcitx的开关快捷键，此处构造一个结构备用。
+     * 至于为什么这样做，现在还不清楚。接下去看可能会明白作者的用意。*/
     if (!Trigger_Keys) {
 	iTriggerKeyCount = 0;
 	Trigger_Keys = (XIMTriggerKey *) malloc (sizeof (XIMTriggerKey) * (iTriggerKeyCount + 2));
@@ -696,293 +1300,296 @@ void LoadConfig (Bool bMode)
     }
 }
 
+/**
+ * 保存配置信息
+ */
 void SaveConfig (void)
 {
-    FILE           *fp;
-    char            strPath[PATH_MAX];
+    FILE    *fp;
+    char    buf[PATH_MAX], *pbuf;
+    Configure_group *tmpgroup;
 
-    strcpy (strPath, (char *) getenv ("HOME"));
-    strcat (strPath, "/.fcitx/");
-
-    if (access (strPath, 0))
-	mkdir (strPath, S_IRWXU);
-
-    strcat (strPath, "config");
-    fp = fopen (strPath, "wt");
-    if (!fp) {
-	fprintf (stderr, "\n无法创建文件 config！\n");
-	return;
+    pbuf = getenv("HOME");
+    if(!pbuf){
+        fprintf(stderr, "error: get environment variable HOME\n");
+        exit(1);
     }
 
-    fprintf (fp, "[程序]\n");
-    fprintf (fp, "显示字体(中)=%s\n", strFontName);
-    fprintf (fp, "显示字体(英)=%s\n", strFontEnName);
-    fprintf (fp, "显示字体大小=%d\n", iFontSize);
-    fprintf (fp, "主窗口字体大小=%d\n", iMainWindowFontSize);
-    if (strUserLocale[0])
-	fprintf (fp, "字体区域=%s\n", strUserLocale);
-    else
-	fprintf (fp, "#字体区域=zh_CN.gb18030\n");
-#ifdef _USE_XFT
-    fprintf (fp, "是否使用AA字体=%d\n", bUseAA);
-#endif
-    fprintf (fp, "是否使用粗体=%d\n", bUseBold);
+    snprintf(buf, PATH_MAX, "%s/.fcitx", pbuf);
+    if(mkdir(buf, S_IRWXU) < 0 && errno != EEXIST){
+        perror("mkdir");
+        exit(1);
+    }
 
-    fprintf (fp, "\n[输出]\n");
-    fprintf (fp, "数字后跟半角符号=%d\n", bEngPuncAfterNumber);
-    fprintf (fp, "Enter键行为=%d\n", enterToDo);
-    fprintf (fp, "分号键行为=%d\n", (int) semicolonToDo);
-    fprintf (fp, "大写字母输入英文=%d\n", bEngAfterCap);
-    fprintf (fp, "转换英文中的标点=%d\n", bConvertPunc);
-    fprintf (fp, "联想方式禁止翻页=%d\n", bDisablePagingInLegend);
-    //fprintf (fp, "LumaQQ支持=%d\n", bLumaQQ);
+    snprintf(buf, PATH_MAX, "%s/.fcitx/config", pbuf);
+    fp = fopen (buf, "w");
+    if (!fp) {
+        perror("fopen");
+        exit(1);
+    }
 
-    fprintf (fp, "\n[界面]\n");
-    fprintf (fp, "候选词个数=%d\n", iMaxCandWord);
-    fprintf (fp, "主窗口是否使用3D界面=%d\n", _3DEffectMainWindow);
-    fprintf (fp, "输入条使用3D界面=%d\n", _3DEffectInputWindow);
-    fprintf (fp, "主窗口隐藏模式=%d\n", (int) hideMainWindow);
-    fprintf (fp, "显示虚拟键盘=%d\n", (int) bShowVK);
-    fprintf (fp, "是否自动隐藏输入条=%d\n", bAutoHideInputWindow);
-    fprintf (fp, "输入条是否居中=%d\n", bCenterInputWindow);
-    fprintf (fp, "首次显示输入条=%d\n", bShowInputWindowTriggering);
-    fprintf (fp, "#输入条固定宽度(仅适用于码表输入法)，0表示不固定宽度\n");
-    fprintf (fp, "输入条固定宽度=%d\n", iFixedInputWindowWidth);
-    fprintf (fp, "输入条偏移量X=%d\n", iOffsetX);
-    fprintf (fp, "输入条偏移量Y=%d\n", iOffsetY);
-    fprintf (fp, "序号后加点=%d\n", bPointAfterNumber);
-    fprintf (fp, "显示打字速度=%d\n", bShowUserSpeed);
-    fprintf (fp, "显示版本=%d\n", bShowVersion);
-
-    fprintf (fp, "光标色=%d %d %d\n", cursorColor.color.red >> 8, cursorColor.color.green >> 8, cursorColor.color.blue >> 8);
-    fprintf (fp, "主窗口背景色=%d %d %d\n", mainWindowColor.backColor.red >> 8, mainWindowColor.backColor.green >> 8, mainWindowColor.backColor.blue >> 8);
-    fprintf (fp, "主窗口线条色=%d %d %d\n", mainWindowLineColor.color.red >> 8, mainWindowLineColor.color.green >> 8, mainWindowLineColor.color.blue >> 8);
-    fprintf (fp, "主窗口输入法名称色=%d %d %d %d %d %d %d %d %d\n", IMNameColor[0].color.red >> 8, IMNameColor[0].color.green >> 8, IMNameColor[0].color.blue >> 8, IMNameColor[1].color.red >> 8, IMNameColor[1].color.green >> 8,
-	     IMNameColor[1].color.blue >> 8, IMNameColor[2].color.red >> 8, IMNameColor[2].color.green >> 8, IMNameColor[2].color.blue >> 8);
-    fprintf (fp, "输入窗背景色=%d %d %d\n", inputWindowColor.backColor.red >> 8, inputWindowColor.backColor.green >> 8, inputWindowColor.backColor.blue >> 8);
-    fprintf (fp, "输入窗提示色=%d %d %d\n", messageColor[0].color.red >> 8, messageColor[0].color.green >> 8, messageColor[0].color.blue >> 8);
-    fprintf (fp, "输入窗用户输入色=%d %d %d\n", messageColor[1].color.red >> 8, messageColor[1].color.green >> 8, messageColor[1].color.blue >> 8);
-    fprintf (fp, "输入窗序号色=%d %d %d\n", messageColor[2].color.red >> 8, messageColor[2].color.green >> 8, messageColor[2].color.blue >> 8);
-    fprintf (fp, "输入窗第一个候选字色=%d %d %d\n", messageColor[3].color.red >> 8, messageColor[3].color.green >> 8, messageColor[3].color.blue >> 8);
-    fprintf (fp, "#该颜色值只用于拼音中的用户自造词\n");
-    fprintf (fp, "输入窗用户词组色=%d %d %d\n", messageColor[4].color.red >> 8, messageColor[4].color.green >> 8, messageColor[4].color.blue >> 8);
-    fprintf (fp, "输入窗提示编码色=%d %d %d\n", messageColor[5].color.red >> 8, messageColor[5].color.green >> 8, messageColor[5].color.blue >> 8);
-    fprintf (fp, "#五笔、拼音的单字/系统词组均使用该颜色\n");
-    fprintf (fp, "输入窗其它文本色=%d %d %d\n", messageColor[6].color.red >> 8, messageColor[6].color.green >> 8, messageColor[6].color.blue >> 8);
-    fprintf (fp, "输入窗线条色=%d %d %d\n", inputWindowLineColor.color.red >> 8, inputWindowLineColor.color.green >> 8, inputWindowLineColor.color.blue >> 8);
-    fprintf (fp, "输入窗箭头色=%d %d %d\n", colorArrow.red >> 8, colorArrow.green >> 8, colorArrow.blue >> 8);
-    fprintf (fp, "虚拟键盘窗背景色=%d %d %d\n", VKWindowColor.backColor.red >> 8, VKWindowColor.backColor.green >> 8, VKWindowColor.backColor.blue >> 8);
-    fprintf (fp, "虚拟键盘窗字母色=%d %d %d\n", VKWindowAlphaColor.color.red >> 8, VKWindowAlphaColor.color.green >> 8, VKWindowAlphaColor.color.blue >> 8);
-    fprintf (fp, "虚拟键盘窗符号色=%d %d %d\n", VKWindowFontColor.color.red >> 8, VKWindowFontColor.color.green >> 8, VKWindowFontColor.color.blue >> 8);
-
-    fprintf (fp, "\n#除了“中英文快速切换键”外，其它的热键均可设置为两个，中间用空格分隔\n");
-    fprintf (fp, "[热键]\n");
-    fprintf (fp, "打开/关闭输入法=CTRL_SPACE\n");
-    fprintf (fp, "#中英文快速切换键 可以设置为L_CTRL R_CTRL L_SHIFT R_SHIFT\n");
-    fprintf (fp, "中英文快速切换键=L_CTRL\n");
-    fprintf (fp, "双击中英文切换=%d\n", bDoubleSwitchKey);
-    fprintf (fp, "击键时间间隔=%u\n", iTimeInterval);
-    fprintf (fp, "光标跟随=CTRL_K\n");
-    fprintf (fp, "GBK支持=CTRL_M\n");
-    fprintf (fp, "GBK繁体切换键=CTRL_ALT_F\n");
-    fprintf (fp, "联想支持=CTRL_L\n");
-    fprintf (fp, "反查拼音=CTRL_ALT_E\n");
-    fprintf (fp, "全半角=SHIFT_SPACE\n");
-    fprintf (fp, "中文标点=ALT_SPACE\n");
-    fprintf (fp, "上一页=- ,\n");
-    fprintf (fp, "下一页== .\n");
-    fprintf (fp, "第二三候选词选择键=SHIFT\n");
-
-    fprintf (fp, "\n[输入法]\n");
-    fprintf (fp, "使用拼音=%d\n", bUsePinyin);
-    fprintf (fp, "使用双拼=%d\n", bUseSP);
-    fprintf (fp, "默认双拼方案=%s\n", strDefaultSP);
-    fprintf (fp, "使用区位=%d\n", bUseQW);
-    fprintf (fp, "使用码表=%d\n", bUseTable);
-    fprintf (fp, "提示词库中的词组=%d\n", bPhraseTips);
-
-    fprintf (fp, "\n[拼音]\n");
-    fprintf (fp, "使用全拼=%d\n", bFullPY);
-    fprintf (fp, "拼音自动组词=%d\n", bPYCreateAuto);
-    fprintf (fp, "保存自动组词=%d\n", bPYSaveAutoAsPhrase);
-    fprintf (fp, "增加拼音常用字=CTRL_8\n");
-    fprintf (fp, "删除拼音常用字=CTRL_7\n");
-    fprintf (fp, "删除拼音用户词组=CTRL_DELETE\n");
-    fprintf (fp, "#拼音以词定字键，等号后面紧接键，不要有空格\n");
-    fprintf (fp, "拼音以词定字键=%c%c\n", cPYYCDZ[0], cPYYCDZ[1]);
-    fprintf (fp, "#重码调整方式说明：0-->不调整  1-->快速调整  2-->按频率调整\n");
-    fprintf (fp, "拼音单字重码调整方式=%d\n", baseOrder);
-    fprintf (fp, "拼音词组重码调整方式=%d\n", phraseOrder);
-    fprintf (fp, "拼音常用词重码调整方式=%d\n", freqOrder);
-    fprintf (fp, "是否模糊an和ang=%d\n", MHPY_C[0].bMode);
-    fprintf (fp, "是否模糊en和eng=%d\n", MHPY_C[1].bMode);
-    fprintf (fp, "是否模糊ian和iang=%d\n", MHPY_C[2].bMode);
-    fprintf (fp, "是否模糊in和ing=%d\n", MHPY_C[3].bMode);
-    fprintf (fp, "是否模糊ou和u=%d\n", MHPY_C[4].bMode);
-    fprintf (fp, "是否模糊uan和uang=%d\n", MHPY_C[5].bMode);
-    fprintf (fp, "是否模糊c和ch=%d\n", MHPY_S[0].bMode);
-    fprintf (fp, "是否模糊f和h=%d\n", MHPY_S[1].bMode);
-    fprintf (fp, "是否模糊l和n=%d\n", MHPY_S[2].bMode);
-    fprintf (fp, "是否模糊s和sh=%d\n", MHPY_S[3].bMode);
-    fprintf (fp, "是否模糊z和zh=%d\n", MHPY_S[4].bMode);
-
-    fclose (fp);
+    /* 实际上，写配置文件很简单，就是从全局数组configure_groups里面分别把每个组的配置
+     * 写入到文件里面去*/
+    for(tmpgroup = configure_groups; tmpgroup->name; tmpgroup++){
+        if(tmpgroup->comment)
+            fprintf(fp, "# %s\n", tmpgroup->comment);	// 如果存在注释，先写入
+        fprintf(fp, "[%s]\n", tmpgroup->name);			// 接下来写入组的名字
+        write_configures(fp, tmpgroup->configure);		/* 最后将该组的每个配置项
+														 * 写入到文件中*/
+        fprintf(fp, "\n");		// 为增加可读性插入一个空行
+    }
+    fclose(fp);
 }
 
+/** 版本 */
+inline static int get_version(Configure *c, void *a, int isread)
+{
+    if(isread){
+        if(!strcasecmp(FCITX_VERSION, (char *)a))
+            bIsNeedSaveConfig = False;
+    }else
+        fprintf((FILE *)a, "%s=%s\n", c->name, FCITX_VERSION);
+    return 0;
+}
+
+/** 主窗口位置X */
+inline static int get_main_window_offset_x(Configure *c, void *a, int isread)
+{
+    if(isread){
+        iMainWindowX = atoi(a);
+        if(iMainWindowX < 0)
+            iMainWindowX = 0;
+        else if((iMainWindowX + MAINWND_WIDTH) > DisplayWidth(dpy, iScreen))
+            iMainWindowX = DisplayWidth(dpy, iScreen) - MAINWND_WIDTH;
+    }else
+        fprintf((FILE *)a, "%s=%d\n", c->name, iMainWindowX);
+
+    return 0;
+}
+
+/** 主窗口位置Y */
+inline static int get_main_window_offset_y(Configure *c, void *a, int isread)
+{
+    if(isread){
+        iMainWindowY = atoi(a);
+        if(iMainWindowY < 0)
+            iMainWindowY = 0;
+        else if((iMainWindowY + MAINWND_HEIGHT) > DisplayHeight(dpy, iScreen))
+            iMainWindowY = DisplayHeight(dpy, iScreen) - MAINWND_HEIGHT;
+    }else
+        fprintf((FILE *)a, "%s=%d\n", c->name, iMainWindowY);
+
+    return 0;
+}
+
+/** 输入窗口位置X */
+inline static int get_input_window_offset_x(Configure *c, void *a, int isread)
+{
+    if(isread){
+        iInputWindowX = atoi(a);
+        if(iInputWindowX < 0)
+            iInputWindowX = 0;
+        else if((iInputWindowX + iInputWindowWidth) > DisplayWidth(dpy, iScreen))
+            iInputWindowX = DisplayWidth(dpy, iScreen) - iInputWindowWidth - 3;
+    }else
+        fprintf((FILE *)a, "%s=%d\n", c->name, iInputWindowX);
+
+    return 0;
+}
+
+/** 输入窗口位置Y */
+inline static int get_input_window_offset_y(Configure *c, void *a, int isread)
+{
+    if(isread){
+        iInputWindowY = atoi(a);
+        if(iInputWindowY < 0)
+            iInputWindowY = 0;
+        else if((iInputWindowY + iInputWindowHeight) > DisplayHeight(dpy, iScreen))
+            iInputWindowY = DisplayHeight(dpy, iScreen) - iInputWindowHeight - 3;
+    }else
+        fprintf((FILE *)a, "%s=%d\n", c->name, iInputWindowY);
+
+    return 0;
+}
+
+static int iIMIndex_tmp = 0;		/* Issue 11: piaoairy add 20080518 */
+
+Configure profiles[] = {
+    {
+        .name = "版本",
+        .value_type = CONFIG_OTHER,
+        .config_rw = get_version,
+    },
+    {
+        .name = "主窗口位置X",
+        .value_type = CONFIG_OTHER,
+        .config_rw = get_main_window_offset_x,
+    },
+    {
+        .name = "主窗口位置Y",
+        .value_type = CONFIG_OTHER,
+        .config_rw = get_main_window_offset_y,
+    },
+    {
+        .name = "输入窗口位置X",
+        .value_type = CONFIG_OTHER,
+        .config_rw = get_input_window_offset_x,
+    },
+    {
+        .name = "输入窗口位置Y",
+        .value_type = CONFIG_OTHER,
+        .config_rw = get_input_window_offset_y,
+    },
+    {
+        .name = "全角",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bCorner,
+    },
+    {
+        .name = "中文标点",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bChnPunc,
+    },
+    {
+        .name = "GBK",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bUseGBK,
+    },
+    {
+        .name = "光标跟随",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bTrackCursor,
+    },
+    {
+        .name = "联想",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bUseLegend,
+    },
+    {
+        .name = "当前输入法",	//  Issue 11: piaoairy: 本来打算将iIMIndex 改为int类型,
+        .value_type = CONFIG_INTEGER,	// 无奈使用的地方太多,
+        .value.integer = &iIMIndex_tmp,	// 只好重新定义个iIMIndex_tmp搭桥.
+    },
+    {
+        .name = "禁止键盘切换",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bLocked,
+    },
+    {
+        .name = "简洁模式",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bCompactMainWindow,
+    },
+    {
+        .name = "GBK繁体",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bUseGBKT,
+    },
+    {
+        .name = NULL,
+    },
+};
+
+/**
+ * @brief 加载配置文件
+ * @param void
+ * @return void
+ */
 void LoadProfile (void)
 {
     FILE           *fp;
-    char            str[PATH_MAX], *pstr;
-    char            strPath[PATH_MAX];
+    char            buf[PATH_MAX], *pbuf, *pbuf1;
     int             i;
-    Bool            bRetVal;
+    Configure       *tmpconfig;
 
-    iMainWindowX = MAINWND_STARTX;
-    iMainWindowY = MAINWND_STARTY;
-    iInputWindowX = INPUTWND_STARTX;
-    iInputWindowY = INPUTWND_STARTY;
+    /* 前将窗口的位置设定为最原始的默认值，接下来如果配置文件有，
+     * 会从配置文件中读取，如果没有就使用这个了*/
+    iMainWindowX = MAINWND_STARTX;		//主窗口位置X
+    iMainWindowY = MAINWND_STARTY;		//主窗口位置Y
+    iInputWindowX = INPUTWND_STARTX;	//输入窗口位置X
+    iInputWindowY = INPUTWND_STARTY;	//输入窗口位置Y
 
-    bRetVal = False;
-    strcpy (strPath, (char *) getenv ("HOME"));
-    strcat (strPath, "/.fcitx/profile");
+    pbuf = getenv("HOME");
+    if(!pbuf){
+        fprintf(stderr, "error: get environment variable HOME\n");
+        exit(1);
+    }
+    snprintf(buf, PATH_MAX, "%s/.fcitx/profile", pbuf);
 
-    fp = fopen (strPath, "rt");
-
-    if (fp) {
-	for (;;) {
-	    if (!fgets (str, PATH_MAX, fp))
-		break;
-
-	    i = strlen (str) - 1;
-	    while (str[i] == ' ' || str[i] == '\n')
-		str[i--] = '\0';
-
-	    pstr = str;
-
-	    if (MyStrcmp (str, "版本=")) {
-		pstr += 5;
-
-		if (!strcasecmp (FCITX_VERSION, pstr))
-		    bRetVal = True;
-	    }
-	    else if (MyStrcmp (str, "主窗口位置X=")) {
-		pstr += 12;
-		iMainWindowX = atoi (pstr);
-		if (iMainWindowX < 0)
-		    iMainWindowX = 0;
-		else if ((iMainWindowX + MAINWND_WIDTH) > DisplayWidth (dpy, iScreen))
-		    iMainWindowX = DisplayWidth (dpy, iScreen) - MAINWND_WIDTH;
-	    }
-	    else if (MyStrcmp (str, "主窗口位置Y=")) {
-		pstr += 12;
-		iMainWindowY = atoi (pstr);
-		if (iMainWindowY < 0)
-		    iMainWindowY = 0;
-		else if ((iMainWindowY + MAINWND_HEIGHT) > DisplayHeight (dpy, iScreen))
-		    iMainWindowY = DisplayHeight (dpy, iScreen) - MAINWND_HEIGHT;
-	    }
-	    else if (MyStrcmp (str, "输入窗口位置X=")) {
-		pstr += 14;
-		iInputWindowX = atoi (pstr);
-		if (iInputWindowX < 0)
-		    iInputWindowX = 0;
-		else if ((iInputWindowX + iInputWindowWidth) > DisplayWidth (dpy, iScreen))
-		    iInputWindowX = DisplayWidth (dpy, iScreen) - iInputWindowWidth - 3;
-	    }
-	    else if (MyStrcmp (str, "输入窗口位置Y=")) {
-		pstr += 14;
-		iInputWindowY = atoi (pstr);
-		if (iInputWindowY < 0)
-		    iInputWindowY = 0;
-		else if ((iInputWindowY + INPUTWND_HEIGHT) > DisplayHeight (dpy, iScreen))
-		    iInputWindowY = DisplayHeight (dpy, iScreen) - iInputWindowHeight;
-	    }
-	    else if (MyStrcmp (str, "是否全角=")) {
-		pstr += 9;
-		bCorner = atoi (pstr);
-	    }
-	    else if (MyStrcmp (str, "是否中文标点=")) {
-		pstr += 13;
-		bChnPunc = atoi (pstr);
-	    }
-	    else if (MyStrcmp (str, "是否GBK=")) {
-		pstr += 8;
-		bUseGBK = atoi (pstr);
-	    }
-	    else if (MyStrcmp (str, "是否光标跟随=")) {
-		pstr += 13;
-		bTrackCursor = atoi (pstr);
-	    }
-	    else if (MyStrcmp (str, "是否联想=")) {
-		pstr += 9;
-		bUseLegend = atoi (pstr);
-	    }
-	    else if (MyStrcmp (str, "当前输入法=")) {
-		pstr += 11;
-		iIMIndex = atoi (pstr);
-	    }
-	    else if (MyStrcmp (str, "禁止用键盘切换=")) {
-		pstr += 15;
-		bLocked = atoi (pstr);
-	    }
-	    else if (MyStrcmp (str, "简洁模式=")) {
-		pstr += 9;
-		bCompactMainWindow = atoi (pstr);
-	    }
-	    else if (MyStrcmp (str, "是否输出GBK繁体=")) {
-		pstr += 16;
-		bUseGBKT = atoi (pstr);
-	    }
-	}
-
-	fclose (fp);
+    fp = fopen(buf, "r");
+    if(!fp){
+        if(errno == ENOENT)
+            SaveProfile();
+        return;
     }
 
-    if (!bRetVal) {
-	SaveConfig ();
-	SaveProfile ();
+    /* FIXME: 也许应该用另外更恰当的缓冲区长度 */
+    while(fgets(buf, PATH_MAX, fp)){
+        i = strlen(buf);
+        if(buf[i-1] != '\n'){
+            fprintf(stderr, "error: profile file: line length\n");
+            exit(1);
+        }else
+            buf[i-1] = '\0';
+
+        pbuf = buf;
+        while(*pbuf && isspace(*pbuf))
+            pbuf++;
+        if(!*pbuf || *pbuf == '#')
+            continue;
+
+        pbuf1 = strchr(pbuf, '=');
+        if(!pbuf1){
+            fprintf(stderr, "error: profile file: configure entry name\n");
+            exit(1);
+        }
+
+        for(tmpconfig = profiles; tmpconfig->name; tmpconfig++)
+            if(strncmp(tmpconfig->name, pbuf, pbuf1-pbuf) == 0)
+                read_configure(tmpconfig, ++pbuf1);
     }
+
+    fclose(fp);
+
+    iIMIndex = iIMIndex_tmp;		/* piaoairy add 20080518 */
+
+    if(bIsNeedSaveConfig){
+        SaveConfig();
+        SaveProfile();
+     }
 }
 
 void SaveProfile (void)
 {
     FILE           *fp;
-    char            strPath[PATH_MAX];
+    char            buf[PATH_MAX], *pbuf;
 
-    strcpy (strPath, (char *) getenv ("HOME"));
-    strcat (strPath, "/.fcitx/");
-
-    if (access (strPath, 0))
-	mkdir (strPath, S_IRWXU);
-
-    strcat (strPath, "profile");
-    fp = fopen (strPath, "wt");
-
-    if (!fp) {
-	fprintf (stderr, "\n无法创建文件 profile!\n");
-	return;
+    pbuf = getenv("HOME");
+    if(!pbuf){
+        fprintf(stderr, "error: get environment variable HOME\n");
+        exit(1);
     }
 
-    fprintf (fp, "版本=%s\n", FCITX_VERSION);
-    fprintf (fp, "主窗口位置X=%d\n", iMainWindowX);
-    fprintf (fp, "主窗口位置Y=%d\n", iMainWindowY);
-    fprintf (fp, "输入窗口位置X=%d\n", iInputWindowX);
-    fprintf (fp, "输入窗口位置Y=%d\n", iInputWindowY);
-    fprintf (fp, "是否全角=%d\n", bCorner);
-    fprintf (fp, "是否中文标点=%d\n", bChnPunc);
-    fprintf (fp, "是否GBK=%d\n", bUseGBK);
-    fprintf (fp, "是否光标跟随=%d\n", bTrackCursor);
-    fprintf (fp, "是否联想=%d\n", bUseLegend);
-    fprintf (fp, "当前输入法=%d\n", iIMIndex);
-    fprintf (fp, "禁止用键盘切换=%d\n", bLocked);
-    fprintf (fp, "简洁模式=%d\n", bCompactMainWindow);
+    snprintf(buf, PATH_MAX, "%s/.fcitx", pbuf);
+    if(mkdir(buf, S_IRWXU) < 0 && errno != EEXIST){
+        perror("mkdir");
+        exit(1);
+    }
 
-    fprintf (fp, "是否输出GBK繁体=%d\n", bUseGBKT);
+    snprintf(buf, PATH_MAX, "%s/.fcitx/profile", pbuf);
+    fp = fopen (buf, "w");
+
+    if (!fp) {
+	perror("fopen");
+        exit(1);
+    }
+
+    iIMIndex_tmp = iIMIndex;		/* piaoairy add 20080518 */
+    write_configures(fp, profiles);
+    fclose(fp);
 
     iTempInputWindowX = iInputWindowX;
     iTempInputWindowY = iInputWindowY;
-
-    fclose (fp);
 }
 
 void SetHotKey (char *strKeys, HOTKEYS * hotkey)
@@ -1000,7 +1607,7 @@ void SetHotKey (char *strKeys, HOTKEYS * hotkey)
 	i++;
     strncpy (strKey, p, i);
     strKey[i] = '\0';
-    p += i + 1l;
+    p += i + 1;
     j = ParseKey (strKey);
     if (j != -1)
 	hotkey[0] = j;
@@ -1049,13 +1656,17 @@ int CalculateRecordNumber (FILE * fpDict)
 void SetSwitchKey (char *str)
 {
     if (!strcasecmp (str, "R_CTRL"))
-	switchKey = R_CTRL;
+	switchKey = XKeysymToKeycode (dpy, XK_Control_R);
     else if (!strcasecmp (str, "R_SHIFT"))
-	switchKey = R_SHIFT;
+	switchKey = XKeysymToKeycode (dpy, XK_Shift_R);
     else if (!strcasecmp (str, "L_SHIFT"))
-	switchKey = L_SHIFT;
+	switchKey = XKeysymToKeycode (dpy, XK_Shift_L);
+    else if (!strcasecmp (str, "R_SUPER"))
+	switchKey = XKeysymToKeycode (dpy, XK_Super_R);
+    else if (!strcasecmp (str, "L_SUPER"))
+	switchKey = XKeysymToKeycode (dpy, XK_Super_L);
     else
-	switchKey = L_CTRL;
+	switchKey = XKeysymToKeycode (dpy, XK_Control_L);
 }
 
 void SetTriggerKeys (char *str)
@@ -1064,7 +1675,7 @@ void SetTriggerKeys (char *str)
     char            strKey[2][30];
     char           *p;
 
-    //首先来判断用户设置了几个热键，最多为2    
+    //首先来判断用户设置了几个热键，最多为2
     p = str;
 
     i = 0;
@@ -1102,6 +1713,10 @@ void SetTriggerKeys (char *str)
 	    Trigger_Keys[i].modifier = Trigger_Keys[i].modifier | Mod1Mask;
 	    Trigger_Keys[i].modifier_mask = Trigger_Keys[i].modifier_mask | Mod1Mask;
 	}
+	else if (MyStrcmp (strKey[i], "SUPER_")) {
+	    Trigger_Keys[i].modifier = Trigger_Keys[i].modifier | Mod4Mask;
+	    Trigger_Keys[i].modifier_mask = Trigger_Keys[i].modifier_mask | Mod4Mask;
+	}
 
 	if (Trigger_Keys[i].modifier == 0) {
 	    Trigger_Keys[i].modifier = ControlMask;
@@ -1133,6 +1748,10 @@ void SetTriggerKeys (char *str)
 	    Trigger_Keys[i].keysym = XK_Alt_L;
 	else if (!strcasecmp (p, "RALT"))
 	    Trigger_Keys[i].keysym = XK_Alt_R;
+	else if (!strcasecmp (p, "LSUPER"))
+	    Trigger_Keys[i].keysym = XK_Super_L;
+	else if (!strcasecmp (p, "RSUPER"))
+	    Trigger_Keys[i].keysym = XK_Super_R;
 	else
 	    Trigger_Keys[i].keysym = XK_space;
     }
@@ -1227,7 +1846,7 @@ char           *ConvertGBKSimple2Tradition (char *strHZ)
     return ret;
 }
 
-int CalHZIndex (signed char *strHZ)
+int CalHZIndex (char *strHZ)
 {
     return (strHZ[0] + 127) * 255 + strHZ[1] + 128;
 }
