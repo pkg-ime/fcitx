@@ -1,9 +1,4 @@
 #!/usr/bin/make -f
 
-build:
-	dh build --before configure
-	./autogen.sh
-	dh build --remaining
-
 %:
 	dh $@

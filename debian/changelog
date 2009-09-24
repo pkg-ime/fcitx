@@ -1,3 +1,16 @@
+fcitx (1:3.6.1-1) unstable; urgency=low
+
+  * new upstream release.
+  * debian/control:
+    - add me to Uploader.
+    - add libxtst-dev to Build-Depends.
+    - bump standards version to 3.8.3.
+  * debian/rules:
+    - updated, no longer need to call autogen.sh
+  * debian/clean: updated.
+
+ -- LI Daobing <lidaobing@debian.org>  Thu, 24 Sep 2009 23:03:16 +0800
+
 fcitx (1:3.6.0~rc-0.1) unstable; urgency=low
 
   * Non-maintainer upload (with the bless of the origin maintainer).

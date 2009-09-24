@@ -1,5 +1,9 @@
-This package was debianized by Yu Guanghui <ygh@debian.org> on
-Sat,  3 May 2003 14:24:40 +0800
+Format-Specification: http://wiki.debian.org/Proposals/CopyrightFormat?action=recall&rev=423
+Packaged-By: Yu Guanghui <ygh@debian.org>
+Packaged-Date: Sat,  3 May 2003 14:24:40 +0800
+Upstream-Name: fcitx
+Upstream-Maintainer: Yuking <yuking_net@sohu.com>
+Upstream-Source: http://fcitx.googlecode.com/
 
 It was downloaded from  http://www.fcitx.org
 

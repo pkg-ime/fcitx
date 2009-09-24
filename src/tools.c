@@ -52,8 +52,6 @@ extern int      iMainWindowX;
 extern int      iMainWindowY;
 extern int      iInputWindowX;
 extern int      iInputWindowY;
-extern int      iTempInputWindowX;
-extern int      iTempInputWindowY;
 extern int      iInputWindowWidth;
 extern int      iInputWindowHeight;
 
@@ -155,7 +153,6 @@ extern Bool     bUseTable;
 extern char     strDefaultSP[];
 extern SP_FROM  iSPFrom;
 
-//extern Bool     bLumaQQ;
 extern char     cPYYCDZ[];
 extern char	strExternIM[];
 
@@ -176,27 +173,9 @@ extern Bool     bUseBold;
 extern int      iOffsetX;
 extern int      iOffsetY;
 
-/*
-extern Bool     bStaticXIM;
-extern Bool     bNoReleaseKey;
-*/
-
-/*
-#if defined(DARWIN)*/
-/* function to reverse byte order for integer
-this is required for Mac machine*/
-/*int ReverseInt (unsigned int pc_int)
-{
-    int             mac_int;
-    unsigned char  *p;
-
-    mac_int = pc_int;
-    p = (unsigned char *) &pc_int;
-    mac_int = (p[3] << 24) + (p[2] << 16) + (p[1] << 8) + p[0];
-    return mac_int;
-}
+#ifdef _ENABLE_TRAY
+extern Bool	bUseTrayIcon;
 #endif
-*/
 
 Bool MyStrcmp (char *str1, char *str2)
 {
@@ -677,6 +656,13 @@ Configure program_config[] = {
         .value_type = CONFIG_INTEGER,
         .value.integer = &bUseBold,
     },
+ #ifdef _ENABLE_TRAY
+    {
+        .name = "使用托盘图标",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bUseTrayIcon,
+    },
+ #endif
     {
         .name = NULL,
     },
@@ -1197,8 +1183,7 @@ void LoadConfig (Bool bMode)
         fp = fopen(buf, "r");
         if(!fp){
             perror("fopen");
-            exit(1);	/* 如果安装目录里面也没有配置文件，那就没办法了。
-						 * 只好告诉用户，无法运行了*/
+            exit(1);	// 如果安装目录里面也没有配置文件，那就只好告诉用户，无法运行了
         }
     }
 
@@ -1274,11 +1259,11 @@ void LoadConfig (Bool bMode)
             fprintf(stderr, "error: configure file: no group name at beginning\n");
             exit(1);
         }
-
         //找到该组中的配置项，并将其保存到对应的全局变量里面去
         for(tmpconfig = configure_groups[group_idx].configure;
                 tmpconfig->name; tmpconfig++)
         {
+
             if(strncmp(tmpconfig->name, pbuf, pbuf1-pbuf) == 0)
                 read_configure(tmpconfig, ++pbuf1);
         }
@@ -1286,8 +1271,7 @@ void LoadConfig (Bool bMode)
 
     fclose(fp);
 
-    /* Ctrl+Space就是fcitx的开关快捷键，此处构造一个结构备用。
-     * 至于为什么这样做，现在还不清楚。接下去看可能会明白作者的用意。*/
+    /* 如果配置文件中没有设置打开/关闭输入法的热键，那么设置CTRL-SPACE为默认热键 */
     if (!Trigger_Keys) {
 	iTriggerKeyCount = 0;
 	Trigger_Keys = (XIMTriggerKey *) malloc (sizeof (XIMTriggerKey) * (iTriggerKeyCount + 2));
@@ -1333,9 +1317,8 @@ void SaveConfig (void)
     for(tmpgroup = configure_groups; tmpgroup->name; tmpgroup++){
         if(tmpgroup->comment)
             fprintf(fp, "# %s\n", tmpgroup->comment);	// 如果存在注释，先写入
-        fprintf(fp, "[%s]\n", tmpgroup->name);			// 接下来写入组的名字
-        write_configures(fp, tmpgroup->configure);		/* 最后将该组的每个配置项
-														 * 写入到文件中*/
+        fprintf(fp, "[%s]\n", tmpgroup->name);		// 接下来写入组的名字
+        write_configures(fp, tmpgroup->configure);	// 最后将该组的每个配置项写入到文件中
         fprintf(fp, "\n");		// 为增加可读性插入一个空行
     }
     fclose(fp);
@@ -1587,9 +1570,6 @@ void SaveProfile (void)
     iIMIndex_tmp = iIMIndex;		/* piaoairy add 20080518 */
     write_configures(fp, profiles);
     fclose(fp);
-
-    iTempInputWindowX = iInputWindowX;
-    iTempInputWindowY = iInputWindowY;
 }
 
 void SetHotKey (char *strKeys, HOTKEYS * hotkey)

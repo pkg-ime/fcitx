@@ -1,3 +1,58 @@
+2009-09-13: Yuking <yuking_net@sohu.com>
+	* src/ui.c: 重画tray icon
+
+2009-08-17: Yuking <yuking_net@sohu.com>
+	* src/ime.c: 修正仅配置双拼时双拼工作不正常的问题
+	
+2009-08-11: Yuking <yuking_net@sohu.com>
+	* src/xim.c, InputWindow.c: 优化光标跟随
+	
+2009-07-05: Yuking <yuking_net@sohu.com>
+	* src/ime.c: 修正联想模式下显示不正常及可能导致崩溃的问题
+
+2009-05-26: Yuking <yuking_net@sohu.com>
+        * src/ime.c: 修正输入条有时候显示不正常的问题
+	* 当编译了托盘图标时，可选择是否显示托盘图标
+	
+2009-05-19: Yuking <yuking_net@sohu.com>
+        * src/main.c: 修正启动时不显示托盘图标的问题
+	* configure.in: 将托盘图标作为一个可配置选项
+	
+2009-05-19: hubert_star AT forum.ubuntu.com.cn
+        * src/ime.c: keycode在32到126之间时，处理keypress而忽略keyrelease
+	
+2009-05-15: Yuking <yuking_net@sohu.com>
+        * 修正光标跟随时输入条位置的一些小问题
+
+2009-05-07: Yuking <yuking_net@sohu.com>
+        * 修正输入条显示时的一些小问题
+	
+2009-05-07: Vern Sun <s5unty AT gmail.com>
+        * 尝试修正托盘图标有时候无法正确显示的问题
+
+2009-05-02: Vern Sun <s5unty AT gmail.com>
+        * 增加托盘图标功能
+
+2009-04-13: Yuking <yuking_net@sohu.com>
+	* 修正五笔码表中的一些致命错误
+	* src/ime.c: 修正某些时候无法用0选择候选字的问题
+
+2009-04-05: Yuking <yuking_net@sohu.com>
+	* 修正某些情况下会出现双字母的问题
+	
+2009-03-26: Yuking <yuking_net@sohu.com>
+	* 修正拼音码表中的一些错误
+	
+2009-03-26: Yuking <yuking_net@sohu.com>
+	* tools/createPYMB.c: 转换拼音的时候增加了一些输出信息
+	* 清除一些被注释掉的无用代码
+
+2009-03-10: BigSnake.NET (BigSnake.NET@forum.ubuntu.org.cn)
+	* src/xim.c: fixes a potential segment fault
+	
+2009-01-27: Yuking <yuking_net@sohu.com>
+	* src/table.c: 增加最长词组字数的选项(比如，指定为2表示只显示双字词)
+
 2008-11-14: Yuking <yuking_net@sohu.com>
 	* 改进拼音简写词组的匹配，比如，当输入"c'fan"时，“吃饭”也会出现在候选词中，而无论是否选择了模糊拼音
 	
@@ -44,9 +99,6 @@
 2008-07-11: Yuking <yuking_net@sohu.com>
 	* data/wanfeng.txt: 加上wiltong@linuxsir提供的晚风码表中的部分错码修正
 	* src/table.c: 修正自动组词中的一个错误
-	
-2008-06-18: Yuking <yuking_net@sohu.com>
-	* 增加若干判断语句，以免程序执行不必要的窗口显示/隐藏操作
 
 2008-05-10: Yuking <yuking_net@sohu.com>
 	* src/table.c: 修正码表输入法中的一个错误

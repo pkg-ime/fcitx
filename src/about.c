@@ -91,7 +91,7 @@ Bool CreateAboutWindow (void)
 	return False;
 
     InitWindowProperty ();
-    XSelectInput (dpy, aboutWindow, ExposureMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | StructureNotifyMask | EnterWindowMask | PointerMotionMask | LeaveWindowMask | VisibilityChangeMask);
+    XSelectInput (dpy, aboutWindow, ExposureMask | ButtonPressMask | ButtonReleaseMask  | PointerMotionMask );
 
     InitAboutWindowColor ();
     setIcon ();
@@ -153,8 +153,7 @@ void InitAboutWindowColor (void)
 
 void DisplayAboutWindow (void)
 {
-    if (!IsWindowVisible(aboutWindow))
-	XMapRaised (dpy, aboutWindow);
+    XMapRaised (dpy, aboutWindow);
     XMoveWindow (dpy, aboutWindow, (DisplayWidth (dpy, iScreen) - ABOUT_WINDOW_WIDTH) / 2, (DisplayHeight (dpy, iScreen) - ABOUT_WINDOW_HEIGHT) / 2);
 }
 

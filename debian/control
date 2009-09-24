@@ -2,9 +2,10 @@ Source: fcitx
 Section: utils
 Priority: optional
 Maintainer: Yu Guanghui <ygh@debian.org>
+Uploaders: LI Daobing <lidaobing@debian.org>
 Build-Depends: debhelper (>= 7), libx11-dev, libxft-dev, x11proto-core-dev,
- libxpm-dev, automake, autoconf
-Standards-Version: 3.8.1
+ libxpm-dev, automake, autoconf, libxtst-dev
+Standards-Version: 3.8.3
 Homepage: http://code.google.com/p/fcitx/
 
 Package: fcitx
