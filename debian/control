@@ -3,9 +3,9 @@ Section: utils
 Priority: optional
 Maintainer: Yu Guanghui <ygh@debian.org>
 Uploaders: LI Daobing <lidaobing@debian.org>
-Build-Depends: debhelper (>= 7), libx11-dev, libxft-dev, x11proto-core-dev,
+Build-Depends: debhelper (>= 7.0.50~), libx11-dev, libxft-dev, x11proto-core-dev,
  libxpm-dev, automake, autoconf, libxtst-dev
-Standards-Version: 3.8.3
+Standards-Version: 3.8.4
 Homepage: http://code.google.com/p/fcitx/
 
 Package: fcitx

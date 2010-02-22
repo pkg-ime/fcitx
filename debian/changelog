@@ -1,3 +1,17 @@
+fcitx (1:3.6.3-1) unstable; urgency=low
+
+  * new upstream release.
+  * change to 3.0 (quilt) format.
+  * debian/control:
+    - bump standards version to 3.8.4.
+    - build depends on debhelper > 7.0.50~
+  * debian/patches/binutils-gold.patch: Fix "FTBFS with binutils-gold"
+    (Closes: #554282)
+  * debian/rules: run autoreconf before configure
+  * debian/clean: updated.
+
+ -- LI Daobing <lidaobing@debian.org>  Mon, 22 Feb 2010 21:00:56 +0800
+
 fcitx (1:3.6.2-1) unstable; urgency=low
 
   * new upstream release.

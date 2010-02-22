@@ -8,3 +8,12 @@ data/wanfeng.mb
 data/wbpy.mb
 data/wbx.mb
 data/zrm.mb
+Makefile.in
+aclocal.m4
+configure
+data/Makefile.in
+doc/Makefile.in
+lib/Makefile.in
+src/Makefile.in
+tools/Makefile.in
+xpm/Makefile.in

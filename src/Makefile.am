@@ -27,12 +27,14 @@ fcitx_SOURCES = IC.c IC.h \
                 qw.c qw.h \
                 tray.c tray.h \
                 TrayWindow.c TrayWindow.h \
+				DBus.c DBus.h \
 		vk.c vk.h \
 		about.c about.h \
 		QuickPhrase.c QuickPhrase.h \
 		AutoEng.c AutoEng.h \
 		fcitx.h extra.c extra.h \
-		internalVersion.c
+		internalVersion.c \
+		ImeRemote.c
 		
 fcitx_LDADD = ../lib/libXimd.a
-fcitx_LDFLAGS = -lXpm -lXtst
+fcitx_LDFLAGS = -lXpm -lXtst -lpthread

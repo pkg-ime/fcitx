@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <X11/xpm.h>
+#include <X11/Xatom.h>
 
 #include "IC.h"
 #include "ui.h"
@@ -57,7 +58,7 @@
 #include "ui.h"
 #include "vk.h"
 
-Window          mainWindow;
+Window          mainWindow = (Window) NULL;
 int             MAINWND_WIDTH = _MAINWND_WIDTH;
 
 int             iMainWindowX = MAINWND_STARTX;
@@ -127,8 +128,10 @@ extern Bool     bVK;
 Bool CreateMainWindow (void)
 {
     XSetWindowAttributes attrib;
-    unsigned long   attribmask;
-    int             iBackPixel;
+    unsigned long	attribmask;
+    int			iBackPixel;
+    XTextProperty	tp;
+    char		strWindowName[]="Fcitx Status Window";
 
     attrib.override_redirect = True;
     attribmask = CWOverrideRedirect;
@@ -147,6 +150,13 @@ Bool CreateMainWindow (void)
     XChangeWindowAttributes (dpy, mainWindow, attribmask, &attrib);
     XSelectInput (dpy, mainWindow, ExposureMask | ButtonPressMask | ButtonReleaseMask  | PointerMotionMask);
     
+    //Set the name of the window
+    tp.value = (void *)strWindowName;
+    tp.encoding = XA_STRING;
+    tp.format = 16;
+    tp.nitems = strlen(strWindowName);
+    XSetWMName (dpy, mainWindow, &tp);
+
     InitMainWindowColor ();
 
     return True;

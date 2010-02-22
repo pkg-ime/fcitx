@@ -57,7 +57,6 @@ XftDraw        *xftDraw = (XftDraw *) NULL;
 XftFont        *xftMainWindowFont = (XftFont *) NULL;
 XftFont        *xftMainWindowFontEn = (XftFont *) NULL;
 XftFont        *xftVKWindowFont = (XftFont *) NULL;
-Bool            bUseAA = True;
 Bool            bUseBold = True;
 int             iMainWindowFontSize = 9;
 int             iVKWindowFontSize = 11;
@@ -81,11 +80,11 @@ GC              lightGC = (GC) NULL;
 
 Bool            bIsUtf8 = False;
 
-char            strFontName[100] = "*";
-
 #ifdef _USE_XFT
+char            strFontName[100] = "AR PL ShanHeiSun Uni";
 char            strFontEnName[100] = "Courier New";
 #else
+char            strFontName[100] = "*";
 char            strFontEnName[100] = "Courier";
 #endif
 
@@ -98,6 +97,7 @@ extern int      iInputWindowY;
 extern Window   VKWindow;
 extern int      iVKWindowX;
 extern int      iVKWindowY;
+extern Window   ximWindow;
 extern WINDOW_COLOR mainWindowColor;
 extern WINDOW_COLOR inputWindowColor;
 extern WINDOW_COLOR VKWindowColor;
@@ -219,14 +219,14 @@ void InitGC (Window window)
 /*void SetLocale(void)
 {
 	char *p;
-	
+
 	p=getenv("LC_CTYPE");
 	if ( !p ) {
 		p=getenv("LC_ALL");
 		if ( !p)
 			p=getenv("LANG");
 	}
-	
+
 	//试验发现，当locale为zh_CN.UTF-8时，setlocale必须设置这zh_CN.UTF-8而不能是zh_CN.utf-8
 	if ( p ) {
 		strcpy(strUserLocale,p);
@@ -253,25 +253,25 @@ void CreateFont (void)
 
     if (xftFont)
 	XftFontClose (dpy, xftFont);
-    xftFont = XftFontOpen (dpy, iScreen, XFT_FAMILY, XftTypeString, strFontName, XFT_SIZE, XftTypeDouble, (double) iFontSize, XFT_ANTIALIAS, XftTypeBool, bUseAA, NULL);
+    xftFont = XftFontOpen (dpy, iScreen, XFT_FAMILY, XftTypeString, strFontName, XFT_SIZE, XftTypeDouble, (double) iFontSize, XFT_ANTIALIAS, XftTypeBool, True, NULL);
 
     if (xftFontEn)
 	XftFontClose (dpy, xftFontEn);
-    xftFontEn = XftFontOpen (dpy, iScreen, XFT_FAMILY, XftTypeString, strFontEnName, XFT_SIZE, XftTypeDouble, (double) iFontSize, XFT_ANTIALIAS, XftTypeBool, bUseAA, NULL);
+    xftFontEn = XftFontOpen (dpy, iScreen, XFT_FAMILY, XftTypeString, strFontEnName, XFT_SIZE, XftTypeDouble, (double) iFontSize, XFT_ANTIALIAS, XftTypeBool, True, NULL);
 
     if (xftMainWindowFont)
 	XftFontClose (dpy, xftMainWindowFont);
     xftMainWindowFont =
-	XftFontOpen (dpy, iScreen, XFT_FAMILY, XftTypeString, strFontName, XFT_SIZE, XftTypeDouble, (double) iMainWindowFontSize, XFT_ANTIALIAS, XftTypeBool, bUseAA, XFT_WEIGHT, XftTypeInteger, (bUseBold) ? XFT_WEIGHT_BOLD : XFT_WEIGHT_MEDIUM, NULL);
+	XftFontOpen (dpy, iScreen, XFT_FAMILY, XftTypeString, strFontName, XFT_SIZE, XftTypeDouble, (double) iMainWindowFontSize, XFT_ANTIALIAS, XftTypeBool, True, XFT_WEIGHT, XftTypeInteger, (bUseBold) ? XFT_WEIGHT_BOLD : XFT_WEIGHT_MEDIUM, NULL);
 
     if (xftMainWindowFontEn)
 	XftFontClose (dpy, xftMainWindowFontEn);
     xftMainWindowFontEn =
-	XftFontOpen (dpy, iScreen, XFT_FAMILY, XftTypeString, strFontEnName, XFT_SIZE, XftTypeDouble, (double) iMainWindowFontSize, XFT_ANTIALIAS, XftTypeBool, bUseAA, XFT_WEIGHT, XftTypeInteger, (bUseBold) ? XFT_WEIGHT_BOLD : XFT_WEIGHT_MEDIUM, NULL);
+	XftFontOpen (dpy, iScreen, XFT_FAMILY, XftTypeString, strFontEnName, XFT_SIZE, XftTypeDouble, (double) iMainWindowFontSize, XFT_ANTIALIAS, XftTypeBool, True, XFT_WEIGHT, XftTypeInteger, (bUseBold) ? XFT_WEIGHT_BOLD : XFT_WEIGHT_MEDIUM, NULL);
 
     if (xftVKWindowFont)
 	XftFontClose (dpy, xftVKWindowFont);
-    xftVKWindowFont = XftFontOpen (dpy, iScreen, XFT_FAMILY, XftTypeString, strFontName, XFT_SIZE, XftTypeDouble, (double) iVKWindowFontSize, XFT_ANTIALIAS, XftTypeBool, bUseAA, NULL);
+    xftVKWindowFont = XftFontOpen (dpy, iScreen, XFT_FAMILY, XftTypeString, strFontName, XFT_SIZE, XftTypeDouble, (double) iVKWindowFontSize, XFT_ANTIALIAS, XftTypeBool, True, NULL);
 
     if (xftDraw)
 	XftDrawDestroy (xftDraw);
@@ -373,20 +373,27 @@ void Draw3DEffect (Window window, int x, int y, int width, int height, _3D_EFFEC
 
 /*
  * 有关界面的消息都在这里处理
+ *     有关tray重画的问题，此处的解决方案似乎很dirt
  */
 void MyXEventHandler (XEvent * event)
 {
     unsigned char   iPos;
-
+    
     switch (event->type) {
-	//added by yunfan
+#ifdef _ENABLE_TRAY
+    case ReparentNotify:
+	tray_win_redraw();
+	break;
+#endif
     case ClientMessage:
 	if ((event->xclient.message_type == about_protocol_atom) && ((Atom) event->xclient.data.l[0] == about_kill_atom)) {
 	    XUnmapWindow (dpy, aboutWindow);
 	    DrawMainWindow ();
 	}
+#ifdef _ENABLE_TRAY
+	tray_win_redraw();
+#endif
 	break;
-	//*********************
     case Expose:
 #ifdef _DEBUG
 	fprintf (stderr, "XEvent--Expose\n");
@@ -406,7 +413,7 @@ void MyXEventHandler (XEvent * event)
 	    else
 		DrawTrayWindow (INACTIVE_ICON);
 	}
-#endif		    
+#endif
 	//added by yunfan
 	else if (event->xexpose.window == aboutWindow)
 	    DrawAboutWindow ();
@@ -435,12 +442,12 @@ void MyXEventHandler (XEvent * event)
 			}
 			else
 			    ChangeIMState (connect_id);
-#ifdef _ENABLE_TRAY			    
+#ifdef _ENABLE_TRAY
 			if (ConnectIDGetState (connect_id) == IS_CHN)
 			    DrawTrayWindow (ACTIVE_ICON);
 			else
 			    DrawTrayWindow (INACTIVE_ICON);
-#endif			    
+#endif
 		    }
 		}
 	    }
@@ -451,7 +458,7 @@ void MyXEventHandler (XEvent * event)
 		    MouseClick (&iVKWindowX, &iVKWindowY, VKWindow);
 		    DrawVKWindow ();
 		}
-	    }	    
+	    }
 	    //added by yunfan
 	    else if (event->xbutton.window == aboutWindow) {
 		XUnmapWindow (dpy, aboutWindow);
@@ -500,10 +507,8 @@ void MyXEventHandler (XEvent * event)
 		break;
 		//********************
 	    case Button3:
-		if (IsInBox (event->xbutton.x, event->xbutton.y, 1, 1, 16, 17)) {
-		    bMainWindow_Hiden = True;
+		if (IsInBox (event->xbutton.x, event->xbutton.y, 1, 1, 16, 17))
 		    XUnmapWindow (dpy, mainWindow);
-	        }
 		else if (!bVK) {
 		    bCompactMainWindow = !bCompactMainWindow;
 		    SwitchIM (iIMIndex);
@@ -511,7 +516,7 @@ void MyXEventHandler (XEvent * event)
 		break;
 	    }
 	}
-#ifdef _ENABLE_TRAY	
+#ifdef _ENABLE_TRAY
 	else if (event->xbutton.window == tray.window) {
 	    switch (event->xbutton.button) {
 	    case Button1:
@@ -528,19 +533,19 @@ void MyXEventHandler (XEvent * event)
 
 		break;
 	    case Button2:
-		if (bMainWindow_Hiden) {
+		if (IsWindowVisible(mainWindow)) {
+		    bMainWindow_Hiden = True;
+		    XUnmapWindow(dpy,mainWindow);
+		}
+		else {
 		    bMainWindow_Hiden = False;
 		    DisplayMainWindow();
 		    DrawMainWindow();
 		}
-		else {
-		    bMainWindow_Hiden = True;
-		    XUnmapWindow(dpy,mainWindow);
-		}
 		break;
 	    }
 	}
-#endif	
+#endif
 	break;
     case FocusIn:
 	if (ConnectIDGetState (connect_id) == IS_CHN)
@@ -682,6 +687,18 @@ void OutputString (Window window, XFontSet font, char *str, int x, int y, GC gc)
 }
 #endif
 
+Bool IsWindowVisible(Window window)
+{
+    XWindowAttributes attrs;
+
+    XGetWindowAttributes( dpy, window, &attrs );
+
+    if ( attrs.map_state==IsUnmapped)
+	return False;
+
+    return True;
+}
+
 /* *************下列函数取自于 rfinput-2.0 ************************ */
 /*
  * 从xpm图形文件中图形数据填入到XImage变量中
@@ -816,20 +833,6 @@ Bool MouseClick (int *x, int *y, Window window)
     }
 }
 */
-/* ****************************************************************** */
-/* 
-Bool IsWindowVisible(Window window)
-{
-    XWindowAttributes attrs;
-    
-    XGetWindowAttributes( dpy, window, &attrs );
-    
-    if ( attrs.map_state==IsUnmapped)
-	return False;
-
-    return True;
-}
-*/
 
 /* For debug only
 void OutputAsUTF8(char *str)
@@ -844,7 +847,7 @@ void OutputAsUTF8(char *str)
     l1 = iconv (convUTF8, (ICONV_CONST char **) (&str), &l1, &ps, &l2);
     *ps = '\0';
     ps = strOutput;
-    
+
     puts(strOutput);
 }
 */

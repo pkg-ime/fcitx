@@ -28,6 +28,7 @@
 #include "InputWindow.h"
 #include "IC.h"
 #include "xim.h"
+#include "tools.h"
 
 #include <limits.h>
 #include <ctype.h>
@@ -84,6 +85,7 @@ extern CARD16   icid;
 extern XIMS     ims;
 
 extern uint     iHZInputed;
+extern Bool	bUseDBus;
 
 Bool CreateVKWindow (void)
 {
@@ -214,6 +216,7 @@ void DrawVKWindow (void)
 	iPos += 24;
 #endif
     }
+    
     if (bShiftPressed)
 	Draw3DEffect (VKWindow, 5, 113, 56, 25, _3D_LOWER);
 }
@@ -366,12 +369,21 @@ void LoadVKMapFile (void)
     strcpy (strPath, (char *) getenv ("HOME"));
     strcat (strPath, "/.fcitx/");
     strcat (strPath, VK_FILE);
-
-    if (access (strPath, 0)) {
+    fp = UserConfigFile(VK_FILE, "rt", NULL);
+    if (!fp) {
 	strcpy (strPath, PKGDATADIR "/data/");
 	strcat (strPath, VK_FILE);
+
+	/* zxd add begin */
+        if( access(strPath,0) && getenv( "FCITXDIR" ) ) {
+	    strcpy (strPath, getenv( "FCITXDIR" ) );
+       	    strcat (strPath, "/share/fcitx/data/");
+       	    strcat (strPath, VK_FILE );
+        }
+        /* zxd add end */
+	
+	fp = fopen (strPath, "rt");
     }
-    fp = fopen (strPath, "rt");
 
     if (!fp)
 	return;
@@ -494,7 +506,9 @@ void ChangVK (void)
 
     DrawVKWindow ();
     SwitchIM (-2);
-    DrawMainWindow ();
+
+    if (!bUseDBus)
+        DrawMainWindow ();
 }
 
 INPUT_RETURN_VALUE DoVKInput (int iKey)
@@ -542,5 +556,7 @@ void SwitchVK (void)
 	XUnmapWindow (dpy, VKWindow);
 
     SwitchIM (-2);
-    DrawMainWindow ();
+
+    if ( !bUseDBus )
+	DrawMainWindow ();
 }

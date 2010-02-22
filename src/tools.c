@@ -147,11 +147,6 @@ extern Bool     bLocked;
 extern MHPY     MHPY_C[];
 extern MHPY     MHPY_S[];
 
-extern Bool     bUsePinyin;
-extern Bool     bUseSP;
-extern Bool     bUseQW;
-extern Bool     bUseTable;
-
 extern char     strDefaultSP[];
 extern SP_FROM  iSPFrom;
 
@@ -165,18 +160,26 @@ extern unsigned int iTimeInterval;
 extern int     iFixedInputWindowWidth;
 extern Bool     bShowInputWindowTriggering;
 
-#ifdef _USE_XFT
-extern Bool     bUseAA;
-#endif
 extern char     strUserLocale[];
-
 extern Bool     bUseBold;
 
 extern int      iOffsetX;
 extern int      iOffsetY;
+extern int	inputMethods[];
 
 #ifdef _ENABLE_TRAY
 extern Bool	bUseTrayIcon;
+#endif
+
+#ifdef _ENABLE_DBUS
+extern Bool bUseDBus;
+#endif
+
+#ifdef _ENABLE_RECORDING
+extern HOTKEYS  hkRecording[];
+extern HOTKEYS	hkResetRecording[];
+extern Bool	bRecording;
+extern char     strRecordingPath[];
 #endif
 
 Bool MyStrcmp (char *str1, char *str2)
@@ -187,7 +190,7 @@ Bool MyStrcmp (char *str1, char *str2)
 /* 其他函数需要知道传递给 LoadConfig 的参数 */
 Bool    bIsReloadConfig = True;
 /* 在载入 profile 文件过程中传递状态信息 */
-Bool    bIsNeedSaveConfig = True;
+Bool    bNeedSaveConfig = True;
 
 /*
  * 配置项值的类型：
@@ -324,7 +327,7 @@ static int write_configures(FILE *fp, Configure *configures)
                     exit(1);
             }
         }
-     }
+    }
     return 0;
 }
 
@@ -404,8 +407,20 @@ inline static int fast_chinese_english_switch(Configure *c, void *a, int isread)
 {
     if(isread)
         SetSwitchKey((char *)a);
-    else
-        fprintf((FILE *)a, "%s=%s\n", c->name, "L_SHIFT");
+    else {
+	if ( switchKey == XKeysymToKeycode (dpy, XK_Control_R) )
+	    fprintf((FILE *)a, "%s=%s\n", c->name, "R_CTRL");
+	else if ( switchKey == XKeysymToKeycode (dpy, XK_Shift_R) )
+	    fprintf((FILE *)a, "%s=%s\n", c->name, "R_SHIFT");
+	else if ( switchKey == XKeysymToKeycode (dpy, XK_Shift_L) )
+	    fprintf((FILE *)a, "%s=%s\n", c->name, "L_SHIFT");
+	else if ( switchKey == XKeysymToKeycode (dpy, XK_Super_R) )
+	    fprintf((FILE *)a, "%s=%s\n", c->name, "R_SUPER");
+	else if ( switchKey == XKeysymToKeycode (dpy, XK_Super_L) )
+	    fprintf((FILE *)a, "%s=%s\n", c->name, "L_SUPER");
+	else
+	    fprintf((FILE *)a, "%s=%s\n", c->name, "L_CTRL");
+    }
 
     return 0;
 }
@@ -549,11 +564,24 @@ inline static int second_third_candidate_word(Configure *c, void *a, int isread)
             i3rdSelectKey = 109;       //右CTRL的扫描码
         }
         else {
-            i2ndSelectKey = pstr[0] ^ 0xFF;
-            i3rdSelectKey = pstr[1] ^ 0xFF;
+	    if (pstr[0] && pstr[0]!='0')
+		i2ndSelectKey = pstr[0] ^ 0xFF;
+	    else
+		i2ndSelectKey = 0;
+	
+	    if (pstr[1] && pstr[1]!='0')
+		i3rdSelectKey = pstr[1] ^ 0xFF;
+	    else
+		i3rdSelectKey = 0;
         }
-    }else
-        fprintf((FILE *)a, "%s=%s\n", c->name, "0");
+    }else {
+	if ( i2ndSelectKey == 50 )
+            fprintf((FILE *)a, "%s=%s\n", c->name, "SHIFT");
+        else if ( i2ndSelectKey == 37 )
+            fprintf((FILE *)a, "%s=%s\n", c->name, "CTRL");
+        else
+            fprintf((FILE *)a, "%s=%c%c\n", c->name, (!i2ndSelectKey)? '0':i2ndSelectKey, (!i3rdSelectKey)? '0':i3rdSelectKey);
+    }
 
     return 0;
 }
@@ -568,6 +596,30 @@ inline static int save_all(Configure *c, void *a, int isread)
 
     return 0;
 }
+
+#ifdef _ENABLE_RECORDING
+/* 设置记录模式 */
+inline static int set_recording(Configure *c, void *a, int isread)
+{
+    if(isread)
+        SetHotKey((char *)a, hkRecording);
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "CTRL_ALT_J");
+
+    return 0;
+}
+
+/* 重置记录模式 */
+inline static int reset_recording(Configure *c, void *a, int isread)
+{
+    if(isread)
+        SetHotKey((char *)a, hkResetRecording);
+    else
+        fprintf((FILE *)a, "%s=%s\n", c->name, "CTRL_ALT_A");
+
+    return 0;
+}
+#endif
 
 /* 默认双拼方案 */
 inline static int default_shuangpin_scheme(Configure *c, void *a, int isread)
@@ -668,24 +720,32 @@ Configure program_config[] = {
         .value.str_value.string = strUserLocale,
         .value.str_value.string_length = 50,
     },
- #ifdef _USE_XFT
-    {
-        .name = "使用AA字体",
-        .value_type = CONFIG_INTEGER,
-        .value.integer = &bUseAA,
-    },
- #endif
     {
         .name = "使用粗体",
         .value_type = CONFIG_INTEGER,
         .value.integer = &bUseBold,
     },
- #ifdef _ENABLE_TRAY
+#ifdef _ENABLE_RECORDING
+    {
+        .name = "记录文件",
+        .value_type = CONFIG_STRING,
+        .value.str_value.string = strRecordingPath,
+        .value.str_value.string_length = PATH_MAX,
+    },
+#endif
+#ifdef _ENABLE_TRAY
     {
         .name = "使用托盘图标",
         .value_type = CONFIG_INTEGER,
         .value.integer = &bUseTrayIcon,
     },
+ #endif
+ #ifdef _ENABLE_DBUS
+	{
+		.name = "使用DBus接口",
+		.value_type = CONFIG_INTEGER,
+		.value.integer = &bUseDBus,
+	},
  #endif
     {
         .name = NULL,
@@ -919,7 +979,7 @@ Configure hotkey_config[] = {
         .name = "隐藏主窗口",
         .value_type = CONFIG_HOTKEY,
         .config_rw = hide_main_window,
-    },    
+    },
     {
         .name = "切换虚拟键盘",
         .value_type = CONFIG_HOTKEY,
@@ -971,13 +1031,22 @@ Configure hotkey_config[] = {
         .config_rw = second_third_candidate_word,
     },
     {
-        .name = NULL,
-    },
-    {
         .name = "保存词库",
         .value_type = CONFIG_HOTKEY,
         .config_rw = save_all,
     },
+#ifdef _ENABLE_RECORDING
+    {
+        .name = "记录模式",
+        .value_type = CONFIG_HOTKEY,
+        .config_rw = set_recording,
+    },
+    {
+        .name = "重置记录模式",
+        .value_type = CONFIG_HOTKEY,
+        .config_rw = reset_recording,
+    },
+#endif
     {
         .name = NULL,
     },
@@ -987,7 +1056,7 @@ Configure input_method_config[] = {
     {
         .name = "使用拼音",
         .value_type = CONFIG_INTEGER,
-        .value.integer = &bUsePinyin,
+        .value.integer = &inputMethods[IM_PY],
     },
     {
         .name = "拼音名称",
@@ -998,7 +1067,7 @@ Configure input_method_config[] = {
     {
         .name = "使用双拼",
         .value_type = CONFIG_INTEGER,
-        .value.integer = &bUseSP,
+        .value.integer = &inputMethods[IM_SP],
     },
     {
         .name = "双拼名称",
@@ -1014,7 +1083,7 @@ Configure input_method_config[] = {
     {
         .name = "使用区位",
         .value_type = CONFIG_INTEGER,
-        .value.integer = &bUseQW,
+        .value.integer = &inputMethods[IM_QW],
     },
     {
         .name = "区位名称",
@@ -1025,7 +1094,7 @@ Configure input_method_config[] = {
     {
         .name = "使用码表",
         .value_type = CONFIG_INTEGER,
-        .value.integer = &bUseTable,
+        .value.integer = &inputMethods[IM_TABLE],
     },
     {
         .name = "提示词库中的词组",
@@ -1196,117 +1265,116 @@ void LoadConfig (Bool bMode)
 {
     FILE    *fp;
     char    buf[PATH_MAX], *pbuf, *pbuf1;
-    Bool    bFromUser = True;
     //用于标示group的index，在配置文件里面配置是分组的，类似与ini文件的分组
     int     group_idx;
     int		i;
     Configure   *tmpconfig;
 
-    //用以标识配置文件是用户家目录下的，还是从安装目录下拷贝过来的
-    bIsReloadConfig = bMode;	// 全局变量，定义于“src/tool.c[193]"
+    for (i = 0;i < INPUT_METHODS; i++ )
+        inputMethods[i] = 1;
 
-    pbuf = getenv("HOME");		// 从环境变量中获取当前用户家目录的绝对路径
-    if(!pbuf){
-        fprintf(stderr, "error: get environment variable HOME\n");
-        exit(1);	// 此时可以不退出，但直接退出处理起来明了简单
-    }
-    //获取配置文件的绝对路径
-    snprintf(buf, PATH_MAX, "%s/.fcitx/config", pbuf);
+    //用以标识是否是重新读取配置文件
+    bIsReloadConfig = bMode;
 
-    fp = fopen(buf, "r");
+    fp = UserConfigFile("config", "rt", NULL);
     if(!fp && errno == ENOENT){ /* $HOME/.fcitx/config does not exist */
+    
         snprintf(buf, PATH_MAX, PKGDATADIR "/data/config");
-        bFromUser = False;
-        fp = fopen(buf, "r");
-        if(!fp){
-            perror("fopen");
-            exit(1);	// 如果安装目录里面也没有配置文件，那就只好告诉用户，无法运行了
+
+	/* zxd add begin */
+        if( access( buf, 0 ) && getenv( "FCITXDIR" ) ) {
+            strcpy( buf, getenv( "FCITXDIR" ) );
+            strcat( buf, "/share/fcitx/data/config" );
         }
+        /* zxd add end */
+        
+        fp = fopen(buf, "rt");
+        if(!fp)
+            SaveConfig();
     }
+    
+    if (fp) {
+	group_idx = -1;
 
-    if(!bFromUser) /* create default configure file */
-        SaveConfig();
+	/* FIXME: 也许应该用另外更恰当的缓冲区长度 */
+	while(fgets(buf, PATH_MAX, fp)){		//每次最多读入PATH_MAX大小的数据
+	    i = strlen(buf);
 
-    group_idx = -1;
+            /*fcitx的配置文件每行最多是PATH_MAX个字符，因此有上面的FIXME*/
+            if(buf[i-1] != '\n'){
+		fprintf(stderr, "error: configure file: line length\n");
+		exit(1);
+	    } else
+		buf[i-1] = '\0';
 
-    /* FIXME: 也许应该用另外更恰当的缓冲区长度 */
-    while(fgets(buf, PATH_MAX, fp)){		//每次最多读入PATH_MAX大小的数据
-        i = strlen(buf);
+	    pbuf = buf;
+	    while(*pbuf && isspace(*pbuf))	//将pbuf指向第一个非空字符
+		pbuf++;
+            if(!*pbuf || *pbuf == '#')		//如果改行是空数据或者是注释(以#开头为注释)
+		continue;
 
-        /*fcitx的配置文件每行最多是PATH_MAX个字符，因此有上面的FIXME*/
-        if(buf[i-1] != '\n'){
-            fprintf(stderr, "error: configure file: line length\n");
-            exit(1);
-        }else
-            buf[i-1] = '\0';
+            if(*pbuf == '['){ /* get a group name(组名的格式为"[组名]")*/
+		pbuf++;
+		pbuf1 = strchr(pbuf, ']');
+		if(!pbuf1){
+                    fprintf(stderr, "error: configure file: configure group name\n");
+                    exit(1);
+                }
 
-        pbuf = buf;
-        while(*pbuf && isspace(*pbuf))	//将pbuf指向第一个非空字符
-            pbuf++;
-        if(!*pbuf || *pbuf == '#')		//如果改行是空数据或者是注释(以#开头为注释)
-            continue;
+                //根据group的名字找到其在全局变量configure_groups中的index
+                group_idx = -1;
+                for(i = 0; configure_groups[i].name; i++)
+                    if(strncmp(configure_groups[i].name, pbuf, pbuf1-pbuf) == 0){
+                        group_idx = i;
+                        break;
+                    }
+                if(group_idx < 0){
+                    fprintf(stderr, "error: invalid configure group name\n");
+                    exit(1); /* 我认为这儿没有必要退出。此处完全可以忽略这个错误，
+                              * 并且在后面也忽略这个组的配置即可。
+                              * 因为这儿退出只会带来一个坏处，那就是扩展性。
+                              * 以后再添加新的组的时候，老版本的程序就无法使用
+                              * 新版本的配置文件了。或者，添加了一个可选扩展，
+                              * 该扩展新添加一个组等等。所以，此处应该给一个警告，
+                              * 而不是退出。*/
+		}
+		continue;
+	    }
 
-        if(*pbuf == '['){ /* get a group name(组名的格式为"[组名]")*/
-            pbuf++;
-            pbuf1 = strchr(pbuf, ']');
+            //pbuf1指向第一个非空字符与=之间的字符
+            pbuf1 = strchr(pbuf, '=');
             if(!pbuf1){
-                fprintf(stderr, "error: configure file: configure group name\n");
+                fprintf(stderr, "error: configure file: configure entry name\n");
+                exit(1);	// 和前面一样，这儿也应该是一个警告而不应该是提示出错并退出。
+            }
+
+            /*
+	     * 这儿避免的是那样一种情况，即从文件头到第一个配置项(即类似与“配置名=配置值”
+             * 的一行字符串)并没有任何分组。也就是防止出现下面的“配置1”和“配置2”
+             * #文件头
+             * 配置1=123 配置2=123
+             * [组名]
+             * ...
+             * #文件尾
+             */
+
+
+            if(group_idx < 0){
+                fprintf(stderr, "error: configure file: no group name at beginning\n");
                 exit(1);
             }
-
-            //根据group的名字找到其在全局变量configure_groups中的index
-            group_idx = -1;
-            for(i = 0; configure_groups[i].name; i++)
-                if(strncmp(configure_groups[i].name, pbuf, pbuf1-pbuf) == 0){
-                    group_idx = i;
-                    break;
-                }
-            if(group_idx < 0){
-                fprintf(stderr, "error: invalid configure group name\n");
-                exit(1); /* 我认为这儿没有必要退出。此处完全可以忽略这个错误，
-                          * 并且在后面也忽略这个组的配置即可。
-                          * 因为这儿退出只会带来一个坏处，那就是扩展性。
-                          * 以后再添加新的组的时候，老版本的程序就无法使用
-                          * 新版本的配置文件了。或者，添加了一个可选扩展，
-                          * 该扩展新添加一个组等等。所以，此处应该给一个警告，
-                          * 而不是退出。*/
-            }
-            continue;
-        }
-
-        //pbuf1指向第一个非空字符与=之间的字符
-        pbuf1 = strchr(pbuf, '=');
-        if(!pbuf1){
-            fprintf(stderr, "error: configure file: configure entry name\n");
-            exit(1);	// 和前面一样，这儿也应该是一个警告而不应该是提示出错并退出。
-        }
-
-        /*
-         * 这儿避免的是那样一种情况，即从文件头到第一个配置项(即类似与“配置名=配置值”
-         * 的一行字符串)并没有任何分组。也就是防止出现下面的“配置1”和“配置2”
-         * #文件头
-         * 配置1=123 配置2=123
-         * [组名]
-         * ...
-         * #文件尾
-         */
-
-
-        if(group_idx < 0){
-            fprintf(stderr, "error: configure file: no group name at beginning\n");
-            exit(1);
-        }
-        //找到该组中的配置项，并将其保存到对应的全局变量里面去
-        for(tmpconfig = configure_groups[group_idx].configure;
+            //找到该组中的配置项，并将其保存到对应的全局变量里面去
+            for(tmpconfig = configure_groups[group_idx].configure;
                 tmpconfig->name; tmpconfig++)
-        {
+            {
 
-            if(strncmp(tmpconfig->name, pbuf, pbuf1-pbuf) == 0)
-                read_configure(tmpconfig, ++pbuf1);
+                if(strncmp(tmpconfig->name, pbuf, pbuf1-pbuf) == 0)
+                    read_configure(tmpconfig, ++pbuf1);
+            }
         }
-    }
 
-    fclose(fp);
+        fclose(fp);
+    }
 
     /* 如果配置文件中没有设置打开/关闭输入法的热键，那么设置CTRL-SPACE为默认热键 */
     if (!Trigger_Keys) {
@@ -1327,27 +1395,11 @@ void LoadConfig (Bool bMode)
 void SaveConfig (void)
 {
     FILE    *fp;
-    char    buf[PATH_MAX], *pbuf;
     Configure_group *tmpgroup;
 
-    pbuf = getenv("HOME");
-    if(!pbuf){
-        fprintf(stderr, "error: get environment variable HOME\n");
-        exit(1);
-    }
-
-    snprintf(buf, PATH_MAX, "%s/.fcitx", pbuf);
-    if(mkdir(buf, S_IRWXU) < 0 && errno != EEXIST){
-        perror("mkdir");
-        exit(1);
-    }
-
-    snprintf(buf, PATH_MAX, "%s/.fcitx/config", pbuf);
-    fp = fopen (buf, "w");
-    if (!fp) {
+    fp = UserConfigFile("config", "wt", NULL);
+    if (!fp)
         perror("fopen");
-        exit(1);
-    }
 
     /* 实际上，写配置文件很简单，就是从全局数组configure_groups里面分别把每个组的配置
      * 写入到文件里面去*/
@@ -1366,7 +1418,7 @@ inline static int get_version(Configure *c, void *a, int isread)
 {
     if(isread){
         if(!strcasecmp(FCITX_VERSION, (char *)a))
-            bIsNeedSaveConfig = False;
+            bNeedSaveConfig = False;
     }else
         fprintf((FILE *)a, "%s=%s\n", c->name, FCITX_VERSION);
     return 0;
@@ -1505,6 +1557,13 @@ Configure profiles[] = {
         .value_type = CONFIG_INTEGER,
         .value.integer = &bUseGBKT,
     },
+#ifdef _ENABLE_RECORDING
+    {
+        .name = "记录模式",
+        .value_type = CONFIG_INTEGER,
+        .value.integer = &bRecording,
+    },
+#endif
     {
         .name = NULL,
     },
@@ -1529,14 +1588,7 @@ void LoadProfile (void)
     iInputWindowX = INPUTWND_STARTX;	//输入窗口位置X
     iInputWindowY = INPUTWND_STARTY;	//输入窗口位置Y
 
-    pbuf = getenv("HOME");
-    if(!pbuf){
-        fprintf(stderr, "error: get environment variable HOME\n");
-        exit(1);
-    }
-    snprintf(buf, PATH_MAX, "%s/.fcitx/profile", pbuf);
-
-    fp = fopen(buf, "r");
+    fp = UserConfigFile ("profile", "rt", NULL);
     if(!fp){
         if(errno == ENOENT)
             SaveProfile();
@@ -1573,7 +1625,7 @@ void LoadProfile (void)
 
     iIMIndex = iIMIndex_tmp;		/* piaoairy add 20080518 */
 
-    if(bIsNeedSaveConfig){
+    if(bNeedSaveConfig){
         SaveConfig();
         SaveProfile();
      }
@@ -1582,23 +1634,8 @@ void LoadProfile (void)
 void SaveProfile (void)
 {
     FILE           *fp;
-    char            buf[PATH_MAX], *pbuf;
 
-    pbuf = getenv("HOME");
-    if(!pbuf){
-        fprintf(stderr, "error: get environment variable HOME\n");
-        exit(1);
-    }
-
-    snprintf(buf, PATH_MAX, "%s/.fcitx", pbuf);
-    if(mkdir(buf, S_IRWXU) < 0 && errno != EEXIST){
-        perror("mkdir");
-        exit(1);
-    }
-
-    snprintf(buf, PATH_MAX, "%s/.fcitx/profile", pbuf);
-    fp = fopen (buf, "w");
-
+    fp = UserConfigFile ("profile", "wt", NULL);
     if (!fp) {
 	perror("fopen");
         exit(1);
@@ -1817,6 +1854,15 @@ char           *ConvertGBKSimple2Tradition (char *strHZ)
 
 	strcpy (strPath, PKGDATADIR "/data/");
 	strcat (strPath, TABLE_GBKS2T);
+
+	/* zxd add begin */
+        if( access( strPath, 0 ) && getenv( "FCITXDIR" ) ) {
+            strcpy( strPath, getenv( "FCITXDIR" ) );
+            strcat( strPath, "/share/fcitx/data/" );
+            strcat( strPath, TABLE_GBKS2T );
+        }
+        /* zxd add end */
+	
 	fp = fopen (strPath, "rb");
 	if (!fp) {
 	    ret = (char *) malloc (sizeof (char) * (strlen (strHZ) + 1));
@@ -1847,7 +1893,6 @@ char           *ConvertGBKSimple2Tradition (char *strHZ)
 		       * (unsigned char) 0xbe + ((unsigned char) strHZ[i + 1] - (unsigned char) 0x40)
 		       - ((unsigned char) strHZ[i + 1] / (unsigned char) 0x80)) * 2;
 		if (idx >= 0 && idx < gGBKS2TTableSize - 1) {
-		    //if ((unsigned char)gGBKS2TTable[idx] != (unsigned char)0xa1 && (unsigned char) gGBKS2TTable[idx + 1] != (unsigned char) 0x7f) {
 		    if ((unsigned char) gGBKS2TTable[idx + 1] != (unsigned char) 0x7f) {
 			ret[i] = gGBKS2TTable[idx];
 			ret[i + 1] = gGBKS2TTable[idx + 1];
@@ -1866,4 +1911,36 @@ char           *ConvertGBKSimple2Tradition (char *strHZ)
 int CalHZIndex (char *strHZ)
 {
     return (strHZ[0] + 127) * 255 + strHZ[1] + 128;
+}
+
+/**
+ * 该函数访问指定的用户配置文件
+ */
+FILE *UserConfigFile (char *strFileName, char *strMode, char **strFullPath)
+{
+    static char	strPath[PATH_MAX];
+    FILE	*fp = (FILE *) NULL;
+
+    if( getenv("XDG_CONFIG_HOME") != NULL )
+        strcpy (strPath, (char *) getenv ("XDG_CONFIG_HOME"));
+    else{
+        strcpy (strPath, (char *) getenv ("HOME"));
+        strcat (strPath, "/.config");
+    }
+
+    strcat (strPath, "/fcitx/");
+    if (strMode) {
+	if (access (strPath, 0))
+	    mkdir (strPath, S_IRWXU);
+    }
+    
+    strcat (strPath, strFileName);
+
+    if ( strFullPath!=NULL )
+        (*strFullPath) = strPath;
+
+    if ( strMode )    
+	fp = fopen(strPath, strMode);
+
+    return fp;
 }
