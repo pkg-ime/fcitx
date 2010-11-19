@@ -1,17 +1,18 @@
 Source: fcitx
 Section: utils
 Priority: optional
-Maintainer: Yu Guanghui <ygh@debian.org>
-Uploaders: LI Daobing <lidaobing@debian.org>
-Build-Depends: debhelper (>= 7.0.50~), libx11-dev, libxft-dev, x11proto-core-dev,
- libxpm-dev, automake, autoconf, libxtst-dev
-Standards-Version: 3.8.4
+Maintainer: IME Packaging Team <pkg-ime-devel@lists.alioth.debian.org>
+Uploaders: LI Daobing <lidaobing@debian.org>, Aron Xu <happyaron.xu@gmail.com>, Yu Guanghui <ygh@debian.org>
+Build-Depends: debhelper (>= 7.0.50~), libx11-dev, libxft-dev, x11proto-core-dev, libxpm-dev, automake, autoconf, libxtst-dev
+Standards-Version: 3.9.1
 Homepage: http://code.google.com/p/fcitx/
+Vcs-Bzr: lp:~pkg-ime/fcitx/debian-fcitx
+Vcs-Browser: https://code.launchpad.net/~pkg-ime/fcitx/debian-fcitx
 
 Package: fcitx
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Recommends: im-switch, ttf-arphic-uming | ttf-arphic-ukai
+Recommends: im-switch, ttf-wqy-zenhei | ttf-arphic-uming | ttf-arphic-ukai | ttf-wqy-microhei | xfonts-wqy
 Description: Free Chinese Input Toy for X (XIM)
  fcitx is a simplified Chinese input server. It supports WuBi,
  Pinyin and QuWei input method. It's small and fast.

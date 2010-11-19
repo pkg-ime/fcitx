@@ -207,7 +207,14 @@ void DisplayInputWindow (void)
     CalInputWindow();
     MoveInputWindow(connect_id);
     if (uMessageUp || uMessageDown)
-	XMapRaised (dpy, inputWindow);
+	{
+		if (!bUseDBus)
+			XMapRaised (dpy, inputWindow);
+#ifdef _ENABLE_DBUS
+		else
+			updateMessages();
+#endif
+	}
 }
 
 void InitInputWindowColor (void)
@@ -692,7 +699,19 @@ void MoveInputWindow(CARD16 connect_id)
 	    XMoveResizeWindow (dpy, inputWindow, iTempInputWindowX, iTempInputWindowY, iInputWindowWidth, iInputWindowHeight);
 #ifdef _ENABLE_DBUS
 	else
+	{
+	if (iClientCursorX < 0)
+	    iTempInputWindowX = 0;
+	else
+	    iTempInputWindowX = iClientCursorX + iOffsetX;
+
+	if (iClientCursorY < 0)
+	    iTempInputWindowY = 0;
+	else
+	    iTempInputWindowY = iClientCursorY + iOffsetY;
+
 	    KIMUpdateSpotLocation(iTempInputWindowX, iTempInputWindowY);
+	}
 #endif
 	ConnectIDSetPos (connect_id, iTempInputWindowX - iOffsetX, iTempInputWindowY - iOffsetY);
     }
@@ -715,3 +734,17 @@ void MoveInputWindow(CARD16 connect_id)
     }
     
 }
+
+void CloseInputWindow()
+{
+	XUnmapWindow (dpy, inputWindow);
+#ifdef _ENABLE_DBUS
+	if (bUseDBus)
+	{
+		KIMShowAux(False);
+		KIMShowPreedit(False);
+		KIMShowLookupTable(False);
+	}
+#endif
+}
+

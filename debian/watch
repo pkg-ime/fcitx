@@ -1,4 +1,3 @@
 version=3
-opts="uversionmangle=s/-rc/~rc/" \
-http://code.google.com/p/fcitx/downloads/list \
-http://fcitx.googlecode.com/files/fcitx-(.*)\.tar\.bz2
+opts=downloadurlmangle=s#.*(fcitx-([\d.]+)\.tar\.bz2).*#http://fcitx.googlecode.com/files/$1#,filenamemangle=s#.*(fcitx-([\d.]+)\.tar\.bz2).*#$1# \
+    http://code.google.com/p/fcitx/downloads/list ^.*detail\?name=fcitx-([\d.]+)\.tar\.bz2.*

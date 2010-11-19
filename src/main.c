@@ -224,7 +224,7 @@ int main (int argc, char *argv[])
     tray.window = (Window) NULL;
     if (!bUseDBus) {
 	CreateTrayWindow ();		//创建系统托盘窗口
-    	DrawTrayWindow (INACTIVE_ICON);	//显示托盘图标
+    	DrawTrayWindow (INACTIVE_ICON, 0, 0, TRAY_ICON_WIDTH, TRAY_ICON_HEIGHT);	//显示托盘图标
     }
 #endif
 
@@ -244,8 +244,8 @@ void Usage ()
     printf("Usage: fcitx [OPTION]\n"
            "\t-d\t\trun as daemon(default)\n"
            "\t-D\t\tdon't run as daemon\n"
-   	   "\t-c\t\t(re)create config file in home directory and then exit\n"
-	   "\t-n[im name]\trun as specified name\n"
+           "\t-c\t\t(re)create config file in home directory and then exit\n"
+           "\t-n[im name]\trun as specified name\n"
            "\t-v\t\tdisplay the version information and exit\n"
            "\t-h\t\tdisplay this help and exit\n");
 }

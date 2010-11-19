@@ -217,12 +217,12 @@ Bool MySetFocusHandler (IMChangeFocusStruct * call_data)
 	if (icidGetIMState(call_data->icid) != IS_CLOSED)
 	    IMPreeditEnd (ims, (XPointer) call_data);
 
-	XUnmapWindow (dpy, inputWindow);
+	CloseInputWindow();
 	if (!bUseDBus) {
 	    XUnmapWindow (dpy, VKWindow);
 
 #ifdef _ENABLE_TRAY
-	    DrawTrayWindow (INACTIVE_ICON);
+	    DrawTrayWindow (INACTIVE_ICON, 0, 0, TRAY_ICON_HEIGHT, TRAY_ICON_WIDTH );
 #endif
 	    if (hideMainWindow == HM_SHOW) {
 		DisplayMainWindow ();
@@ -269,17 +269,17 @@ Bool MySetFocusHandler (IMChangeFocusStruct * call_data)
 Bool MyUnsetFocusHandler (IMChangeICStruct * call_data)
 {
     if (call_data->connect_id==connect_id) {
-	XUnmapWindow (dpy, inputWindow);
+	CloseInputWindow();
 	if (!bUseDBus)
 	    XUnmapWindow (dpy, VKWindow);
     }
-
+    
     return True;
 }
 
 Bool MyCloseHandler (IMOpenStruct * call_data)
 {
-    XUnmapWindow (dpy, inputWindow);
+    CloseInputWindow();
     
     if (!bUseDBus)
     	XUnmapWindow (dpy, VKWindow);
@@ -319,7 +319,7 @@ Bool MyCreateICHandler (IMChangeICStruct * call_data)
 Bool MyDestroyICHandler (IMChangeICStruct * call_data)
 {
     if (CurrentIC == (IC *) FindIC (call_data->icid)) {
-	XUnmapWindow (dpy, inputWindow);
+	CloseInputWindow();
 	if (!bUseDBus)
 	    XUnmapWindow (dpy, VKWindow);
     }
@@ -329,7 +329,7 @@ Bool MyDestroyICHandler (IMChangeICStruct * call_data)
 
 #ifdef _ENABLE_DBUS
     if (bUseDBus) {
-	logo_prop.label = "Fcitx";
+	strcpy(logo_prop.label, "Fcitx");
 	updateProperty(&logo_prop);
     }
 #endif
@@ -350,7 +350,7 @@ void EnterChineseMode (Bool bState)
     if (!bUseDBus) {
 	DisplayMainWindow ();
 #ifdef _ENABLE_TRAY
-	DrawTrayWindow (ACTIVE_ICON);
+	DrawTrayWindow (ACTIVE_ICON, 0, 0, TRAY_ICON_HEIGHT, TRAY_ICON_WIDTH );
 #endif
     }
 
@@ -377,12 +377,11 @@ Bool MyTriggerNotifyHandler (IMTriggerNotifyStruct * call_data)
 
     SetTrackPos( (IMChangeICStruct *)call_data );
     if (bShowInputWindowTriggering && !bCorner) {
-	if (!bUseDBus)
-	    DisplayInputWindow ();
+	DisplayInputWindow ();
 
 #ifdef _ENABLE_TRAY
 	if (!bUseDBus)
-	    DrawTrayWindow (ACTIVE_ICON);
+	    DrawTrayWindow (ACTIVE_ICON, 0, 0, TRAY_ICON_HEIGHT, TRAY_ICON_WIDTH );
 #endif
     }
     else
