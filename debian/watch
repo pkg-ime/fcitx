@@ -1,3 +1,2 @@
 version=3
-opts=downloadurlmangle=s#.*(fcitx-([\d.]+)\.tar\.bz2).*#http://fcitx.googlecode.com/files/$1#,filenamemangle=s#.*(fcitx-([\d.]+)\.tar\.bz2).*#$1# \
-    http://code.google.com/p/fcitx/downloads/list ^.*detail\?name=fcitx-([\d.]+)\.tar\.bz2.*
+http://googlecode.debian.net/p/fcitx/fcitx-(\d+.*)\.tar\.gz

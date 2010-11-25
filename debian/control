@@ -3,7 +3,7 @@ Section: utils
 Priority: optional
 Maintainer: IME Packaging Team <pkg-ime-devel@lists.alioth.debian.org>
 Uploaders: LI Daobing <lidaobing@debian.org>, Aron Xu <happyaron.xu@gmail.com>, Yu Guanghui <ygh@debian.org>
-Build-Depends: debhelper (>= 7.0.50~), libx11-dev, libxft-dev, x11proto-core-dev, libxpm-dev, automake, autoconf, libxtst-dev
+Build-Depends: debhelper (>= 7.0.50~), libpango1.0-dev, libcairo2-dev, libdbus-1-dev, intltool (>= 0.35.0), libtool, automake, autoconf, binutils-gold
 Standards-Version: 3.9.1
 Homepage: http://code.google.com/p/fcitx/
 Vcs-Bzr: lp:~pkg-ime/fcitx/debian-fcitx
@@ -11,8 +11,127 @@ Vcs-Browser: https://code.launchpad.net/~pkg-ime/fcitx/debian-fcitx
 
 Package: fcitx
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Recommends: im-switch, ttf-wqy-zenhei | ttf-arphic-uming | ttf-arphic-ukai | ttf-wqy-microhei | xfonts-wqy
+Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-data
+Recommends: im-switch, fcitx-config-gtk
+Suggests: fcitx-table-all, fcitx-tools
 Description: Free Chinese Input Toy for X (XIM)
- fcitx is a simplified Chinese input server. It supports WuBi,
- Pinyin and QuWei input method. It's small and fast.
+ fcitx is a small and fast input server initially designed for Chinese, 
+ which is also useful for some other languages (especially CJK) now. 
+ .
+ It supports Pinyin, QuWei and Table-based input methods. 
+
+Package: fcitx-data
+Architecture: all
+Depends: ${misc:Depends}
+Description: Data files of Free Chinese Input Toy for X (XIM)
+ fcitx is a small and fast input server initially designed for Chinese, 
+ which is also useful for some other languages (especially CJK) now. 
+ .
+ This package contains essential data files of fcitx.
+
+Package: fcitx-table-all
+Architecture: all
+Depends: ${misc:Depends}, fcitx-table-bingchan, fcitx-table-cangjie, fcitx-table-dianbaoma, fcitx-table-erbi, fcitx-table-wanfeng, fcitx-table-wbpy, fcitx-table-wubi, fcitx-table-ziranma
+Description: Tables of Free Chinese Input Toy for X (XIM) - meta package
+ fcitx is a small and fast input server initially designed for Chinese, 
+ which is also useful for some other languages (especially CJK) now. 
+ .
+ This package pulls in following tables (and configs) for fcitx:
+  * Cangjie
+  * Dianbaoma
+  * Erbi
+  * Bingchan
+  * Wanfeng
+  * WubiPinyin
+  * Wubi
+  * Ziranma
+
+Package: fcitx-table-bingchan
+Architecture: all
+Depends: ${misc:Depends}, fcitx
+Description: Bingchan table of Free Chinese Input Toy for X (XIM)
+ fcitx is a small and fast input server initially designed for Chinese, 
+ which is also useful for some other languages (especially CJK) now. 
+ .
+ This package contains Bingchan table and config for fcitx.
+
+Package: fcitx-table-cangjie
+Architecture: all
+Depends: ${misc:Depends}, fcitx
+Description: Cangjie table of Free Chinese Input Toy for X (XIM)
+ fcitx is a small and fast input server initially designed for Chinese, 
+ which is also useful for some other languages (especially CJK) now. 
+ .
+ This package contains Cangjie table and config for fcitx.
+
+Package: fcitx-table-dianbaoma
+Architecture: all
+Depends: ${misc:Depends}, fcitx
+Description: Dianbaoma table of Free Chinese Input Toy for X (XIM)
+ fcitx is a small and fast input server initially designed for Chinese, 
+ which is also useful for some other languages (especially CJK) now. 
+ .
+ This package contains Dianbaoma table and config for fcitx.
+
+Package: fcitx-table-erbi
+Architecture: all
+Depends: ${misc:Depends}, fcitx
+Description: Erbi table of Free Chinese Input Toy for X (XIM)
+ fcitx is a small and fast input server initially designed for Chinese, 
+ which is also useful for some other languages (especially CJK) now. 
+ .
+ This package contains Erbi table and config for fcitx.
+
+Package: fcitx-table-wanfeng
+Architecture: all
+Depends: ${misc:Depends}, fcitx
+Description: Wanfeng table of Free Chinese Input Toy for X (XIM)
+ fcitx is a small and fast input server initially designed for Chinese, 
+ which is also useful for some other languages (especially CJK) now. 
+ .
+ This package contains Wanfeng table and config for fcitx.
+
+Package: fcitx-table-wbpy
+Architecture: all
+Depends: ${misc:Depends}, fcitx
+Description: Wubi-pinyin table of Free Chinese Input Toy for X (XIM)
+ fcitx is a small and fast input server initially designed for Chinese, 
+ which is also useful for some other languages (especially CJK) now. 
+ .
+ This package contains Wubi-pinyin table and config for fcitx.
+
+Package: fcitx-table-wubi
+Architecture: all
+Depends: ${misc:Depends}, fcitx
+Description: Wubi table of Free Chinese Input Toy for X (XIM)
+ fcitx is a small and fast input server initially designed for Chinese, 
+ which is also useful for some other languages (especially CJK) now. 
+ .
+ This package contains Wubi table and config for fcitx.
+
+Package: fcitx-table-ziranma
+Architecture: all
+Depends: ${misc:Depends}, fcitx
+Description: Ziranma table of Free Chinese Input Toy for X (XIM)
+ fcitx is a small and fast input server initially designed for Chinese, 
+ which is also useful for some other languages (especially CJK) now. 
+ .
+ This package contains Ziranma table and config for fcitx.
+
+Package: fcitx-tools
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: fcitx
+Description: Tools for Free Chinese Input Toy for X (XIM)
+ fcitx is a small and fast input server initially designed for Chinese, 
+ which is also useful for some other languages (especially CJK) now. 
+ .
+ This package contains following tools for fcitx:
+  * createPYMB
+  * mb2org
+  * mb2txt
+  * readPYBase
+  * readPYMB
+  * scel2org
+  * txt2mb
+

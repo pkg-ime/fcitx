@@ -1,0 +1,14 @@
+Document: fcitx
+Title: fcitx documentation
+Author: The fcitx authors and contributors
+Abstract: This manual describes what fcitx is
+ and how it can be used.
+Section: Help/Books
+
+Format: PDF
+Files: /usr/share/doc/fcitx/fcitx4.pdf.gz
+
+Format: text
+Files: /usr/share/doc/fcitx/Develop_Readme
+       /usr/share/doc/fcitx/API.txt.gz
+       /usr/share/doc/fcitx/pinyin.txt

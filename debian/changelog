@@ -1,3 +1,35 @@
+fcitx (1:4.0.0-1) unstable; urgency=low
+
+  * New upstream major release:
+    - Get rid of unsafe environment variable usage. (Closes: #430420)
+    - Create config file if not exist; Tray icon refresh background. 
+      (Closes: #571588)
+    - Use utf-8 config file with English options.
+    - Fixe input problem in OpenOffice.org. (LP: #261382, LP: #238309)
+  * debian/control:
+    - Update to a new set of Build-Dep packages.
+    - Improve descriptions.
+    - Remove fonts from Recommends since fcitx can detect system font now.
+      (Closes: #584307, LP: #482564)
+    - Split package into 12. 
+    - Use binutils-gold.
+  * debian/rules: 
+    - Set LDFLAGS="-Wl,--as-needed".
+  * debian/Makefile, debian/Makefile.am, debian/Makefile.in,
+    source.lintian-overrides, README, README.Debian: Remove.
+  * debian/copyright: Rewrite.
+  * debian/patches/binutils-gold.patch: 
+    - Remove, for upstream has accepted it.
+  * debian/patches/1ca5ac8c5b.patch:
+    - Fix desc.po problem and do not distclean tarball files.
+      (Backport from upstream 1ca5ac8c5b commit.)
+  * debian/docs: Install upstream textual files.
+  * debian/clean: Clean autoreconf generated files.
+  * debian/fcitx.doc-base, debian/fcitx-table-wubi.doc-base: 
+    - Add doc-base entries.
+
+ -- Aron Xu <happyaron.xu@gmail.com>  Fri, 25 Nov 2010 21:33:23 +0800
+
 fcitx (1:3.6.4-1) unstable; urgency=low
 
   [ Aron Xu ]
@@ -5,17 +37,17 @@ fcitx (1:3.6.4-1) unstable; urgency=low
     - Change data/pyPhrase.py to avoid copyright problem.
   * Change Maintainer field to IME Packaging Team, move original
     maintainer to Uploaders, add myself to Uploaders.
-  * debian/rules: 
+  * debian/rules:
     - Update to use upstream autogen.sh, since autoreconf isn't enough now.
   * debian/fcitx.doc-base.EX: Removed, will add back in 4.0.0 release.
   * debian/source.lintian-overrides: Removed.
 
   [ LI Daobing ]
-  * debian/watch: updated. 
+  * debian/watch: updated.
   * debian/control:
     - add Vcs-* fields.
     - add wqy fonts to depends (Closes: #584307)
-    - bump standards version to 3.9.1. 
+    - bump standards version to 3.9.1.
 
  -- Aron Xu <happyaron.xu@gmail.com>  Fri, 19 Nov 2010 14:44:31 +0800
 

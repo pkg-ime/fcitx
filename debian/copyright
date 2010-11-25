@@ -1,23 +1,117 @@
-Format-Specification: http://wiki.debian.org/Proposals/CopyrightFormat?action=recall&rev=423
-Packaged-By: Yu Guanghui <ygh@debian.org>
-Packaged-Date: Sat,  3 May 2003 14:24:40 +0800
-Upstream-Name: fcitx
-Upstream-Maintainer: Yuking <yuking_net@sohu.com>
-Upstream-Source: http://fcitx.googlecode.com/
+Format-Specification: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?op=file&rev=135
+Name: fcitx
+Source: http://code.google.com/p/fcitx
 
-It was downloaded from  http://www.fcitx.org
+Copyright: 2010, CSSlayer <wengxt@gmail.com>
+           2002-2005, Yuking <yuking_net@sohu.com>
+License: GPL-2+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-Upstream Author: Yuking <yuking_net@sohu.com>
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-Copyright: Copyright (C) 2002~2005 by Yuking
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the
+ Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+ MA 02110-1301, USA.
 
-lib/*:
-	Copyright (C) 1994, 1995 by Sun Microsystems, Inc.
-	Copyright (C) 1993, 1994 by Hewlett-Packard Company
+ On Debian systems, the full text of GPL-2 could be found at 
+ /usr/share/common-licenses/GPL-2 .
 
+Files: debian/*
+Copyright: 2010, Aron Xu <happyaron.xu@gmail.com>
+           2010, LI Daobing <lidaobing@debian.org>
+License: GPL-2+
 
-The programs in this package may be copied under the terms of the GNU
-General Public Licence (see below).
+Files: data/pinyin.tar.gz
+Copyright: The Open-Phrase Project (http://code.google.com/p/open-phrase)
+License: GPL-2+
 
-On Debian systems, you can find the complete GNU GPL at
-/usr/share/common-licenses/GPL.
+Files: lib/FrameMgr.*
+Copyright: 1993, 1994, Digital Equipment Corporation, Maynard, Massachusetts
+License: BSD
+ Permission to use, copy, modify, and distribute this software and its 
+ documentation for any purpose and without fee is hereby granted, 
+ provided that the above copyright notice appear in all copies and that
+ both that copyright notice and this permission notice appear in 
+ supporting documentation, and that the names of Digital or MIT not be
+ used in advertising or publicity pertaining to distribution of the
+ software without specific, written prior permission.  
+
+ DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
+ ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
+ DIGITAL BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR
+ ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+ WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
+ SOFTWARE.
+
+Files: lib/i18n*.c,lib/IM*.c, lib/Xi18n*.h, lib/XimFunc.h, src/core/IC.*
+Copyright: 1994, 1995, Sun Microsystems, Inc.
+           1993, 1994, Hewlett-Packard Company
+License: BSD
+ Permission to use, copy, modify, distribute, and sell this software
+ and its documentation for any purpose is hereby granted without fee,
+ provided that the above copyright notice appear in all copies and
+ that both that copyright notice and this permission notice appear
+ in supporting documentation, and that the name of Sun Microsystems, Inc.
+ and Hewlett-Packard not be used in advertising or publicity pertaining to
+ distribution of the software without specific, written prior permission.
+ Sun Microsystems, Inc. and Hewlett-Packard make no representations about
+ the suitability of this software for any purpose.  It is provided "as is"
+ without express or implied warranty.
+ 
+ SUN MICROSYSTEMS INC. AND HEWLETT-PACKARD COMPANY DISCLAIMS ALL
+ WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
+ SUN MICROSYSTEMS, INC. AND HEWLETT-PACKARD COMPANY BE LIABLE FOR ANY
+ SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
+ RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
+ CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+Files: src/fcitx-config/uthash.h, src/tools/utarray.h,
+Copyright: 2003-2009, Troy D. Hanson     http://uthash.sourceforge.net
+License: MIT
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+ 
+     * Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+ OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Files: src/im/extra/extra.*
+Copyright: 2010, dgod
+License: GPL-2+
+
+Files: src/interface/DBus.*
+Copyright: 2008-2010, Zealot.Hoi
+License: GPL-2+
+
+Files: src/interface/ImeRemote.c, tools/fcitx-remote.c
+Copyright: 2008-2010, wind (xihe) <xihels@gmail.com>
+License: GPL-2+
+
+Files: src/ui/AboutWindow.*
+Copyright: 2005, Yunfan <yunfan_zg@163.com>
+License: GPL-2+
+
+Files: src/ui/MenuWindow.*, src/ui/skin.*, src/ui/skinconfig.c
+Copyright: 2009-2010, t3swing <t3swing@gmail.com>
+License: GPL-2+

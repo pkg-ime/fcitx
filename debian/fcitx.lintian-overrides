@@ -1,1 +1,4 @@
+fcitx: non-dev-pkg-with-shlib-symlink
+fcitx: no-symbols-control-file
+fcitx: package-name-doesnt-match-sonames
 fcitx: binary-without-manpage
