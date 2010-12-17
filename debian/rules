@@ -6,7 +6,4 @@ LDFLAGS=-Wl,--as-needed
 	dh $@
 
 override_dh_auto_configure:
-	./autogen.sh
-	dh_auto_configure
-
-override_dh_auto_test:
+	dh_auto_configure -- --enable-recording

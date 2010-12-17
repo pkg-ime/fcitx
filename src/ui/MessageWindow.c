@@ -23,7 +23,7 @@
 #include "ui/MessageWindow.h"
 #include "ui/ui.h"
 #include "core/xim.h"
-#include "fcitx-config/configfile.h"
+#include "tools/configfile.h"
 #include "fcitx-config/cutils.h"
 
 #include <ctype.h>
@@ -33,7 +33,7 @@
 
 extern Display *dpy;
 extern int      iScreen;
-extern Atom killAtom;
+extern Atom killAtom, windowTypeAtom, typeDialogAtom;
 
 MessageWindow messageWindow;
 
@@ -65,20 +65,19 @@ Bool CreateMessageWindow (void)
 
 void InitMessageWindowProperty (void)
 {
-    Atom            message_wm_window_type = XInternAtom (dpy, "_NET_WM_WINDOW_TYPE", False);
-    Atom            type_toolbar = XInternAtom (dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
-
     XSetTransientForHint (dpy, messageWindow.window, DefaultRootWindow (dpy));
 
-    XChangeProperty (dpy, messageWindow.window, message_wm_window_type, XA_ATOM, 32, PropModeReplace, (void *) &type_toolbar, 1);
+    XChangeProperty (dpy, messageWindow.window, windowTypeAtom, XA_ATOM, 32, PropModeReplace, (void *) &typeDialogAtom, 1);
 
     XSetWMProtocols(dpy, messageWindow.window, &killAtom, 1);
 }
 
 void DisplayMessageWindow (void)
 {
+    int dwidth, dheight;
+    GetScreenSize(&dwidth, &dheight);
     XMapRaised (dpy, messageWindow.window);
-    XMoveWindow (dpy, messageWindow.window, (DisplayWidth (dpy, iScreen) - messageWindow.width) / 2, (DisplayHeight (dpy, iScreen) - messageWindow.height) / 2);
+    XMoveWindow (dpy, messageWindow.window, (dwidth - messageWindow.width) / 2, (dheight - messageWindow.height) / 2);
 }
 
 void DrawMessageWindow (char *title, char **msg, int length)

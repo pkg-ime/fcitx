@@ -31,8 +31,8 @@
 
 #include "interface/DBus.h"
 #include "skin.h"
-#include "fcitx-config/profile.h"
-#include "fcitx-config/configfile.h"
+#include "tools/profile.h"
+#include "tools/configfile.h"
 #include "fcitx-config/cutils.h"
 
 InputWindow     inputWindow;
@@ -83,8 +83,6 @@ Bool CreateInputWindow (void)
     Colormap cmap;
     Visual * vs;
     int scr;
-    GC gc;
-    XGCValues xgv;
 
     InitInputWindow();
 
@@ -108,23 +106,12 @@ Bool CreateInputWindow (void)
     if (mainWindow.window == None)
         return False;
 
-    xgv.foreground = WhitePixel(dpy, scr);
-
     inputWindow.pm_input_bar=XCreatePixmap(
                                  dpy,
                                  inputWindow.window,
                                  INPUT_BAR_MAX_LEN,
                                  inputWindow.iInputWindowHeight,
                                  depth);
-    gc = XCreateGC(dpy, inputWindow.pm_input_bar, GCForeground, &xgv);
-    XFillRectangle(
-        dpy,
-        inputWindow.pm_input_bar,
-        gc,
-        0,
-        0,
-        INPUT_BAR_MAX_LEN,
-        inputWindow.iInputWindowHeight);
     inputWindow.cs_input_bar=cairo_xlib_surface_create(
                                  dpy,
                                  inputWindow.pm_input_bar,
@@ -136,8 +123,6 @@ Bool CreateInputWindow (void)
             CAIRO_CONTENT_COLOR_ALPHA,
             INPUT_BAR_MAX_LEN,
             inputWindow.iInputWindowHeight);
-
-    XFreeGC(dpy, gc);
 
     LoadInputMessage();
     XSelectInput (dpy, inputWindow.window, ButtonPressMask | ButtonReleaseMask  | PointerMotionMask | ExposureMask);
@@ -241,22 +226,22 @@ void DrawInputWindow(void)
                 inputWindow.iInputWindowHeight);
         MoveInputWindow();
     }
-    else {
-        GC gc = XCreateGC( dpy, inputWindow.window, 0, NULL );
-        XCopyArea (dpy,
-                inputWindow.pm_input_bar,
-                inputWindow.window,
-                gc,
-                0,
-                0,
-                inputWindow.iInputWindowWidth,
-                inputWindow.iInputWindowHeight, 0, 0);
-        XFreeGC(dpy, gc);
-    }
+    GC gc = XCreateGC( dpy, inputWindow.window, 0, NULL );
+    XCopyArea (dpy,
+            inputWindow.pm_input_bar,
+            inputWindow.window,
+            gc,
+            0,
+            0,
+            inputWindow.iInputWindowWidth,
+            inputWindow.iInputWindowHeight, 0, 0);
+    XFreeGC(dpy, gc);
 }
 
 void MoveInputWindow()
 {
+    int dwidth, dheight;
+    GetScreenSize(&dwidth, &dheight);
     if (fcitxProfile.bTrackCursor)
     {
         Window window = None, dst;
@@ -300,12 +285,12 @@ void MoveInputWindow()
         else
             iTempInputWindowY = iClientCursorY + inputWindow.iOffsetY;
 
-        if ((iTempInputWindowX + inputWindow.iInputWindowWidth) > DisplayWidth (dpy, iScreen))
-            iTempInputWindowX = DisplayWidth (dpy, iScreen) - inputWindow.iInputWindowWidth;
+        if ((iTempInputWindowX + inputWindow.iInputWindowWidth) > dwidth)
+            iTempInputWindowX = dwidth - inputWindow.iInputWindowWidth;
 
-        if ((iTempInputWindowY + inputWindow.iInputWindowHeight) > DisplayHeight (dpy, iScreen)) {
-            if ( iTempInputWindowY > DisplayHeight (dpy, iScreen) )
-                iTempInputWindowY = DisplayHeight (dpy, iScreen) - 2 * inputWindow.iInputWindowHeight;
+        if ((iTempInputWindowY + inputWindow.iInputWindowHeight) > dheight) {
+            if ( iTempInputWindowY > dheight )
+                iTempInputWindowY = dheight - 2 * inputWindow.iInputWindowHeight;
             else
                 iTempInputWindowY = iTempInputWindowY - 2 * inputWindow.iInputWindowHeight;
         }
@@ -334,7 +319,7 @@ void MoveInputWindow()
     else
     {
         if (fc.bCenterInputWindow) {
-            fcitxProfile.iInputWindowOffsetX = (DisplayWidth (dpy, iScreen) - inputWindow.iInputWindowWidth) / 2;
+            fcitxProfile.iInputWindowOffsetX = (dwidth - inputWindow.iInputWindowWidth) / 2;
             if (fcitxProfile.iInputWindowOffsetX < 0)
                 fcitxProfile.iInputWindowOffsetX = 0;
         }

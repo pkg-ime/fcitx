@@ -2,8 +2,8 @@ debian/im-switch/fcitx etc/X11/xinit/xinput.d/
 usr/bin/fcitx*
 usr/include/
 usr/lib/
-usr/share/fcitx/doc/fcitx4.pdf usr/share/doc/fcitx/
-usr/share/fcitx/doc/pinyin.txt usr/share/doc/fcitx/
-usr/share/fcitx/doc/API.txt usr/share/doc/fcitx/
-usr/share/fcitx/doc/Develop_Readme usr/share/doc/fcitx/
+usr/share/doc/fcitx/pinyin.txt
+usr/share/doc/fcitx/API.txt
+usr/share/doc/fcitx/Develop_Readme
+usr/share/man/
 usr/share/locale/

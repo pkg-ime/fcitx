@@ -22,7 +22,7 @@
 
 #include <X11/Xlib.h>
 
-#include "fcitx-config/configfile.h"
+#include "tools/configfile.h"
 #include "core/ime.h"
 #include "tools/utarray.h"
 
@@ -136,7 +136,7 @@ typedef struct TableState {
     INT8            iTableIMIndex;
     INT8            iTableCount;
     
-    Bool            bTableDictLoaded;		//Loads tables only if needed
+    INT8            iCurrentTableLoaded;
     
     RECORD         *currentRecord;
     RECORD	       *recordHead;
@@ -153,7 +153,7 @@ typedef struct TableState {
     uint            iAutoPhrase;
     uint            iTableCandDisplayed;
     uint            iTableTotalCandCount;
-    char            strTableLegendSource[PHRASE_MAX_LENGTH * 2 + 1];
+    char            strTableLegendSource[PHRASE_MAX_LENGTH * UTF8_MAX_LENGTH + 1];
     
     FH             *fh;
     int             iFH ;
@@ -184,7 +184,8 @@ extern TableState tbl;
 void            LoadTableInfo (void);
 Bool            LoadTableDict (void);
 void            TableInit (void);
-void            FreeTableIM (void);
+void            FreeTableIM (INT8 index);
+void            SaveTableIM (void);
 void            SaveTableDict (void);
 Bool            IsInputKey (int iKey);
 Bool            IsIgnoreChar (char cChar);

@@ -25,7 +25,7 @@
 #include "core/fcitx.h"
 #include "fcitx-config/uthash.h"
 #include "fcitx-config/fcitx-config.h"
-#include "fcitx-config/configfile.h"
+#include "tools/configfile.h"
 #include "fcitx-config/cutils.h"
 #include "fcitx-config/xdg.h"
 #include "tools/utarray.h"
@@ -46,13 +46,13 @@ static ConfigFileDesc *addonConfigDesc = NULL;
 static ConfigFileDesc* GetAddonConfigDesc();
 
 /** 
- * @brief 加载Addon信息
+ * @brief Load Addon Info
  */
 void LoadAddonInfo(void)
 {
     if (!fc.bEnableAddons)
         return;
-        
+
     char **addonPath;
     size_t len;
     char pathBuf[PATH_MAX];
@@ -61,7 +61,7 @@ void LoadAddonInfo(void)
     struct dirent *drt;
     struct stat fileStat;
 
-	StringHashSet* sset = NULL;
+    StringHashSet* sset = NULL;
 
     if (addons)
     {
@@ -83,7 +83,7 @@ void LoadAddonInfo(void)
         if (dir == NULL)
             continue;
 
-		/* collect all *.conf files */
+        /* collect all *.conf files */
         while((drt = readdir(dir)) != NULL)
         {
             size_t nameLen = strlen(drt->d_name);
@@ -100,16 +100,16 @@ void LoadAddonInfo(void)
 
             if (fileStat.st_mode & S_IFREG)
             {
-				StringHashSet *string;
-				HASH_FIND_STR(sset, drt->d_name, string);
-				if (!string)
-				{
-					char *bStr = strdup(drt->d_name);
-					string = malloc(sizeof(StringHashSet));
+                StringHashSet *string;
+                HASH_FIND_STR(sset, drt->d_name, string);
+                if (!string)
+                {
+                    char *bStr = strdup(drt->d_name);
+                    string = malloc(sizeof(StringHashSet));
                     memset(string, 0, sizeof(StringHashSet));
-					string->name = bStr;
-					HASH_ADD_KEYPTR(hh, sset, string->name, strlen(string->name), string);
-				}
+                    string->name = bStr;
+                    HASH_ADD_KEYPTR(hh, sset, string->name, strlen(string->name), string);
+                }
             }
         }
 
@@ -149,42 +149,41 @@ void LoadAddonInfo(void)
     for (i = 0;i < len ;i ++)
         free(paths[i]);
     free(paths);
-		
 
     FreeXDGPath(addonPath);
 
-	StringHashSet *curStr;
-	while(sset)
-	{
-		curStr = sset;
-		HASH_DEL(sset, curStr);
-		free(curStr->name);
+    StringHashSet *curStr;
+    while(sset)
+    {
+        curStr = sset;
+        HASH_DEL(sset, curStr);
+        free(curStr->name);
         free(curStr);
-	}
+    }
 }
 
 /** 
- * @brief 加载Addon的配置文件描述
+ * @brief Load addon.desc file
  * 
- * @return 单例的配置文件描述
+ * @return the description of addon configure.
  */
 ConfigFileDesc* GetAddonConfigDesc()
 {
-	if (!addonConfigDesc)
-	{
-		FILE *tmpfp;
-		tmpfp = GetXDGFileData("addon.desc", "r", NULL);
-		addonConfigDesc = ParseConfigFileDescFp(tmpfp);
-		fclose(tmpfp);
-	}
+    if (!addonConfigDesc)
+    {
+        FILE *tmpfp;
+        tmpfp = GetXDGFileData("addon.desc", "r", NULL);
+        addonConfigDesc = ParseConfigFileDescFp(tmpfp);
+        fclose(tmpfp);
+    }
 
-	return addonConfigDesc;
+    return addonConfigDesc;
 }
 
 /** 
- * @brief 释放单个Addon信息的内存
+ * @brief Free one addon info
  * 
- * @param addon的指针
+ * @param v addon info
  */
 void FreeAddon(void *v)
 {

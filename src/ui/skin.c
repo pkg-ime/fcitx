@@ -38,17 +38,18 @@
 #include "ui/ui.h"
 #include "ui/skin.h"
 #include "fcitx-config/xdg.h"
-#include "fcitx-config/configfile.h"
-#include "fcitx-config/profile.h"
+#include "tools/configfile.h"
+#include "tools/profile.h"
 #include "fcitx-config/fcitx-config.h"
 #include "fcitx-config/cutils.h"
+#include "im/special/vk.h"
 #ifdef _ENABLE_TRAY
 #include "ui/TrayWindow.h"
 #endif
 
 #define ROUND_SIZE 60
 
-static int LoadImage(FcitxImage * img,cairo_surface_t ** png);
+static int LoadImage(FcitxImage * img,cairo_surface_t ** png, Bool fallback);
 static void DestroyAllImage();
 static ConfigFileDesc* GetSkinDesc();
 
@@ -75,6 +76,7 @@ cairo_surface_t *  english;
 cairo_surface_t *  otherim;
 cairo_surface_t *  trayActive;
 cairo_surface_t *  trayInactive;
+cairo_surface_t *  keyBoard;
 
 //定义全局皮肤配置结构
 FcitxSkin sc;
@@ -185,68 +187,49 @@ reload:
 
 }
 
-Visual * FindARGBVisual (Display *dpy, int scr)
-{
-    XVisualInfo *xvi;
-    XVisualInfo template;
-    int         nvi;
-    int         i;
-    XRenderPictFormat   *format;
-    Visual      *visual;
-
-    template.screen = scr;
-    template.depth = 32;
-    template.class = TrueColor;
-    xvi = XGetVisualInfo (dpy,  VisualScreenMask |VisualDepthMask |VisualClassMask,&template,&nvi);
-    if (!xvi)
-        return 0;
-    visual = 0;
-    for (i = 0; i < nvi; i++)
-    {
-        format = XRenderFindVisualFormat (dpy, xvi[i].visual);
-        if (format->type == PictTypeDirect && format->direct.alphaMask)
-        {
-            visual = xvi[i].visual;
-            break;
-        }
-    }
-
-    XFree (xvi);
-    return visual;
-}
-
-int LoadImage(FcitxImage * img,cairo_surface_t ** png)
+int LoadImage(FcitxImage * img,cairo_surface_t ** png, Bool fallback)
 {
     char buf[PATH_MAX];
     if ( strlen(img->img_name) > 0 && strcmp( img->img_name ,"NONE.img") !=0)
     {
+        char *skintype = strdup(fc.skinType);
         size_t len;
         char ** path = GetXDGPath(&len, "XDG_CONFIG_HOME", ".config", "fcitx/skin" , DATADIR, "fcitx/skin" );
         char *name;
-        snprintf(buf, PATH_MAX, "%s/%s", fc.skinType, img->img_name);
-        buf[PATH_MAX-1] ='\0';
+        while (True) {
+            snprintf(buf, PATH_MAX, "%s/%s", skintype, img->img_name);
+            buf[PATH_MAX-1] ='\0';
 
-        FILE* fp = GetXDGFile(buf, path, "r", len, &name);
-        FreeXDGPath(path);
+            FILE* fp = GetXDGFile(buf, path, "r", len, &name);
 
-        if (fp)
-        {
-            fclose(fp);
-
-            *png=cairo_image_surface_create_from_png(name);
-            if ( img->width ==0 || img->height== 0)
+            Bool flagNoFile = (fp == NULL);
+            if (fp)
             {
-                img->width=cairo_image_surface_get_width(*png);
-                img->height=cairo_image_surface_get_height(*png);
-                img->response_w=img->width;
-                img->response_h=img->height;
+                fclose(fp);
+
+                *png=cairo_image_surface_create_from_png(name);
+                if ( img->width ==0 || img->height== 0)
+                {
+                    img->width=cairo_image_surface_get_width(*png);
+                    img->height=cairo_image_surface_get_height(*png);
+                    img->response_w=img->width;
+                    img->response_h=img->height;
+                }
+                break;
             }
-        }
-        else
-        {
-            *png = NULL;
+            if (flagNoFile && (!fallback || strcmp(skintype, "default") == 0))
+            {
+                *png = NULL;
+                break;
+            }
+
+            free(name);
+            free(skintype);
+            skintype = strdup("default");
         }
         free(name);
+        free(skintype);
+        FreeXDGPath(path);
     }
     return 0;
 }
@@ -254,22 +237,22 @@ int LoadImage(FcitxImage * img,cairo_surface_t ** png)
 
 void LoadMainBarImage()
 {
-    LoadImage( &sc.skinMainBar.backImg, &bar );
-    LoadImage( &sc.skinMainBar.logo, &logo);
-    LoadImage( &sc.skinMainBar.zhpunc, &punc[0]);
-    LoadImage( &sc.skinMainBar.enpunc, &punc[1]);
-    LoadImage( &sc.skinMainBar.chs, &chs_t[0]);
-    LoadImage( &sc.skinMainBar.cht, &chs_t[1]);
-    LoadImage( &sc.skinMainBar.halfcorner, &corner[0]);
-    LoadImage( &sc.skinMainBar.fullcorner, &corner[1]);
-    LoadImage( &sc.skinMainBar.unlock, &lock[0]);
-    LoadImage( &sc.skinMainBar.lock, &lock[1]);
-    LoadImage( &sc.skinMainBar.nolegend, &lx[0]);
-    LoadImage( &sc.skinMainBar.legend, &lx[1]);
-    LoadImage( &sc.skinMainBar.novk, &vk[0]);
-    LoadImage( &sc.skinMainBar.vk, &vk[1]);
-    LoadImage( &sc.skinMainBar.eng, &english);
-    LoadImage( &sc.skinMainBar.chn, &otherim);
+    LoadImage( &sc.skinMainBar.backImg, &bar , False);
+    LoadImage( &sc.skinMainBar.logo, &logo, False);
+    LoadImage( &sc.skinMainBar.zhpunc, &punc[0], False);
+    LoadImage( &sc.skinMainBar.enpunc, &punc[1], False);
+    LoadImage( &sc.skinMainBar.chs, &chs_t[0], False);
+    LoadImage( &sc.skinMainBar.cht, &chs_t[1], False);
+    LoadImage( &sc.skinMainBar.halfcorner, &corner[0], False);
+    LoadImage( &sc.skinMainBar.fullcorner, &corner[1], False);
+    LoadImage( &sc.skinMainBar.unlock, &lock[0], False);
+    LoadImage( &sc.skinMainBar.lock, &lock[1], False);
+    LoadImage( &sc.skinMainBar.nolegend, &lx[0], False);
+    LoadImage( &sc.skinMainBar.legend, &lx[1], False);
+    LoadImage( &sc.skinMainBar.novk, &vk[0], False);
+    LoadImage( &sc.skinMainBar.vk, &vk[1], False);
+    LoadImage( &sc.skinMainBar.eng, &english, False);
+    LoadImage( &sc.skinMainBar.chn, &otherim, False);
     int i = 0;
     for (; i < iIMCount; i ++)
     {
@@ -279,8 +262,13 @@ void LoadMainBarImage()
         im[i].image.response_y = sc.skinMainBar.chn.response_y;
         im[i].image.response_w = sc.skinMainBar.chn.response_w;
         im[i].image.response_h = sc.skinMainBar.chn.response_h;
-        LoadImage(&im[i].image, &im[i].icon);
+        LoadImage(&im[i].image, &im[i].icon, False);
     }
+}
+
+void LoadVKImage()
+{
+    LoadImage( &sc.skinKeyboard.backImg, &keyBoard, True);
 }
 
 void DrawMenuBackground(XlibMenu * menu)
@@ -549,20 +537,20 @@ void DrawMenuBackground(XlibMenu * menu)
 
 void LoadInputBarImage()
 {
-    LoadImage( &sc.skinInputBar.backImg, &input);
-    LoadImage( &sc.skinInputBar.backArrow, &prev);
-    LoadImage( &sc.skinInputBar.forwardArrow, &next);
+    LoadImage( &sc.skinInputBar.backImg, &input, False);
+    LoadImage( &sc.skinInputBar.backArrow, &prev, False);
+    LoadImage( &sc.skinInputBar.forwardArrow, &next, False);
 }
 
 void LoadTrayImage()
 {
-    LoadImage( &sc.skinTrayIcon.active, &trayActive);
-    LoadImage( &sc.skinTrayIcon.inactive, &trayInactive);
+    LoadImage( &sc.skinTrayIcon.active, &trayActive, False);
+    LoadImage( &sc.skinTrayIcon.inactive, &trayInactive, False);
 }
 
 void LoadMenuImage()
 {
-    LoadImage( &sc.skinMenu.backImg, &menuBack);
+    LoadImage( &sc.skinMenu.backImg, &menuBack, False);
 }
 
 void DestroyImage(cairo_surface_t ** png)
@@ -598,6 +586,8 @@ void DestroyAllImage()
     DestroyImage(&trayInactive);
 
     DestroyImage(&menuBack);
+
+    DestroyImage(&keyBoard);
 
     int i = 0;
     for (; i < iIMCount; i ++)
@@ -867,7 +857,7 @@ void DrawInputBar(Messages * msgup, Messages *msgdown ,unsigned int * iwidth)
         else
             cairo_paint_with_alpha(inputWindow.c_back,0.5);
     }
-    
+
     for (i = 0; i < msgup->msgCount ; i++)
     {
         OutputStringWithContext(inputWindow.c_font[msgup->msg[i].type], strUp[i], posUp[i], sc.skinInputBar.inputPos - sc.skinFont.fontSize);
@@ -937,12 +927,17 @@ void DisplaySkin(char * skinname)
     DestroyMainWindow();
     DestroyInputWindow();
     DestroyMenuWindow();
+    DestroyVKWindow();
 
     LoadSkinConfig();
+
+    InitComposite();
+
     CreateMainWindow ();
     CreateInputWindow ();
 
     CreateMenuWindow();
+    CreateVKWindow();
 
     DrawMainWindow ();
     DrawInputWindow ();

@@ -27,7 +27,7 @@
 #include "ui/AboutWindow.h"
 #include "ui/ui.h"
 #include "core/xim.h"
-#include "fcitx-config/configfile.h"
+#include "tools/configfile.h"
 
 extern Display *dpy;
 extern int      iScreen;
@@ -41,14 +41,16 @@ char            AboutCopyRight[] = "(c) 2005, Yuking";
 char            strTitle[100];
 
 AboutWindow aboutWindow;
-extern Atom killAtom;
+extern Atom killAtom, windowTypeAtom, typeDialogAtom;
 static void            InitAboutWindowProperty (void);
 
 Bool CreateAboutWindow (void)
 {
+    int dwidth, dheight;
     strcpy (strTitle, AboutTitle);
     strcat (strTitle, " ");
     strcat (strTitle, VERSION);
+    GetScreenSize(&dwidth, &dheight);
 
     aboutWindow.color.r = aboutWindow.color.g = aboutWindow.color.b = 220.0 / 256;
     aboutWindow.fontColor.r = aboutWindow.fontColor.g = aboutWindow.fontColor.b = 0;
@@ -56,7 +58,7 @@ Bool CreateAboutWindow (void)
 
     ABOUT_WINDOW_WIDTH = StringWidth (strTitle, gs.font, aboutWindow.fontSize ) + 50;
     aboutWindow.window =
-        XCreateSimpleWindow (dpy, DefaultRootWindow (dpy), (DisplayWidth (dpy, iScreen) - ABOUT_WINDOW_WIDTH) / 2, (DisplayHeight (dpy, iScreen) - ABOUT_WINDOW_HEIGHT) / 2, ABOUT_WINDOW_WIDTH, ABOUT_WINDOW_HEIGHT, 0, WhitePixel (dpy, DefaultScreen (dpy)), WhitePixel (dpy, DefaultScreen (dpy)));
+        XCreateSimpleWindow (dpy, DefaultRootWindow (dpy), (dwidth - ABOUT_WINDOW_WIDTH) / 2, (dheight - ABOUT_WINDOW_HEIGHT) / 2, ABOUT_WINDOW_WIDTH, ABOUT_WINDOW_HEIGHT, 0, WhitePixel (dpy, DefaultScreen (dpy)), WhitePixel (dpy, DefaultScreen (dpy)));
 
     aboutWindow.surface = cairo_xlib_surface_create(dpy, aboutWindow.window, DefaultVisual(dpy, iScreen), ABOUT_WINDOW_WIDTH, ABOUT_WINDOW_HEIGHT);
     if (aboutWindow.window == None)
@@ -70,12 +72,9 @@ Bool CreateAboutWindow (void)
 
 void InitAboutWindowProperty (void)
 {
-    Atom            about_wm_window_type = XInternAtom (dpy, "_NET_WM_WINDOW_TYPE", False);
-    Atom            type_toolbar = XInternAtom (dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
-
     XSetTransientForHint (dpy, aboutWindow.window, DefaultRootWindow (dpy));
 
-    XChangeProperty (dpy, aboutWindow.window, about_wm_window_type, XA_ATOM, 32, PropModeReplace, (void *) &type_toolbar, 1);
+    XChangeProperty (dpy, aboutWindow.window, windowTypeAtom, XA_ATOM, 32, PropModeReplace, (void *) &typeDialogAtom, 1);
 
     XSetWMProtocols (dpy, aboutWindow.window, &killAtom, 1);
 
@@ -91,8 +90,10 @@ void InitAboutWindowProperty (void)
 
 void DisplayAboutWindow (void)
 {
+    int dwidth, dheight;
+    GetScreenSize(&dwidth, &dheight);
     XMapRaised (dpy, aboutWindow.window);
-    XMoveWindow (dpy, aboutWindow.window, (DisplayWidth (dpy, iScreen) - ABOUT_WINDOW_WIDTH) / 2, (DisplayHeight (dpy, iScreen) - ABOUT_WINDOW_HEIGHT) / 2);
+    XMoveWindow (dpy, aboutWindow.window, (dwidth - ABOUT_WINDOW_WIDTH) / 2, (dheight - ABOUT_WINDOW_HEIGHT) / 2);
 }
 
 void DrawAboutWindow (void)

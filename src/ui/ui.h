@@ -40,7 +40,9 @@ int FontHeight (const char *font);
 Bool MouseClick (int *x, int *y, Window window);
 Bool IsWindowVisible(Window window);
 void InitWindowAttribute(Visual** vs, Colormap *cmap, XSetWindowAttributes *attrib, unsigned long *attribmask, int* depth);
+void InitComposite();
 void ActiveWindow(Display *dpy, Window window);
+void GetScreenSize(int *width, int *height);
 
 #ifdef _ENABLE_PANGO
 #define OutputStringWithContext(c,str,x,y) OutputStringWithContextReal(c, fontDesc, str, x, y)
@@ -54,7 +56,7 @@ int FontHeightWithContextReal(cairo_t* c, PangoFontDescription* fontDesc);
 
 #define SetFontContext(context, fontname, size) \
     PangoFontDescription* fontDesc = GetPangoFontDescription(fontname, size)
-    
+
 #define ResetFontContext() \
     do { \
         pango_font_description_free(fontDesc); \
@@ -84,5 +86,6 @@ int FontHeightWithContextReal(cairo_t* c);
 
 Bool IsInBox(int x0, int y0, int x1, int y1, int x2, int y2);
 Bool IsInRspArea(int x0, int y0, FcitxImage img);
+Visual * FindARGBVisual (Display *dpy, int scr);
 
 #endif

@@ -3,7 +3,8 @@ Section: utils
 Priority: optional
 Maintainer: IME Packaging Team <pkg-ime-devel@lists.alioth.debian.org>
 Uploaders: LI Daobing <lidaobing@debian.org>, Aron Xu <happyaron.xu@gmail.com>, Yu Guanghui <ygh@debian.org>
-Build-Depends: debhelper (>= 7.0.50~), libpango1.0-dev, libcairo2-dev, libdbus-1-dev, intltool (>= 0.35.0), libtool, automake, autoconf, binutils-gold
+DM-Upload-Allowed: yes
+Build-Depends: debhelper (>= 7.0.50~), libpango1.0-dev, libcairo2-dev, libdbus-1-dev, intltool (>= 0.35.0), libtool
 Standards-Version: 3.9.1
 Homepage: http://code.google.com/p/fcitx/
 Vcs-Bzr: lp:~pkg-ime/fcitx/debian-fcitx

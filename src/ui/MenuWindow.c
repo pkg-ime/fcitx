@@ -26,11 +26,12 @@
 #include "ui/MenuWindow.h"
 #include "ui/skin.h"
 #include "im/special/vk.h"
-#include "fcitx-config/configfile.h"
+#include "tools/configfile.h"
 
 extern unsigned char iVKCount;
 extern int      iScreen;
 extern VKS             vks[];
+extern Atom windowTypeAtom, typeMenuAtom;
 
 XlibMenu mainMenu,imMenu,vkMenu,skinMenu;
 static void DestroyXlibMenu(XlibMenu *menu);
@@ -40,8 +41,10 @@ static Bool CreateSkinMenuWindow (void);
 static Bool CreateVKMenuWindow();
 static Bool ReverseColor(XlibMenu * Menu,int shellIndex);
 static void MenuMark(Display * dpy,XlibMenu * Menu,int y,int i);
+static void DrawArrow(cairo_t *cr, XlibMenu *menu, int line_y);
 static void InitMenuDefault(XlibMenu * Menu);
 static void AddMenuShell(XlibMenu* menu,char * tips,int isselect,MenuShellType type);
+static void MoveSubMenu(XlibMenu *sub, XlibMenu *parent, int offseth, int dwidth, int dheight);
 
 const static UT_icd menuICD = {sizeof(MenuShell), NULL, NULL, NULL};
 
@@ -52,8 +55,8 @@ void InitMenuDefault(XlibMenu * menu)
     menu->iPosX=100;
     menu->iPosY=100;
     menu->width=sc.skinMenu.backImg.width;
-    menu->font_size=14;
-    strcpy(menu->font,gs.font);
+    menu->font_size=sc.skinFont.menuFontSize;
+    strcpy(menu->font,gs.menuFont);
     menu->mark=-1;
     utarray_init(&menu->shell, &menuICD);
 }
@@ -71,8 +74,6 @@ void AddMenuShell(XlibMenu* menu,char * tips,int isselect,MenuShellType type)
 
 int CreateXlibMenu(Display * dpy,XlibMenu * menu)
 {
-    Atom            menu_wm_window_type = XInternAtom (dpy, "_NET_WM_WINDOW_TYPE", False);
-    Atom            type_menu = XInternAtom (dpy, "_NET_WM_WINDOW_TYPE_MENU", False);
     char        strWindowName[]="Fcitx Menu Window";
     XSetWindowAttributes attrib;
     unsigned long   attribmask;
@@ -100,7 +101,7 @@ int CreateXlibMenu(Display * dpy,XlibMenu * menu)
 
     XSetTransientForHint (dpy, menu->menuWindow, DefaultRootWindow (dpy));
 
-    XChangeProperty (dpy, menu->menuWindow, menu_wm_window_type, XA_ATOM, 32, PropModeReplace, (void *) &type_menu, 1);
+    XChangeProperty (dpy, menu->menuWindow, windowTypeAtom, XA_ATOM, 32, PropModeReplace, (void *) &typeMenuAtom, 1);
     
     menu->pixmap = XCreatePixmap(dpy,
                                  menu->menuWindow,
@@ -145,7 +146,7 @@ void GetMenuSize(Display * dpy,XlibMenu * menu)
     int menuwidth = 0;
 
     winheight = sc.skinMenu.marginTop + sc.skinMenu.marginBottom;//菜单头和尾都空8个pixel
-    fontheight= sc.skinFont.fontSize;
+    fontheight= menu->font_size;
     for (i=0;i<utarray_len(&menu->shell);i++)
     {
         if ( GetMenuShell(menu, i)->type == MENUSHELL)
@@ -169,7 +170,7 @@ void DrawXlibMenu(Display * dpy,XlibMenu * menu)
     int fontheight;
     int iPosY = 0;
 
-    fontheight= sc.skinFont.fontSize;
+    fontheight= menu->font_size;
 
     GetMenuSize(dpy,menu);
 
@@ -192,7 +193,7 @@ void DrawXlibMenu(Display * dpy,XlibMenu * menu)
         }
     }
     
-    XMoveResizeWindow(dpy, menu->menuWindow, menu->iPosX,menu->iPosY,menu->width, menu->height);
+    XResizeWindow(dpy, menu->menuWindow, menu->width, menu->height);
     XCopyArea (dpy,
                menu->pixmap,
                menu->menuWindow,
@@ -228,6 +229,7 @@ void DrawDivLine(Display * dpy,XlibMenu * Menu,int line_y)
 void MenuMark(Display * dpy,XlibMenu * menu,int y,int i)
 {
     int marginLeft = sc.skinMenu.marginLeft;
+    double size = (menu->font_size * 0.7 ) / 2;
     cairo_t *cr;
     cr = cairo_create(menu->menu_cs);
     if (GetMenuShell(menu, i)->isselect == 0)
@@ -238,8 +240,8 @@ void MenuMark(Display * dpy,XlibMenu * menu,int y,int i)
     {
         fcitx_cairo_set_color(cr, &sc.skinFont.menuFontColor[MENU_ACTIVE]);
     }
-    cairo_translate(cr, marginLeft + 7, y + 10);
-    cairo_arc(cr, 0, 0, 5.5 , 0., 2*M_PI);
+    cairo_translate(cr, marginLeft + 7, y + (menu->font_size / 2.0) );
+    cairo_arc(cr, 0, 0, size , 0., 2*M_PI);
     cairo_fill(cr);
     cairo_destroy(cr);
 }
@@ -264,13 +266,7 @@ void DisplayText(Display * dpy,XlibMenu * menu,int shellindex,int line_y)
         OutputStringWithContext(cr, GetMenuShell(menu, shellindex)->tipstr , 15 + marginLeft ,line_y);
 
         if (GetMenuShell(menu, shellindex)->next == 1)
-        {
-            cairo_move_to(cr,menu->width - marginRight - 6,line_y+4);
-            cairo_line_to(cr,menu->width - marginRight - 6,line_y+16);
-            cairo_line_to(cr,menu->width - marginRight - 1,line_y+10);
-            cairo_line_to(cr,menu->width - marginRight - 6,line_y+4);
-            cairo_fill (cr);
-        }
+            DrawArrow(cr, menu, line_y);
     }
     else
     {
@@ -283,16 +279,22 @@ void DisplayText(Display * dpy,XlibMenu * menu,int shellindex,int line_y)
         OutputStringWithContext(cr, GetMenuShell(menu, shellindex)->tipstr , 15 + marginLeft ,line_y);
 
         if (GetMenuShell(menu, shellindex)->next == 1)
-        {
-            cairo_move_to(cr,menu->width - marginRight - 6,line_y+4);
-            cairo_line_to(cr,menu->width - marginRight - 6,line_y+16);
-            cairo_line_to(cr,menu->width - marginRight - 1,line_y+10);
-            cairo_line_to(cr,menu->width - marginRight - 6,line_y+4);
-            cairo_fill (cr);
-        }
+            DrawArrow(cr, menu, line_y);
     }
     ResetFontContext();
     cairo_destroy(cr);
+}
+
+void DrawArrow(cairo_t *cr, XlibMenu *menu, int line_y)
+{
+    int marginRight = sc.skinMenu.marginRight;
+    double size = menu->font_size * 0.4;
+    double offset = (menu->font_size - size) / 2;
+    cairo_move_to(cr,menu->width - marginRight - 1 - size, line_y + offset);
+    cairo_line_to(cr,menu->width - marginRight - 1 - size, line_y+size * 2 + offset);
+    cairo_line_to(cr,menu->width - marginRight - 1, line_y + size + offset );
+    cairo_line_to(cr,menu->width - marginRight - 1 - size ,line_y + offset);
+    cairo_fill (cr);
 }
 
 /**
@@ -308,7 +310,7 @@ int SelectShellIndex(XlibMenu * menu, int x, int y, int* offseth)
     if (x < marginLeft)
         return -1;
 
-    fontheight= sc.skinFont.fontSize;
+    fontheight= menu->font_size;
     for (i=0;i<utarray_len(&menu->shell);i++)
     {
         if (GetMenuShell(menu, i)->type == MENUSHELL)
@@ -439,12 +441,28 @@ Bool CreateVKMenuWindow()
 
 }
 
+void MoveSubMenu(XlibMenu *sub, XlibMenu *parent, int offseth, int dwidth, int dheight)
+{
+    sub->iPosX=parent->iPosX + parent->width - sc.skinMenu.marginRight - 4;
+    sub->iPosY=parent->iPosY + offseth - sc.skinMenu.marginTop;
+
+    if ( sub->iPosX + sub->width > dwidth)
+        sub->iPosX=parent->iPosX - sub->width + sc.skinMenu.marginLeft + 4;
+
+    if ( sub->iPosY + sub->height > dheight)
+        sub->iPosY = dheight - sub->height;
+    
+    XMoveWindow(dpy, sub->menuWindow, sub->iPosX, sub->iPosY);
+}
+
 //主菜单事件处理
 void MainMenuEvent(int x,int y)
 {
     int i,j;
     char tmpstr[64]={0};
-    int offseth = 0;
+    int dwidth, dheight;
+    int offseth;
+    GetScreenSize(&dwidth, &dheight);
     i=SelectShellIndex(&mainMenu, x, y, &offseth);
     Bool flag = ReverseColor(&mainMenu,i);
     if (flag)
@@ -463,21 +481,9 @@ void MainMenuEvent(int x,int y)
             char **sskin = (char**)utarray_eltptr(skinBuf, j);
             AddMenuShell(&skinMenu, *sskin, 0, MENUSHELL);
         }
-        skinMenu.iPosX=mainMenu.iPosX;
-        skinMenu.iPosY=mainMenu.iPosY;
-
-        if ( skinMenu.iPosX+ mainMenu.width+skinMenu.width > DisplayWidth(dpy,iScreen))
-            skinMenu.iPosX=skinMenu.iPosX - skinMenu.width + sc.skinMenu.marginLeft + 4;
-        else
-            skinMenu.iPosX=skinMenu.iPosX + mainMenu.width - sc.skinMenu.marginRight - 4;
-
-        if ( skinMenu.iPosY+offseth+skinMenu.height >DisplayHeight(dpy, iScreen))
-            skinMenu.iPosY=DisplayHeight(dpy, iScreen)-skinMenu.height-10;
-        else
-            skinMenu.iPosY=offseth+skinMenu.iPosY-sc.skinMenu.marginTop;
-
         ClearSelectFlag(&skinMenu);
         DrawXlibMenu(dpy,&skinMenu);
+        MoveSubMenu(&skinMenu, &mainMenu, offseth, dwidth, dheight);
         DisplayXlibMenu(dpy,&skinMenu);
         break;
     case 3:
@@ -489,39 +495,15 @@ void MainMenuEvent(int x,int y)
             AddMenuShell(&imMenu,tmpstr,0,MENUSHELL);
         }
 
-        imMenu.iPosX=mainMenu.iPosX;
-        imMenu.iPosY=mainMenu.iPosY;
-
-        if ( imMenu.iPosX+ mainMenu.width+imMenu.width > DisplayWidth(dpy,iScreen))
-            imMenu.iPosX=imMenu.iPosX-imMenu.width+ sc.skinMenu.marginLeft + 4;
-        else
-            imMenu.iPosX=imMenu.iPosX+ mainMenu.width - sc.skinMenu.marginRight-4;
-
-        if ( imMenu.iPosY+offseth+imMenu.height >DisplayHeight(dpy, iScreen))
-            imMenu.iPosY=DisplayHeight(dpy, iScreen)-imMenu.height-10;
-        else
-            imMenu.iPosY=offseth+imMenu.iPosY-sc.skinMenu.marginTop;
-
         ClearSelectFlag(&imMenu);
         DrawXlibMenu( dpy,&imMenu);
+        MoveSubMenu(&imMenu, &mainMenu, offseth, dwidth, dheight);
         DisplayXlibMenu(dpy,&imMenu);
         break;
     case 4:
-        vkMenu.iPosX=mainMenu.iPosX;
-        vkMenu.iPosY=mainMenu.iPosY;
-
-        if ( vkMenu.iPosX+ mainMenu.width+vkMenu.width > DisplayWidth(dpy,iScreen))
-            vkMenu.iPosX=vkMenu.iPosX-vkMenu.width+ sc.skinMenu.marginLeft + 4;
-        else
-            vkMenu.iPosX=vkMenu.iPosX+ mainMenu.width - sc.skinMenu.marginRight-4;
-
-        if ( vkMenu.iPosY+offseth+vkMenu.height >DisplayHeight(dpy, iScreen))
-            vkMenu.iPosY=DisplayHeight(dpy, iScreen)-vkMenu.height-10;
-        else
-            vkMenu.iPosY=offseth+vkMenu.iPosY-sc.skinMenu.marginTop;
-
         ClearSelectFlag(&vkMenu)    ;
         DrawXlibMenu( dpy,&vkMenu);
+        MoveSubMenu(&vkMenu, &mainMenu, offseth, dwidth, dheight);
         DisplayXlibMenu(dpy,&vkMenu);
         break;
     default :

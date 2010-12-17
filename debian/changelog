@@ -1,3 +1,23 @@
+fcitx (1:4.0.1-1) unstable; urgency=low
+
+  * New upstream release.
+  * debian/control: 
+    - Remove binutils-gold from build-dep, most archs doesn't have it.
+    - Remove automake and autoconf from build-dep, not needed now.
+    - Add DM-Upload-Allowed.
+  * debian/patches/ :
+    - Remove patches because upstream has applied them.
+  * debian/rules:
+    - Get back dh_auto_test.
+    - Don't run autoreconf.
+    - Pass parameter --enable-recording.
+  * debian/fcitx.install and debian/fcitx.doc-base:
+    - Remove fcitx4.pdf since removed from tarball by upstream.
+  * debian/fcitx.doc-base:
+    - Fix doc-base error by listing files in one line.
+
+ -- Aron Xu <happyaron.xu@gmail.com>  Fri, 17 Dec 2010 18:56:00 +0800
+
 fcitx (1:4.0.0-1) unstable; urgency=low
 
   * New upstream major release:
