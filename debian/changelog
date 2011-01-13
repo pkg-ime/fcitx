@@ -1,3 +1,14 @@
+fcitx (1:4.0.1-2) unstable; urgency=medium
+
+  * debian/patches/debian-ftbfs-609776.patch:
+    - Make it build on kfreebsd and hurd. (Closes: #609776)
+  * debian/rules:
+    - Run autoreconf becore dh_auto_configure, this is a temporary
+      workaround bypassing the libtool error caused by patching
+      configure{,in}, and will be removed in next upstream release.
+
+ -- Aron Xu <happyaron.xu@gmail.com>  Fri, 14 Jan 2011 00:38:27 +0800
+
 fcitx (1:4.0.1-1) unstable; urgency=low
 
   * New upstream release.
