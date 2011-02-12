@@ -24,6 +24,8 @@ Description: Free Chinese Input Toy for X (XIM)
 Package: fcitx-data
 Architecture: all
 Depends: ${misc:Depends}
+Replaces: fcitx (<< 1:4.0.0)
+Breaks: fcitx (<< 1:4.0.0)
 Description: Data files of Free Chinese Input Toy for X (XIM)
  fcitx is a small and fast input server initially designed for Chinese, 
  which is also useful for some other languages (especially CJK) now. 
@@ -50,6 +52,8 @@ Description: Tables of Free Chinese Input Toy for X (XIM) - meta package
 Package: fcitx-table-bingchan
 Architecture: all
 Depends: ${misc:Depends}, fcitx
+Replaces: fcitx (<< 1:4.0.0)
+Breaks: fcitx (<< 1:4.0.0)
 Description: Bingchan table of Free Chinese Input Toy for X (XIM)
  fcitx is a small and fast input server initially designed for Chinese, 
  which is also useful for some other languages (especially CJK) now. 
@@ -59,6 +63,8 @@ Description: Bingchan table of Free Chinese Input Toy for X (XIM)
 Package: fcitx-table-cangjie
 Architecture: all
 Depends: ${misc:Depends}, fcitx
+Replaces: fcitx (<< 1:4.0.0)
+Breaks: fcitx (<< 1:4.0.0)
 Description: Cangjie table of Free Chinese Input Toy for X (XIM)
  fcitx is a small and fast input server initially designed for Chinese, 
  which is also useful for some other languages (especially CJK) now. 
@@ -68,6 +74,8 @@ Description: Cangjie table of Free Chinese Input Toy for X (XIM)
 Package: fcitx-table-dianbaoma
 Architecture: all
 Depends: ${misc:Depends}, fcitx
+Replaces: fcitx (<< 1:4.0.0)
+Breaks: fcitx (<< 1:4.0.0)
 Description: Dianbaoma table of Free Chinese Input Toy for X (XIM)
  fcitx is a small and fast input server initially designed for Chinese, 
  which is also useful for some other languages (especially CJK) now. 
@@ -77,6 +85,8 @@ Description: Dianbaoma table of Free Chinese Input Toy for X (XIM)
 Package: fcitx-table-erbi
 Architecture: all
 Depends: ${misc:Depends}, fcitx
+Replaces: fcitx (<< 1:4.0.0)
+Breaks: fcitx (<< 1:4.0.0)
 Description: Erbi table of Free Chinese Input Toy for X (XIM)
  fcitx is a small and fast input server initially designed for Chinese, 
  which is also useful for some other languages (especially CJK) now. 
@@ -86,6 +96,8 @@ Description: Erbi table of Free Chinese Input Toy for X (XIM)
 Package: fcitx-table-wanfeng
 Architecture: all
 Depends: ${misc:Depends}, fcitx
+Replaces: fcitx (<< 1:4.0.0)
+Breaks: fcitx (<< 1:4.0.0)
 Description: Wanfeng table of Free Chinese Input Toy for X (XIM)
  fcitx is a small and fast input server initially designed for Chinese, 
  which is also useful for some other languages (especially CJK) now. 
@@ -95,6 +107,8 @@ Description: Wanfeng table of Free Chinese Input Toy for X (XIM)
 Package: fcitx-table-wbpy
 Architecture: all
 Depends: ${misc:Depends}, fcitx
+Replaces: fcitx (<< 1:4.0.0)
+Breaks: fcitx (<< 1:4.0.0)
 Description: Wubi-pinyin table of Free Chinese Input Toy for X (XIM)
  fcitx is a small and fast input server initially designed for Chinese, 
  which is also useful for some other languages (especially CJK) now. 
@@ -104,6 +118,8 @@ Description: Wubi-pinyin table of Free Chinese Input Toy for X (XIM)
 Package: fcitx-table-wubi
 Architecture: all
 Depends: ${misc:Depends}, fcitx
+Replaces: fcitx (<< 1:4.0.0)
+Breaks: fcitx (<< 1:4.0.0)
 Description: Wubi table of Free Chinese Input Toy for X (XIM)
  fcitx is a small and fast input server initially designed for Chinese, 
  which is also useful for some other languages (especially CJK) now. 
@@ -113,6 +129,8 @@ Description: Wubi table of Free Chinese Input Toy for X (XIM)
 Package: fcitx-table-ziranma
 Architecture: all
 Depends: ${misc:Depends}, fcitx
+Replaces: fcitx (<< 1:4.0.0)
+Breaks: fcitx (<< 1:4.0.0)
 Description: Ziranma table of Free Chinese Input Toy for X (XIM)
  fcitx is a small and fast input server initially designed for Chinese, 
  which is also useful for some other languages (especially CJK) now. 
@@ -123,6 +141,8 @@ Package: fcitx-tools
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: fcitx
+Replaces: fcitx (<< 1:4.0.0)
+Breaks: fcitx (<< 1:4.0.0)
 Description: Tools for Free Chinese Input Toy for X (XIM)
  fcitx is a small and fast input server initially designed for Chinese, 
  which is also useful for some other languages (especially CJK) now. 

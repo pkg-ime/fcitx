@@ -23,7 +23,7 @@ Last-Update: 2011-01-14
      HOST_LIBS="-ldl -lpthread"
      md5prog=md5sum
      ;;
-+    *-*-*hurd*)
++    *-*-*gnu*)
 +    HOST_LIBS="-ldl -lpthread"
 +    md5prog=md5sum
 +    ;;
@@ -47,7 +47,7 @@ Last-Update: 2011-01-14
      HOST_LIBS="-ldl -lpthread"
      md5prog=md5sum
      ;;
-+    *-*-*hurd*)
++    *-*-*gnu*)
 +    HOST_LIBS="-ldl -lpthread"
 +    md5prog=md5sum
 +    ;;
