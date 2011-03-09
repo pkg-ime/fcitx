@@ -1,3 +1,20 @@
+fcitx (1:4.0.1-4) unstable; urgency=low
+
+  * Change fcitx-data from all to any, since this can avoid endianness
+    problems.
+  * Use dh-autoreconf to avoid untidy build directory.
+  * Install xinput.d entry for new locales other than zh_CN:
+     ja_JP fcitx 80
+     ko_KR fcitx 80
+     zh_CN fcitx 40
+     zh_TW fcitx 70
+     zh_HK fcitx 70
+     zh_SG fcitx 40
+    The difference of priorities are set because of user preferences
+    and support status of fcitx to these languages. 
+
+ -- Aron Xu <happyaron.xu@gmail.com>  Thu, 10 Mar 2011 00:42:45 +0800
+
 fcitx (1:4.0.1-3) unstable; urgency=low
 
   * debian/control:

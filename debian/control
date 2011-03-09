@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: IME Packaging Team <pkg-ime-devel@lists.alioth.debian.org>
 Uploaders: LI Daobing <lidaobing@debian.org>, Aron Xu <happyaron.xu@gmail.com>, Yu Guanghui <ygh@debian.org>
 DM-Upload-Allowed: yes
-Build-Depends: debhelper (>= 7.0.50~), libpango1.0-dev, libcairo2-dev, libdbus-1-dev, intltool (>= 0.35.0), libtool
+Build-Depends: debhelper (>= 7.0.50~), dh-autoreconf, libpango1.0-dev, libcairo2-dev, libdbus-1-dev, intltool (>= 0.35.0), libtool
 Standards-Version: 3.9.1
 Homepage: http://code.google.com/p/fcitx/
 Vcs-Bzr: lp:~pkg-ime/fcitx/debian-fcitx
@@ -22,7 +22,7 @@ Description: Free Chinese Input Toy for X (XIM)
  It supports Pinyin, QuWei and Table-based input methods. 
 
 Package: fcitx-data
-Architecture: all
+Architecture: any
 Depends: ${misc:Depends}
 Replaces: fcitx (<< 1:4.0.0)
 Breaks: fcitx (<< 1:4.0.0)
