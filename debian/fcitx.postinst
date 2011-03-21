@@ -10,12 +10,12 @@ ua_inst () {
 case "$1" in
     configure)
         #ua_inst all_ALL fcitx  0
-        ua_inst ja_JP   fcitx 80
-        ua_inst ko_KR   fcitx 80
-        ua_inst zh_CN   fcitx 40
-        ua_inst zh_TW   fcitx 70
-        ua_inst zh_HK   fcitx 70
-        ua_inst zh_SG   fcitx 40
+        ua_inst ja_JP   fcitx 40
+        ua_inst ko_KR   fcitx 40
+        ua_inst zh_CN   fcitx 80
+        ua_inst zh_TW   fcitx 50
+        ua_inst zh_HK   fcitx 50
+        ua_inst zh_SG   fcitx 80
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
