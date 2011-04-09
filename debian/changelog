@@ -1,3 +1,16 @@
+fcitx (1:4.0.1-6) unstable; urgency=low
+
+  * debian/control:
+    + Bump std-ver: 3.9.2.
+    + Change VCS-* to new Git repository.
+  * debian/fcitx.install:
+    - Wipe out unneeded *.la / emptying dependency_libs, 
+      per Policy 10.2 (Closes: # 621217).
+  * debian/watch:
+    - Updated to avoid inclusion of versions like "4.0.1_all".
+
+ -- Aron Xu <happyaron.xu@gmail.com>  Sat, 09 Apr 2011 15:03:33 +0800
+
 fcitx (1:4.0.1-5) unstable; urgency=low
 
   * Correct the priority of xinput.d entries.
