@@ -1,0 +1,20 @@
+[TraditionalChinese/TransEngine]
+Type=Enum
+EnumCount=2
+Enum0=Native
+Enum1=OpenCC
+Description=Traditional Chinese Translate Engine
+DefaultValue=OpenCC
+
+[TraditionalChinese/Enabled]
+Type=Boolean
+DefaultValue=False
+Description=Enabled in input
+
+[TraditionalChinese/Hotkey]
+Type=Hotkey
+DefaultValue=CTRL_SHIFT_F
+Description=Toggle for enable or disable
+
+[DescriptionFile]
+LocaleDomain=fcitx

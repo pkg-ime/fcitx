@@ -18,7 +18,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifdef HAVE_CONFIG_H
+#ifdef FCITX_HAVE_CONFIG_H
 #  include <config.h>
 #endif
 
@@ -30,35 +30,42 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/un.h>
-#include <unistd.h> 
+#include <unistd.h>
 #include <fcntl.h>
 #include <poll.h>
 #include <limits.h>
-#include <X11/Xlib.h>
-#include "core/xim.h"
+#include "fcitx/frontend.h"
+#include "fcitx-utils/utils.h"
 
 int create_socket(const char *name)
 {
-	int fd;
-	int r;
-	struct sockaddr_un uds_addr;
+    int fd;
+    int r;
 
-	fd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (fd < 0) {
-		return fd;
-	}
+    struct sockaddr_un uds_addr;
 
-	/* setup address struct */
-	memset(&uds_addr, 0, sizeof(uds_addr));
-	uds_addr.sun_family = AF_UNIX;
-	strcpy(uds_addr.sun_path, name);
+    fd = socket(AF_UNIX, SOCK_STREAM, 0);
 
-	r = connect(fd, (struct sockaddr *)&uds_addr, sizeof(uds_addr));
-	if (r < 0) {
-		return r;
-	}
+    if (fd < 0)
+    {
+        return fd;
+    }
 
-	return fd;
+    /* setup address struct */
+    memset(&uds_addr, 0, sizeof(uds_addr));
+
+    uds_addr.sun_family = AF_UNIX;
+
+    strcpy(uds_addr.sun_path, name);
+
+    r = connect(fd, (struct sockaddr *) & uds_addr, sizeof(uds_addr));
+
+    if (r < 0)
+    {
+        return r;
+    }
+
+    return fd;
 }
 
 void usage()
@@ -68,67 +75,71 @@ void usage()
            "\t-o\t\topen input method\n"
            "\t-r\t\treload fcitx config\n"
            "\t[no option]\tdisplay fcitx state, %d for close, %d for english, %d for chinese\n"
-		   "\t-h\t\tdisplay this help and exit\n",
-		   IS_CLOSED, IS_ENG, IS_CHN);
+           "\t-h\t\tdisplay this help and exit\n",
+           IS_CLOSED, IS_ENG, IS_ACTIVE);
 }
 
-int main ( int argc, char *argv[] )
+int main(int argc, char *argv[])
 {
     char socketfile[PATH_MAX] = "";
-	int socket_fd;
+    int socket_fd;
 
     int o = 0;
-	char c;
-	while((c = getopt(argc, argv, "chor")) != -1) {
-		switch (c) {
-		case 'o':
+    char c;
+
+    while ((c = getopt(argc, argv, "chor")) != -1)
+    {
+        switch (c)
+        {
+
+        case 'o':
             o = 1;
             o |= (1 << 16);
             break;
+
         case 'c':
             o = 1;
             break;
+
         case 'r':
             o = 2;
             break;
+
         case 'h':
+
         default:
             usage();
             return 0;
             break;
-		}
-	}
+        }
+    }
 
-    Display *dpy = NULL;
-    if ((dpy = XOpenDisplay ((char *) NULL)) == NULL) {
-        fprintf (stderr, "Error: fcitx-remote can only run under X\n");
-        fprintf (stderr, "Hint: If you running fcitx-remote from console, you may need to "
-                "set the $DISPLAY.\n");
+    sprintf(socketfile, "/tmp/fcitx-socket-:%d", FcitxGetDisplayNumber());
+
+    socket_fd = create_socket(socketfile);
+
+    if (socket_fd < 0)
+    {
+        fprintf(stderr, "Can't open socket %s: %s\n", socketfile, strerror(errno));
         return 1;
     }
 
-	sprintf(socketfile, "/tmp/fcitx-socket-%s", DisplayString(dpy));
+    if (o == 0)
+    {
+        write(socket_fd, &o, sizeof(o));
+        int buf;
+        read(socket_fd, &buf, sizeof(buf));
+        printf("%d\n", buf);
+        close(socket_fd);
+    }
+    else
+    {
+        write(socket_fd, &o, sizeof(o));
+        close(socket_fd);
+    }
 
-    if (dpy)
-        XCloseDisplay(dpy);
+    return 0;
+}               /* ----------  end of function main  ---------- */
 
-	socket_fd = create_socket(socketfile);
-	if (socket_fd < 0) {
-		fprintf(stderr, "Can't open socket %s: %s\n", socketfile, strerror(errno));
-		return 1;
-	}
 
-	if (o == 0) {
-		write(socket_fd, &o, sizeof(o));
-		int buf;
-		read(socket_fd, &buf, sizeof(buf));
-		printf("%d\n", buf);
-		close(socket_fd);
-	} else {
-		write(socket_fd, &o, sizeof(o));
-		close(socket_fd);
-	}
-
-	return 0;
-}				/* ----------  end of function main  ---------- */
-
+// kate: indent-mode cstyle; space-indent on; indent-width 4; 

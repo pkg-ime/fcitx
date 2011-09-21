@@ -1,0 +1,8 @@
+usr/bin/fcitx4-config
+usr/lib/libfcitx*.a
+usr/lib/libfcitx*.so
+usr/lib/pkgconfig/*.pc
+usr/include/*
+usr/share/cmake/fcitx/*.cmake
+usr/share/doc/fcitx/API.txt
+usr/share/doc/fcitx/Develop_Readme

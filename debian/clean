@@ -1,1 +1,3 @@
-data/desc.po
+debian/fcitx-frontend-gtk2.install
+debian/fcitx-frontend-gtk3.install
+debian/fcitx-frontend-qt4.install

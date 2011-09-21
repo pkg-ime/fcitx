@@ -18,1172 +18,1183 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include "core/fcitx.h"
-#include "tools/configfile.h"
+#include "fcitx/fcitx.h"
 #include "PYFA.h"
+#include "pyconfig.h"
 
 #include <stdio.h>
+#include "fcitx-utils/log.h"
+#include <string.h>
+#include <fcitx-utils/utils.h>
 
-MHPY            MHPY_C[] = {    //韵母
+const MHPY_TEMPLATE  MHPY_C_TEMPLATE[] =      //韵母
+{
     //{"an","ang"},
-    {"CD", 0}
+    {"CD"}
     ,
     //{"en","eng"},
-    {"HI", 0}
+    {"HI"}
     ,
     //{"ian","iang"},
-    {"LM", 0}
+    {"LM"}
     ,
     //{"in","ing"},
-    {"PQ", 0}
+    {"PQ"}
     ,
     //{"u","ou"},
-    {"VW", 0}
+    {"VW"}
     ,
     //{"uan","uang"},
-    {"Za", 0}
+    {"Za"}
     ,
 
-    {"\0", 0}
+    {"\0"}
 };
 
-MHPY            MHPY_S[] = {    //声母
+const MHPY_TEMPLATE MHPY_S_TEMPLATE[] =      //声母
+{
     //{"c","ch"},
-    {"bc", 0}
+    {"bc"}
     ,
     //{"f","h"},
-    {"TV", 0}
+    {"TV"}
     ,
     //{"l","n"},
-    {"OQ", 0}
+    {"OQ"}
     ,
     //{"s","sh"},
-    {"GH", 0}
+    {"GH"}
     ,
     //{"z","zh"},
-    {"AB", 0}
+    {"AB"}
     ,
     //{"an","ang"}
-    {"fg", 0}
+    {"fg"}
     ,
 
-    {"\0", 0}
+    {"\0"}
 };
 
 //其中增加了那些不是标准的拼音，但模糊输入中需要使用的拼音组合
-PYTABLE         PYTable[] = {
-    {"zuo", NULL}
+const PYTABLE_TEMPLATE  PYTable_template[] =
+{
+    {"zuo", PYTABLE_NONE}
     ,
-    {"zun", NULL}
+    {"zun", PYTABLE_NONE}
     ,
-    {"zui", NULL}
+    {"zui", PYTABLE_NONE}
     ,
-    {"zuagn", &fc.bMisstype }
+    {"zuagn", PYTABLE_NG_GN}
     ,
-    {"zuang", &MHPY_C[5].bMode}
+    {"zuang", PYTABLE_UAN_UANG}
     ,
-    {"zuagn", &fc.bMisstype }
+    {"zuagn", PYTABLE_NG_GN}
     ,
-    {"zuang", &MHPY_S[4].bMode}
+    {"zuang", PYTABLE_Z_ZH}
     ,
-    {"zuan", NULL}
+    {"zuan", PYTABLE_NONE}
     ,
-    {"zua", &MHPY_S[4].bMode}
+    {"zua", PYTABLE_Z_ZH}
     ,
-    {"zu", NULL}
+    {"zu", PYTABLE_NONE}
     ,
-    {"zou", NULL}
+    {"zou", PYTABLE_NONE}
     ,
-    {"zogn", &fc.bMisstype }
+    {"zogn", PYTABLE_NG_GN}
     ,
-    {"zong", NULL}
+    {"zong", PYTABLE_NONE}
     ,
-    {"zi", NULL}
+    {"zi", PYTABLE_NONE}
     ,
-    {"zhuo", NULL}
+    {"zhuo", PYTABLE_NONE}
     ,
-    {"zhun", NULL}
+    {"zhun", PYTABLE_NONE}
     ,
-    {"zhui", NULL}
+    {"zhui", PYTABLE_NONE}
     ,
-    {"zhuagn", &fc.bMisstype }
+    {"zhuagn", PYTABLE_NG_GN}
     ,
-    {"zhuang", NULL}
+    {"zhuang", PYTABLE_NONE}
     ,
-    {"zhuan", NULL}
+    {"zhuan", PYTABLE_NONE}
     ,
-    {"zhuai", NULL}
+    {"zhuai", PYTABLE_NONE}
     ,
-    {"zhua", NULL}
+    {"zhua", PYTABLE_NONE}
     ,
-    {"zhu", NULL}
+    {"zhu", PYTABLE_NONE}
     ,
-    {"zhou", NULL}
+    {"zhou", PYTABLE_NONE}
     ,
-    {"zhogn", &fc.bMisstype }
+    {"zhogn", PYTABLE_NG_GN}
     ,
-    {"zhong", NULL}
+    {"zhong", PYTABLE_NONE}
     ,
-    {"zhi", NULL}
+    {"zhi", PYTABLE_NONE}
     ,
-    {"zhegn", &fc.bMisstype }
+    {"zhegn", PYTABLE_NG_GN}
     ,
-    {"zheng", NULL}
+    {"zheng", PYTABLE_NONE}
     ,
-    {"zhen", NULL}
+    {"zhen", PYTABLE_NONE}
     ,
-    {"zhe", NULL}
+    {"zhe", PYTABLE_NONE}
     ,
-    {"zhao", NULL}
+    {"zhao", PYTABLE_NONE}
     ,
-    {"zhagn", &fc.bMisstype }
+    {"zhagn", PYTABLE_NG_GN}
     ,
-    {"zhang", NULL}
+    {"zhang", PYTABLE_NONE}
     ,
-    {"zhan", NULL}
+    {"zhan", PYTABLE_NONE}
     ,
-    {"zhai", NULL}
+    {"zhai", PYTABLE_NONE}
     ,
-    {"zha", NULL}
+    {"zha", PYTABLE_NONE}
     ,
-    {"zegn", &fc.bMisstype }
+    {"zegn", PYTABLE_NG_GN}
     ,
-    {"zeng", NULL}
+    {"zeng", PYTABLE_NONE}
     ,
-    {"zen", NULL}
+    {"zen", PYTABLE_NONE}
     ,
-    {"zei", NULL}
+    {"zei", PYTABLE_NONE}
     ,
-    {"ze", NULL}
+    {"ze", PYTABLE_NONE}
     ,
-    {"zao", NULL}
+    {"zao", PYTABLE_NONE}
     ,
-    {"zagn", &fc.bMisstype }
+    {"zagn", PYTABLE_NG_GN}
     ,
-    {"zang", NULL}
+    {"zang", PYTABLE_NONE}
     ,
-    {"zan", NULL}
+    {"zan", PYTABLE_NONE}
     ,
-    {"zai", NULL}
+    {"zai", PYTABLE_NONE}
     ,
-    {"za", NULL}
+    {"za", PYTABLE_NONE}
     ,
-    {"yun", NULL}
+    {"yun", PYTABLE_NONE}
     ,
-    {"yue", NULL}
+    {"yue", PYTABLE_NONE}
     ,
-    {"yuagn", &fc.bMisstype }
+    {"yuagn", PYTABLE_NG_GN}
     ,
-    {"yuang", &MHPY_C[5].bMode}
+    {"yuang", PYTABLE_UAN_UANG}
     ,
-    {"yuan", NULL}
+    {"yuan", PYTABLE_NONE}
     ,
-    {"yu", NULL}
+    {"yu", PYTABLE_NONE}
     ,
-    {"you", NULL}
+    {"you", PYTABLE_NONE}
     ,
-    {"yogn", &fc.bMisstype }
+    {"yogn", PYTABLE_NG_GN}
     ,
-    {"yong", NULL}
+    {"yong", PYTABLE_NONE}
     ,
-    {"yo", NULL}
+    {"yo", PYTABLE_NONE}
     ,
-    {"yign", &fc.bMisstype }
+    {"yign", PYTABLE_NG_GN}
     ,
-    {"ying", NULL}
+    {"ying", PYTABLE_NONE}
     ,
-    {"yin", NULL}
+    {"yin", PYTABLE_NONE}
     ,
-    {"yi", NULL}
+    {"yi", PYTABLE_NONE}
     ,
-    {"ye", NULL}
+    {"ye", PYTABLE_NONE}
     ,
-    {"yao", NULL}
+    {"yao", PYTABLE_NONE}
     ,
-    {"yagn", &fc.bMisstype }
+    {"yagn", PYTABLE_NG_GN}
     ,
-    {"yang", NULL}
+    {"yang", PYTABLE_NONE}
     ,
-    {"yan", NULL}
+    {"yan", PYTABLE_NONE}
     ,
-    {"ya", NULL}
+    {"ya", PYTABLE_NONE}
     ,
-    {"xun", NULL}
+    {"xun", PYTABLE_NONE}
     ,
-    {"xue", NULL}
+    {"xue", PYTABLE_NONE}
     ,
-    {"xuagn", &fc.bMisstype }
+    {"xuagn", PYTABLE_NG_GN}
     ,
-    {"xuang", &MHPY_C[5].bMode}
+    {"xuang", PYTABLE_UAN_UANG}
     ,
-    {"xuan", NULL}
+    {"xuan", PYTABLE_NONE}
     ,
-    {"xu", NULL}
+    {"xu", PYTABLE_NONE}
     ,
-    {"xou", &MHPY_C[4].bMode}
+    {"xou", PYTABLE_U_OU}
     ,
-    {"xiu", NULL}
+    {"xiu", PYTABLE_NONE}
     ,
-    {"xiogn", &fc.bMisstype }
+    {"xiogn", PYTABLE_NG_GN}
     ,
-    {"xiong", NULL}
+    {"xiong", PYTABLE_NONE}
     ,
-    {"xign", &fc.bMisstype }
+    {"xign", PYTABLE_NG_GN}
     ,
-    {"xing", NULL}
+    {"xing", PYTABLE_NONE}
     ,
-    {"xin", NULL}
+    {"xin", PYTABLE_NONE}
     ,
-    {"xie", NULL}
+    {"xie", PYTABLE_NONE}
     ,
-    {"xiao", NULL}
+    {"xiao", PYTABLE_NONE}
     ,
-    {"xiagn", &fc.bMisstype }
+    {"xiagn", PYTABLE_NG_GN}
     ,
-    {"xiang", NULL}
+    {"xiang", PYTABLE_NONE}
     ,
-    {"xian", NULL}
+    {"xian", PYTABLE_NONE}
     ,
-    {"xia", NULL}
+    {"xia", PYTABLE_NONE}
     ,
-    {"xi", NULL}
+    {"xi", PYTABLE_NONE}
     ,
-    {"wu", NULL}
+    {"wu", PYTABLE_NONE}
     ,
-    {"wo", NULL}
+    {"wo", PYTABLE_NONE}
     ,
-    {"wegn", &fc.bMisstype }
+    {"wegn", PYTABLE_NG_GN}
     ,
-    {"weng", NULL}
+    {"weng", PYTABLE_NONE}
     ,
-    {"wen", NULL}
+    {"wen", PYTABLE_NONE}
     ,
-    {"wei", NULL}
+    {"wei", PYTABLE_NONE}
     ,
-    {"wagn", &fc.bMisstype }
+    {"wagn", PYTABLE_NG_GN}
     ,
-    {"wang", NULL}
+    {"wang", PYTABLE_NONE}
     ,
-    {"wan", NULL}
+    {"wan", PYTABLE_NONE}
     ,
-    {"wai", NULL}
+    {"wai", PYTABLE_NONE}
     ,
-    {"wa", NULL}
+    {"wa", PYTABLE_NONE}
     ,
-    {"tuo", NULL}
+    {"tuo", PYTABLE_NONE}
     ,
-    {"tun", NULL}
+    {"tun", PYTABLE_NONE}
     ,
-    {"tui", NULL}
+    {"tui", PYTABLE_NONE}
     ,
-    {"tuagn", &fc.bMisstype }
+    {"tuagn", PYTABLE_NG_GN}
     ,
-    {"tuang", &MHPY_C[5].bMode}
+    {"tuang", PYTABLE_UAN_UANG}
     ,
-    {"tuan", NULL}
+    {"tuan", PYTABLE_NONE}
     ,
-    {"tu", NULL}
+    {"tu", PYTABLE_NONE}
     ,
-    {"tou", NULL}
+    {"tou", PYTABLE_NONE}
     ,
-    {"togn", &fc.bMisstype }
+    {"togn", PYTABLE_NG_GN}
     ,
-    {"tong", NULL}
+    {"tong", PYTABLE_NONE}
     ,
-    {"tign", &fc.bMisstype }
+    {"tign", PYTABLE_NG_GN}
     ,
-    {"ting", NULL}
+    {"ting", PYTABLE_NONE}
     ,
-    {"tin", &MHPY_C[3].bMode}
+    {"tin", PYTABLE_IN_ING}
     ,
-    {"tie", NULL}
+    {"tie", PYTABLE_NONE}
     ,
-    {"tiao", NULL}
+    {"tiao", PYTABLE_NONE}
     ,
-    {"tiagn", &fc.bMisstype }
+    {"tiagn", PYTABLE_NG_GN}
     ,
-    {"tiang", &MHPY_C[2].bMode}
+    {"tiang", PYTABLE_IAN_IANG}
     ,
-    {"tian", NULL}
+    {"tian", PYTABLE_NONE}
     ,
-    {"ti", NULL}
+    {"ti", PYTABLE_NONE}
     ,
-    {"tegn", &fc.bMisstype }
+    {"tegn", PYTABLE_NG_GN}
     ,
-    {"teng", NULL}
+    {"teng", PYTABLE_NONE}
     ,
-    {"ten", &MHPY_C[1].bMode}
+    {"ten", PYTABLE_EN_ENG}
     ,
-    {"tei", NULL}
+    {"tei", PYTABLE_NONE}
     ,
-    {"te", NULL}
+    {"te", PYTABLE_NONE}
     ,
-    {"tao", NULL}
+    {"tao", PYTABLE_NONE}
     ,
-    {"tagn", &fc.bMisstype }
+    {"tagn", PYTABLE_NG_GN}
     ,
-    {"tang", NULL}
+    {"tang", PYTABLE_NONE}
     ,
-    {"tan", NULL}
+    {"tan", PYTABLE_NONE}
     ,
-    {"tai", NULL}
+    {"tai", PYTABLE_NONE}
     ,
-    {"ta", NULL}
+    {"ta", PYTABLE_NONE}
     ,
-    {"suo", NULL}
+    {"suo", PYTABLE_NONE}
     ,
-    {"sun", NULL}
+    {"sun", PYTABLE_NONE}
     ,
-    {"sui", NULL}
+    {"sui", PYTABLE_NONE}
     ,
-    {"suagn", &fc.bMisstype }
+    {"suagn", PYTABLE_NG_GN}
     ,
-    {"suang", &MHPY_S[3].bMode}
+    {"suang", PYTABLE_S_SH}
     ,
-    {"suagn", &fc.bMisstype }
+    {"suagn", PYTABLE_NG_GN}
     ,
-    {"suang", &MHPY_C[5].bMode}
+    {"suang", PYTABLE_UAN_UANG}
     ,
-    {"suan", NULL}
+    {"suan", PYTABLE_NONE}
     ,
-    {"sua", &MHPY_S[3].bMode}
+    {"sua", PYTABLE_S_SH}
     ,
-    {"su", NULL}
+    {"su", PYTABLE_NONE}
     ,
-    {"sou", NULL}
+    {"sou", PYTABLE_NONE}
     ,
-    {"sogn", &fc.bMisstype }
+    {"sogn", PYTABLE_NG_GN}
     ,
-    {"song", NULL}
+    {"song", PYTABLE_NONE}
     ,
-    {"si", NULL}
+    {"si", PYTABLE_NONE}
     ,
-    {"shuo", NULL}
+    {"shuo", PYTABLE_NONE}
     ,
-    {"shun", NULL}
+    {"shun", PYTABLE_NONE}
     ,
-    {"shui", NULL}
+    {"shui", PYTABLE_NONE}
     ,
-    {"shuagn", &fc.bMisstype }
+    {"shuagn", PYTABLE_NG_GN}
     ,
-    {"shuang", NULL}
+    {"shuang", PYTABLE_NONE}
     ,
-    {"shuan", NULL}
+    {"shuan", PYTABLE_NONE}
     ,
-    {"shuai", NULL}
+    {"shuai", PYTABLE_NONE}
     ,
-    {"shua", NULL}
+    {"shua", PYTABLE_NONE}
     ,
-    {"shu", NULL}
+    {"shu", PYTABLE_NONE}
     ,
-    {"shou", NULL}
+    {"shou", PYTABLE_NONE}
     ,
-    {"shi", NULL}
+    {"shi", PYTABLE_NONE}
     ,
-    {"shegn", &fc.bMisstype }
+    {"shegn", PYTABLE_NG_GN}
     ,
-    {"sheng", NULL}
+    {"sheng", PYTABLE_NONE}
     ,
-    {"shen", NULL}
+    {"shen", PYTABLE_NONE}
     ,
-    {"shei", NULL}
+    {"shei", PYTABLE_NONE}
     ,
-    {"she", NULL}
+    {"she", PYTABLE_NONE}
     ,
-    {"shao", NULL}
+    {"shao", PYTABLE_NONE}
     ,
-    {"shagn", &fc.bMisstype }
+    {"shagn", PYTABLE_NG_GN}
     ,
-    {"shang", NULL}
+    {"shang", PYTABLE_NONE}
     ,
-    {"shan", NULL}
+    {"shan", PYTABLE_NONE}
     ,
-    {"shai", NULL}
+    {"shai", PYTABLE_NONE}
     ,
-    {"sha", NULL}
+    {"sha", PYTABLE_NONE}
     ,
-    {"segn", &fc.bMisstype }
+    {"segn", PYTABLE_NG_GN}
     ,
-    {"seng", NULL}
+    {"seng", PYTABLE_NONE}
     ,
-    {"sen", NULL}
+    {"sen", PYTABLE_NONE}
     ,
-    {"se", NULL}
+    {"se", PYTABLE_NONE}
     ,
-    {"sao", NULL}
+    {"sao", PYTABLE_NONE}
     ,
-    {"sagn", &fc.bMisstype }
+    {"sagn", PYTABLE_NG_GN}
     ,
-    {"sang", NULL}
+    {"sang", PYTABLE_NONE}
     ,
-    {"san", NULL}
+    {"san", PYTABLE_NONE}
     ,
-    {"sai", NULL}
+    {"sai", PYTABLE_NONE}
     ,
-    {"sa", NULL}
+    {"sa", PYTABLE_NONE}
     ,
-    {"ruo", NULL}
+    {"ruo", PYTABLE_NONE}
     ,
-    {"run", NULL}
+    {"run", PYTABLE_NONE}
     ,
-    {"rui", NULL}
+    {"rui", PYTABLE_NONE}
     ,
-    {"ruagn", &fc.bMisstype }
+    {"ruagn", PYTABLE_NG_GN}
     ,
-    {"ruang", &MHPY_C[5].bMode}
+    {"ruang", PYTABLE_UAN_UANG}
     ,
-    {"ruan", NULL}
+    {"ruan", PYTABLE_NONE}
     ,
-    {"ru", NULL}
+    {"ru", PYTABLE_NONE}
     ,
-    {"rou", NULL}
+    {"rou", PYTABLE_NONE}
     ,
-    {"rogn", &fc.bMisstype }
+    {"rogn", PYTABLE_NG_GN}
     ,
-    {"rong", NULL}
+    {"rong", PYTABLE_NONE}
     ,
-    {"ri", NULL}
+    {"ri", PYTABLE_NONE}
     ,
-    {"regn", &fc.bMisstype }
+    {"regn", PYTABLE_NG_GN}
     ,
-    {"reng", NULL}
+    {"reng", PYTABLE_NONE}
     ,
-    {"ren", NULL}
+    {"ren", PYTABLE_NONE}
     ,
-    {"re", NULL}
+    {"re", PYTABLE_NONE}
     ,
-    {"rao", NULL}
+    {"rao", PYTABLE_NONE}
     ,
-    {"ragn", &fc.bMisstype }
+    {"ragn", PYTABLE_NG_GN}
     ,
-    {"rang", NULL}
+    {"rang", PYTABLE_NONE}
     ,
-    {"ran", NULL}
+    {"ran", PYTABLE_NONE}
     ,
-    {"qun", NULL}
+    {"qun", PYTABLE_NONE}
     ,
-    {"que", NULL}
+    {"que", PYTABLE_NONE}
     ,
-    {"quagn", &fc.bMisstype }
+    {"quagn", PYTABLE_NG_GN}
     ,
-    {"quang", &MHPY_C[5].bMode}
+    {"quang", PYTABLE_UAN_UANG}
     ,
-    {"quan", NULL}
+    {"quan", PYTABLE_NONE}
     ,
-    {"qu", NULL}
+    {"qu", PYTABLE_NONE}
     ,
-    {"qiu", NULL}
+    {"qiu", PYTABLE_NONE}
     ,
-    {"qiogn", &fc.bMisstype }
+    {"qiogn", PYTABLE_NG_GN}
     ,
-    {"qiong", NULL}
+    {"qiong", PYTABLE_NONE}
     ,
-    {"qign", &fc.bMisstype }
+    {"qign", PYTABLE_NG_GN}
     ,
-    {"qing", NULL}
+    {"qing", PYTABLE_NONE}
     ,
-    {"qin", NULL}
+    {"qin", PYTABLE_NONE}
     ,
-    {"qie", NULL}
+    {"qie", PYTABLE_NONE}
     ,
-    {"qiao", NULL}
+    {"qiao", PYTABLE_NONE}
     ,
-    {"qiagn", &fc.bMisstype }
+    {"qiagn", PYTABLE_NG_GN}
     ,
-    {"qiang", NULL}
+    {"qiang", PYTABLE_NONE}
     ,
-    {"qian", NULL}
+    {"qian", PYTABLE_NONE}
     ,
-    {"qia", NULL}
+    {"qia", PYTABLE_NONE}
     ,
-    {"qi", NULL}
+    {"qi", PYTABLE_NONE}
     ,
-    {"pu", NULL}
+    {"pu", PYTABLE_NONE}
     ,
-    {"pou", NULL}
+    {"pou", PYTABLE_NONE}
     ,
-    {"po", NULL}
+    {"po", PYTABLE_NONE}
     ,
-    {"pign", &fc.bMisstype }
+    {"pign", PYTABLE_NG_GN}
     ,
-    {"ping", NULL}
+    {"ping", PYTABLE_NONE}
     ,
-    {"pin", NULL}
+    {"pin", PYTABLE_NONE}
     ,
-    {"pie", NULL}
+    {"pie", PYTABLE_NONE}
     ,
-    {"piao", NULL}
+    {"piao", PYTABLE_NONE}
     ,
-    {"piagn", &fc.bMisstype }
+    {"piagn", PYTABLE_NG_GN}
     ,
-    {"piang", &MHPY_C[2].bMode}
+    {"piang", PYTABLE_IAN_IANG}
     ,
-    {"pian", NULL}
+    {"pian", PYTABLE_NONE}
     ,
-    {"pi", NULL}
+    {"pi", PYTABLE_NONE}
     ,
-    {"pegn", &fc.bMisstype }
+    {"pegn", PYTABLE_NG_GN}
     ,
-    {"peng", NULL}
+    {"peng", PYTABLE_NONE}
     ,
-    {"pen", NULL}
+    {"pen", PYTABLE_NONE}
     ,
-    {"pei", NULL}
+    {"pei", PYTABLE_NONE}
     ,
-    {"pao", NULL}
+    {"pao", PYTABLE_NONE}
     ,
-    {"pagn", &fc.bMisstype }
+    {"pagn", PYTABLE_NG_GN}
     ,
-    {"pang", NULL}
+    {"pang", PYTABLE_NONE}
     ,
-    {"pan", NULL}
+    {"pan", PYTABLE_NONE}
     ,
-    {"pai", NULL}
+    {"pai", PYTABLE_NONE}
     ,
-    {"pa", NULL}
+    {"pa", PYTABLE_NONE}
     ,
-    {"ou", NULL}
+    {"ou", PYTABLE_NONE}
     ,
-    {"o", NULL}
+    {"o", PYTABLE_NONE}
     ,
-    {"nve", NULL}
+    {"nve", PYTABLE_NONE}
     ,
-    {"nv", NULL}
+    {"nv", PYTABLE_NONE}
     ,
-    {"nuo", NULL}
+    {"nuo", PYTABLE_NONE}
     ,
-    {"nue", NULL}
+    {"nue", PYTABLE_NONE}
     ,
-    {"nuagn", &fc.bMisstype }
+    {"nuagn", PYTABLE_NG_GN}
     ,
-    {"nuang", &MHPY_C[5].bMode}
+    {"nuang", PYTABLE_UAN_UANG}
     ,
-    {"nuagn", &fc.bMisstype }
+    {"nuagn", PYTABLE_NG_GN}
     ,
-    {"nuang", &MHPY_S[2].bMode}
+    {"nuang", PYTABLE_L_N}
     ,
-    {"nuan", NULL}
+    {"nuan", PYTABLE_NONE}
     ,
-    {"nu", NULL}
+    {"nu", PYTABLE_NONE}
     ,
-    {"nou", NULL}
+    {"nou", PYTABLE_NONE}
     ,
-    {"nogn", &fc.bMisstype }
+    {"nogn", PYTABLE_NG_GN}
     ,
-    {"nong", NULL}
+    {"nong", PYTABLE_NONE}
     ,
-    {"niu", NULL}
+    {"niu", PYTABLE_NONE}
     ,
-    {"nign", &fc.bMisstype }
+    {"nign", PYTABLE_NG_GN}
     ,
-    {"ning", NULL}
+    {"ning", PYTABLE_NONE}
     ,
-    {"nin", NULL}
+    {"nin", PYTABLE_NONE}
     ,
-    {"nie", NULL}
+    {"nie", PYTABLE_NONE}
     ,
-    {"niao", NULL}
+    {"niao", PYTABLE_NONE}
     ,
-    {"niagn", &fc.bMisstype }
+    {"niagn", PYTABLE_NG_GN}
     ,
-    {"niang", NULL}
+    {"niang", PYTABLE_NONE}
     ,
-    {"nian", NULL}
+    {"nian", PYTABLE_NONE}
     ,
-    {"ni", NULL}
+    {"ni", PYTABLE_NONE}
     ,
-    {"ng", NULL}
+    {"ng", PYTABLE_NONE}
     ,
-    {"negn", &fc.bMisstype }
+    {"negn", PYTABLE_NG_GN}
     ,
-    {"neng", NULL}
+    {"neng", PYTABLE_NONE}
     ,
-    {"nen", NULL}
+    {"nen", PYTABLE_NONE}
     ,
-    {"nei", NULL}
+    {"nei", PYTABLE_NONE}
     ,
-    {"ne", NULL}
+    {"ne", PYTABLE_NONE}
     ,
-    {"nao", NULL}
+    {"nao", PYTABLE_NONE}
     ,
-    {"nagn", &fc.bMisstype }
+    {"nagn", PYTABLE_NG_GN}
     ,
-    {"nang", NULL}
+    {"nang", PYTABLE_NONE}
     ,
-    {"nan", NULL}
+    {"nan", PYTABLE_NONE}
     ,
-    {"nai", NULL}
+    {"nai", PYTABLE_NONE}
     ,
-    {"na", NULL}
+    {"na", PYTABLE_NONE}
     ,
-    {"n", NULL}
+    {"n", PYTABLE_NONE}
     ,
-    {"mu", NULL}
+    {"mu", PYTABLE_NONE}
     ,
-    {"mou", NULL}
+    {"mou", PYTABLE_NONE}
     ,
-    {"mo", NULL}
+    {"mo", PYTABLE_NONE}
     ,
-    {"miu", NULL}
+    {"miu", PYTABLE_NONE}
     ,
-    {"mign", &fc.bMisstype }
+    {"mign", PYTABLE_NG_GN}
     ,
-    {"ming", NULL}
+    {"ming", PYTABLE_NONE}
     ,
-    {"min", NULL}
+    {"min", PYTABLE_NONE}
     ,
-    {"mie", NULL}
+    {"mie", PYTABLE_NONE}
     ,
-    {"miao", NULL}
+    {"miao", PYTABLE_NONE}
     ,
-    {"miagn", &fc.bMisstype }
+    {"miagn", PYTABLE_NG_GN}
     ,
-    {"miang", &MHPY_C[2].bMode}
+    {"miang", PYTABLE_IAN_IANG}
     ,
-    {"mian", NULL}
+    {"mian", PYTABLE_NONE}
     ,
-    {"mi", NULL}
+    {"mi", PYTABLE_NONE}
     ,
-    {"megn", &fc.bMisstype }
+    {"megn", PYTABLE_NG_GN}
     ,
-    {"meng", NULL}
+    {"meng", PYTABLE_NONE}
     ,
-    {"men", NULL}
+    {"men", PYTABLE_NONE}
     ,
-    {"mei", NULL}
+    {"mei", PYTABLE_NONE}
     ,
-    {"me", NULL}
+    {"me", PYTABLE_NONE}
     ,
-    {"mao", NULL}
+    {"mao", PYTABLE_NONE}
     ,
-    {"magn", &fc.bMisstype }
+    {"magn", PYTABLE_NG_GN}
     ,
-    {"mang", NULL}
+    {"mang", PYTABLE_NONE}
     ,
-    {"man", NULL}
+    {"man", PYTABLE_NONE}
     ,
-    {"mai", NULL}
+    {"mai", PYTABLE_NONE}
     ,
-    {"ma", NULL}
+    {"ma", PYTABLE_NONE}
     ,
-    {"m", NULL}
+    {"m", PYTABLE_NONE}
     ,
-    {"lve", NULL}
+    {"lve", PYTABLE_NONE}
     ,
-    {"lv", NULL}
+    {"lv", PYTABLE_NONE}
     ,
-    {"luo", NULL}
+    {"luo", PYTABLE_NONE}
     ,
-    {"lun", NULL}
+    {"lun", PYTABLE_NONE}
     ,
-    {"lue", NULL}
+    {"lue", PYTABLE_NONE}
     ,
-    {"luagn", &fc.bMisstype }
+    {"luagn", PYTABLE_NG_GN}
     ,
-    {"luang", &MHPY_C[5].bMode}
+    {"luang", PYTABLE_UAN_UANG}
     ,
-    {"luagn", &fc.bMisstype }
+    {"luagn", PYTABLE_NG_GN}
     ,
-    {"luang", &MHPY_S[2].bMode}
+    {"luang", PYTABLE_L_N}
     ,
-    {"luan", NULL}
+    {"luan", PYTABLE_NONE}
     ,
-    {"lu", NULL}
+    {"lu", PYTABLE_NONE}
     ,
-    {"lou", NULL}
+    {"lou", PYTABLE_NONE}
     ,
-    {"logn", &fc.bMisstype }
+    {"logn", PYTABLE_NG_GN}
     ,
-    {"long", NULL}
+    {"long", PYTABLE_NONE}
     ,
-    {"lo", NULL}
+    {"lo", PYTABLE_NONE}
     ,
-    {"liu", NULL}
+    {"liu", PYTABLE_NONE}
     ,
-    {"lign", &fc.bMisstype }
+    {"lign", PYTABLE_NG_GN}
     ,
-    {"ling", NULL}
+    {"ling", PYTABLE_NONE}
     ,
-    {"lin", NULL}
+    {"lin", PYTABLE_NONE}
     ,
-    {"lie", NULL}
+    {"lie", PYTABLE_NONE}
     ,
-    {"liao", NULL}
+    {"liao", PYTABLE_NONE}
     ,
-    {"liagn", &fc.bMisstype }
+    {"liagn", PYTABLE_NG_GN}
     ,
-    {"liang", NULL}
+    {"liang", PYTABLE_NONE}
     ,
-    {"lian", NULL}
+    {"lian", PYTABLE_NONE}
     ,
-    {"lia", NULL}
+    {"lia", PYTABLE_NONE}
     ,
-    {"li", NULL}
+    {"li", PYTABLE_NONE}
     ,
-    {"legn", &fc.bMisstype }
+    {"legn", PYTABLE_NG_GN}
     ,
-    {"leng", NULL}
+    {"leng", PYTABLE_NONE}
     ,
-    {"len", &MHPY_C[1].bMode}
+    {"len", PYTABLE_EN_ENG}
     ,
-    {"lei", NULL}
+    {"lei", PYTABLE_NONE}
     ,
-    {"le", NULL}
+    {"le", PYTABLE_NONE}
     ,
-    {"lao", NULL}
+    {"lao", PYTABLE_NONE}
     ,
-    {"lagn", &fc.bMisstype }
+    {"lagn", PYTABLE_NG_GN}
     ,
-    {"lang", NULL}
+    {"lang", PYTABLE_NONE}
     ,
-    {"lan", NULL}
+    {"lan", PYTABLE_NONE}
     ,
-    {"lai", NULL}
+    {"lai", PYTABLE_NONE}
     ,
-    {"la", NULL}
+    {"la", PYTABLE_NONE}
     ,
-    {"kuo", NULL}
+    {"kuo", PYTABLE_NONE}
     ,
-    {"kun", NULL}
+    {"kun", PYTABLE_NONE}
     ,
-    {"kui", NULL}
+    {"kui", PYTABLE_NONE}
     ,
-    {"kuagn", &fc.bMisstype }
+    {"kuagn", PYTABLE_NG_GN}
     ,
-    {"kuang", NULL}
+    {"kuang", PYTABLE_NONE}
     ,
-    {"kuan", NULL}
+    {"kuan", PYTABLE_NONE}
     ,
-    {"kuai", NULL}
+    {"kuai", PYTABLE_NONE}
     ,
-    {"kua", NULL}
+    {"kua", PYTABLE_NONE}
     ,
-    {"ku", NULL}
+    {"ku", PYTABLE_NONE}
     ,
-    {"kou", NULL}
+    {"kou", PYTABLE_NONE}
     ,
-    {"kogn", &fc.bMisstype }
+    {"kogn", PYTABLE_NG_GN}
     ,
-    {"kong", NULL}
+    {"kong", PYTABLE_NONE}
     ,
-    {"kegn", &fc.bMisstype }
+    {"kegn", PYTABLE_NG_GN}
     ,
-    {"keng", NULL}
+    {"keng", PYTABLE_NONE}
     ,
-    {"ken", NULL}
+    {"ken", PYTABLE_NONE}
     ,
-    {"kei", NULL}
+    {"kei", PYTABLE_NONE}
     ,
-    {"ke", NULL}
+    {"ke", PYTABLE_NONE}
     ,
-    {"kao", NULL}
+    {"kao", PYTABLE_NONE}
     ,
-    {"kagn", &fc.bMisstype }
+    {"kagn", PYTABLE_NG_GN}
     ,
-    {"kang", NULL}
+    {"kang", PYTABLE_NONE}
     ,
-    {"kan", NULL}
+    {"kan", PYTABLE_NONE}
     ,
-    {"kai", NULL}
+    {"kai", PYTABLE_NONE}
     ,
-    {"ka", NULL}
+    {"ka", PYTABLE_NONE}
     ,
-    {"jun", NULL}
+    {"jun", PYTABLE_NONE}
     ,
-    {"jue", NULL}
+    {"jue", PYTABLE_NONE}
     ,
-    {"juagn", &fc.bMisstype }
+    {"juagn", PYTABLE_NG_GN}
     ,
-    {"juang", &MHPY_C[5].bMode}
+    {"juang", PYTABLE_UAN_UANG}
     ,
-    {"juan", NULL}
+    {"juan", PYTABLE_NONE}
     ,
-    {"ju", NULL}
+    {"ju", PYTABLE_NONE}
     ,
-    {"jiu", NULL}
+    {"jiu", PYTABLE_NONE}
     ,
-    {"jiogn", &fc.bMisstype }
+    {"jiogn", PYTABLE_NG_GN}
     ,
-    {"jiong", NULL}
+    {"jiong", PYTABLE_NONE}
     ,
-    {"jign", &fc.bMisstype }
+    {"jign", PYTABLE_NG_GN}
     ,
-    {"jing", NULL}
+    {"jing", PYTABLE_NONE}
     ,
-    {"jin", NULL}
+    {"jin", PYTABLE_NONE}
     ,
-    {"jie", NULL}
+    {"jie", PYTABLE_NONE}
     ,
-    {"jiao", NULL}
+    {"jiao", PYTABLE_NONE}
     ,
-    {"jiagn", &fc.bMisstype }
+    {"jiagn", PYTABLE_NG_GN}
     ,
-    {"jiang", NULL}
+    {"jiang", PYTABLE_NONE}
     ,
-    {"jian", NULL}
+    {"jian", PYTABLE_NONE}
     ,
-    {"jia", NULL}
+    {"jia", PYTABLE_NONE}
     ,
-    {"ji", NULL}
+    {"ji", PYTABLE_NONE}
     ,
-    {"huo", NULL}
+    {"huo", PYTABLE_NONE}
     ,
-    {"hun", NULL}
+    {"hun", PYTABLE_NONE}
     ,
-    {"hui", NULL}
+    {"hui", PYTABLE_NONE}
     ,
-    {"huagn", &fc.bMisstype }
+    {"huagn", PYTABLE_NG_GN}
     ,
-    {"huang", NULL}
+    {"huang", PYTABLE_NONE}
     ,
-    {"huan", NULL}
+    {"huan", PYTABLE_NONE}
     ,
-    {"huai", NULL}
+    {"huai", PYTABLE_NONE}
     ,
-    {"hua", NULL}
+    {"hua", PYTABLE_NONE}
     ,
-    {"hu", NULL}
+    {"hu", PYTABLE_NONE}
     ,
-    {"hou", NULL}
+    {"hou", PYTABLE_NONE}
     ,
-    {"hogn", &fc.bMisstype }
+    {"hogn", PYTABLE_NG_GN}
     ,
-    {"hong", NULL}
+    {"hong", PYTABLE_NONE}
     ,
-    {"hegn", &fc.bMisstype }
+    {"hegn", PYTABLE_NG_GN}
     ,
-    {"heng", NULL}
+    {"heng", PYTABLE_NONE}
     ,
-    {"hen", NULL}
+    {"hen", PYTABLE_NONE}
     ,
-    {"hei", NULL}
+    {"hei", PYTABLE_NONE}
     ,
-    {"he", NULL}
+    {"he", PYTABLE_NONE}
     ,
-    {"hao", NULL}
+    {"hao", PYTABLE_NONE}
     ,
-    {"hagn", &fc.bMisstype }
+    {"hagn", PYTABLE_NG_GN}
     ,
-    {"hang", NULL}
+    {"hang", PYTABLE_NONE}
     ,
-    {"han", NULL}
+    {"han", PYTABLE_NONE}
     ,
-    {"hai", NULL}
+    {"hai", PYTABLE_NONE}
     ,
-    {"ha", NULL}
+    {"ha", PYTABLE_NONE}
     ,
-    {"guo", NULL}
+    {"guo", PYTABLE_NONE}
     ,
-    {"gun", NULL}
+    {"gun", PYTABLE_NONE}
     ,
-    {"gui", NULL}
+    {"gui", PYTABLE_NONE}
     ,
-    {"guagn", &fc.bMisstype }
+    {"guagn", PYTABLE_NG_GN}
     ,
-    {"guang", NULL}
+    {"guang", PYTABLE_NONE}
     ,
-    {"guan", NULL}
+    {"guan", PYTABLE_NONE}
     ,
-    {"guai", NULL}
+    {"guai", PYTABLE_NONE}
     ,
-    {"gua", NULL}
+    {"gua", PYTABLE_NONE}
     ,
-    {"gu", NULL}
+    {"gu", PYTABLE_NONE}
     ,
-    {"gou", NULL}
+    {"gou", PYTABLE_NONE}
     ,
-    {"gogn", &fc.bMisstype }
+    {"gogn", PYTABLE_NG_GN}
     ,
-    {"gong", NULL}
+    {"gong", PYTABLE_NONE}
     ,
-    {"gegn", &fc.bMisstype }
+    {"gegn", PYTABLE_NG_GN}
     ,
-    {"geng", NULL}
+    {"geng", PYTABLE_NONE}
     ,
-    {"gen", NULL}
+    {"gen", PYTABLE_NONE}
     ,
-    {"gei", NULL}
+    {"gei", PYTABLE_NONE}
     ,
-    {"ge", NULL}
+    {"ge", PYTABLE_NONE}
     ,
-    {"gao", NULL}
+    {"gao", PYTABLE_NONE}
     ,
-    {"gagn", &fc.bMisstype }
+    {"gagn", PYTABLE_NG_GN}
     ,
-    {"gang", NULL}
+    {"gang", PYTABLE_NONE}
     ,
-    {"gan", NULL}
+    {"gan", PYTABLE_NONE}
     ,
-    {"gai", NULL}
+    {"gai", PYTABLE_NONE}
     ,
-    {"ga", NULL}
+    {"ga", PYTABLE_NONE}
     ,
-    {"fu", NULL}
+    {"fu", PYTABLE_NONE}
     ,
-    {"fou", NULL}
+    {"fou", PYTABLE_NONE}
     ,
-    {"fo", NULL}
+    {"fo", PYTABLE_NONE}
     ,
-    {"fegn", &fc.bMisstype }
+    {"fegn", PYTABLE_NG_GN}
     ,
-    {"feng", NULL}
+    {"feng", PYTABLE_NONE}
     ,
-    {"fen", NULL}
+    {"fen", PYTABLE_NONE}
     ,
-    {"fei", NULL}
+    {"fei", PYTABLE_NONE}
     ,
-    {"fagn", &fc.bMisstype }
+    {"fagn", PYTABLE_NG_GN}
     ,
-    {"fang", NULL}
+    {"fang", PYTABLE_NONE}
     ,
-    {"fan", NULL}
+    {"fan", PYTABLE_NONE}
     ,
-    {"fa", NULL}
+    {"fa", PYTABLE_NONE}
     ,
-    {"er", NULL}
+    {"er", PYTABLE_NONE}
     ,
-    {"egn", &fc.bMisstype }
+    {"egn", PYTABLE_NG_GN}
     ,
-    {"eng", &MHPY_C[1].bMode}
+    {"eng", PYTABLE_EN_ENG}
     ,
-    {"en", NULL}
+    {"en", PYTABLE_NONE}
     ,
-    {"ei", NULL}
+    {"ei", PYTABLE_NONE}
     ,
-    {"e", NULL}
+    {"e", PYTABLE_NONE}
     ,
-    {"duo", NULL}
+    {"duo", PYTABLE_NONE}
     ,
-    {"dun", NULL}
+    {"dun", PYTABLE_NONE}
     ,
-    {"dui", NULL}
+    {"dui", PYTABLE_NONE}
     ,
-    {"duagn", &fc.bMisstype }
+    {"duagn", PYTABLE_NG_GN}
     ,
-    {"duang", &MHPY_C[5].bMode}
+    {"duang", PYTABLE_UAN_UANG}
     ,
-    {"duan", NULL}
+    {"duan", PYTABLE_NONE}
     ,
-    {"du", NULL}
+    {"du", PYTABLE_NONE}
     ,
-    {"dou", NULL}
+    {"dou", PYTABLE_NONE}
     ,
-    {"dogn", &fc.bMisstype }
+    {"dogn", PYTABLE_NG_GN}
     ,
-    {"dong", NULL}
+    {"dong", PYTABLE_NONE}
     ,
-    {"diu", NULL}
+    {"diu", PYTABLE_NONE}
     ,
-    {"dign", &fc.bMisstype }
+    {"dign", PYTABLE_NG_GN}
     ,
-    {"ding", NULL}
+    {"ding", PYTABLE_NONE}
     ,
-    {"din", &MHPY_C[3].bMode}
+    {"din", PYTABLE_IN_ING}
     ,
-    {"die", NULL}
+    {"die", PYTABLE_NONE}
     ,
-    {"diao", NULL}
+    {"diao", PYTABLE_NONE}
     ,
-    {"diagn", &fc.bMisstype }
+    {"diagn", PYTABLE_NG_GN}
     ,
-    {"diang", &MHPY_C[2].bMode}
+    {"diang", PYTABLE_IAN_IANG}
     ,
-    {"dian", NULL}
+    {"dian", PYTABLE_NONE}
     ,
-    {"dia", NULL}
+    {"dia", PYTABLE_NONE}
     ,
-    {"di", NULL}
+    {"di", PYTABLE_NONE}
     ,
-    {"degn", &fc.bMisstype }
+    {"degn", PYTABLE_NG_GN}
     ,
-    {"deng", NULL}
+    {"deng", PYTABLE_NONE}
     ,
-    {"den", NULL}
+    {"den", PYTABLE_NONE}
     ,
-    {"dei", NULL}
+    {"dei", PYTABLE_NONE}
     ,
-    {"de", NULL}
+    {"de", PYTABLE_NONE}
     ,
-    {"dao", NULL}
+    {"dao", PYTABLE_NONE}
     ,
-    {"dagn", &fc.bMisstype }
+    {"dagn", PYTABLE_NG_GN}
     ,
-    {"dang", NULL}
+    {"dang", PYTABLE_NONE}
     ,
-    {"dan", NULL}
+    {"dan", PYTABLE_NONE}
     ,
-    {"dai", NULL}
+    {"dai", PYTABLE_NONE}
     ,
-    {"da", NULL}
+    {"da", PYTABLE_NONE}
     ,
-    {"cuo", NULL}
+    {"cuo", PYTABLE_NONE}
     ,
-    {"cun", NULL}
+    {"cun", PYTABLE_NONE}
     ,
-    {"cui", NULL}
+    {"cui", PYTABLE_NONE}
     ,
-    {"cuagn", &fc.bMisstype }
+    {"cuagn", PYTABLE_NG_GN}
     ,
-    {"cuang", &MHPY_C[5].bMode}
+    {"cuang", PYTABLE_UAN_UANG}
     ,
-    {"cuagn", &fc.bMisstype }
+    {"cuagn", PYTABLE_NG_GN}
     ,
-    {"cuang", &MHPY_S[0].bMode}
+    {"cuang", PYTABLE_C_CH}
     ,
-    {"cuan", NULL}
+    {"cuan", PYTABLE_NONE}
     ,
-    {"cu", NULL}
+    {"cu", PYTABLE_NONE}
     ,
-    {"cou", NULL}
+    {"cou", PYTABLE_NONE}
     ,
-    {"cogn", &fc.bMisstype }
+    {"cogn", PYTABLE_NG_GN}
     ,
-    {"cong", NULL}
+    {"cong", PYTABLE_NONE}
     ,
-    {"ci", NULL}
+    {"ci", PYTABLE_NONE}
     ,
-    {"chuo", NULL}
+    {"chuo", PYTABLE_NONE}
     ,
-    {"chun", NULL}
+    {"chun", PYTABLE_NONE}
     ,
-    {"chui", NULL}
+    {"chui", PYTABLE_NONE}
     ,
-    {"chuagn", &fc.bMisstype }
+    {"chuagn", PYTABLE_NG_GN}
     ,
-    {"chuang", NULL}
+    {"chuang", PYTABLE_NONE}
     ,
-    {"chuan", NULL}
+    {"chuan", PYTABLE_NONE}
     ,
-    {"chuai", NULL}
+    {"chuai", PYTABLE_NONE}
     ,
-    {"chu", NULL}
+    {"chu", PYTABLE_NONE}
     ,
-    {"chou", NULL}
+    {"chou", PYTABLE_NONE}
     ,
-    {"chogn", &fc.bMisstype }
+    {"chogn", PYTABLE_NG_GN}
     ,
-    {"chong", NULL}
+    {"chong", PYTABLE_NONE}
     ,
-    {"chi", NULL}
+    {"chi", PYTABLE_NONE}
     ,
-    {"chegn", &fc.bMisstype }
+    {"chegn", PYTABLE_NG_GN}
     ,
-    {"cheng", NULL}
+    {"cheng", PYTABLE_NONE}
     ,
-    {"chen", NULL}
+    {"chen", PYTABLE_NONE}
     ,
-    {"che", NULL}
+    {"che", PYTABLE_NONE}
     ,
-    {"chao", NULL}
+    {"chao", PYTABLE_NONE}
     ,
-    {"chagn", &fc.bMisstype }
+    {"chagn", PYTABLE_NG_GN}
     ,
-    {"chang", NULL}
+    {"chang", PYTABLE_NONE}
     ,
-    {"chan", NULL}
+    {"chan", PYTABLE_NONE}
     ,
-    {"chai", NULL}
+    {"chai", PYTABLE_NONE}
     ,
-    {"cha", NULL}
+    {"cha", PYTABLE_NONE}
     ,
-    {"cegn", &fc.bMisstype }
+    {"cegn", PYTABLE_NG_GN}
     ,
-    {"ceng", NULL}
+    {"ceng", PYTABLE_NONE}
     ,
-    {"cen", NULL}
+    {"cen", PYTABLE_NONE}
     ,
-    {"ce", NULL}
+    {"ce", PYTABLE_NONE}
     ,
-    {"cao", NULL}
+    {"cao", PYTABLE_NONE}
     ,
-    {"cagn", &fc.bMisstype }
+    {"cagn", PYTABLE_NG_GN}
     ,
-    {"cang", NULL}
+    {"cang", PYTABLE_NONE}
     ,
-    {"can", NULL}
+    {"can", PYTABLE_NONE}
     ,
-    {"cai", NULL}
+    {"cai", PYTABLE_NONE}
     ,
-    {"ca", NULL}
+    {"ca", PYTABLE_NONE}
     ,
-    {"bu", NULL}
+    {"bu", PYTABLE_NONE}
     ,
-    {"bo", NULL}
+    {"bo", PYTABLE_NONE}
     ,
-    {"bign", &fc.bMisstype }
+    {"bign", PYTABLE_NG_GN}
     ,
-    {"bing", NULL}
+    {"bing", PYTABLE_NONE}
     ,
-    {"bin", NULL}
+    {"bin", PYTABLE_NONE}
     ,
-    {"bie", NULL}
+    {"bie", PYTABLE_NONE}
     ,
-    {"biao", NULL}
+    {"biao", PYTABLE_NONE}
     ,
-    {"biagn", &fc.bMisstype }
+    {"biagn", PYTABLE_NG_GN}
     ,
-    {"biang", &MHPY_C[2].bMode}
+    {"biang", PYTABLE_IAN_IANG}
     ,
-    {"bian", NULL}
+    {"bian", PYTABLE_NONE}
     ,
-    {"bi", NULL}
+    {"bi", PYTABLE_NONE}
     ,
-    {"begn", &fc.bMisstype }
+    {"begn", PYTABLE_NG_GN}
     ,
-    {"beng", NULL}
+    {"beng", PYTABLE_NONE}
     ,
-    {"ben", NULL}
+    {"ben", PYTABLE_NONE}
     ,
-    {"bei", NULL}
+    {"bei", PYTABLE_NONE}
     ,
-    {"bao", NULL}
+    {"bao", PYTABLE_NONE}
     ,
-    {"bagn", &fc.bMisstype }
+    {"bagn", PYTABLE_NG_GN}
     ,
-    {"bang", NULL}
+    {"bang", PYTABLE_NONE}
     ,
-    {"ban", NULL}
+    {"ban", PYTABLE_NONE}
     ,
-    {"bai", NULL}
+    {"bai", PYTABLE_NONE}
     ,
-    {"ba", NULL}
+    {"ba", PYTABLE_NONE}
     ,
-    {"ao", NULL}
+    {"ao", PYTABLE_NONE}
     ,
-    {"agn", &fc.bMisstype }
+    {"agn", PYTABLE_NG_GN}
     ,
-    {"ang", NULL}
+    {"ang", PYTABLE_NONE}
     ,
-    {"an", NULL}
+    {"an", PYTABLE_NONE}
     ,
-    {"ai", NULL}
+    {"ai", PYTABLE_NONE}
     ,
-    {"a", NULL}
+    {"a", PYTABLE_NONE}
     ,
-    {"\0", NULL}
+    {"\0", PYTABLE_NONE}
 };
 
-int GetMHIndex_C (char map)
+int GetMHIndex_C(MHPY* MHPY_C, char map)
 {
     int             i;
 
-    for (i = 0; MHPY_C[i].strMap[0]; i++) {
-        if (map == MHPY_C[i].strMap[0] || map == MHPY_C[i].strMap[1]) {
+    for (i = 0; MHPY_C[i].strMap[0]; i++)
+    {
+        if (map == MHPY_C[i].strMap[0] || map == MHPY_C[i].strMap[1])
+        {
             if (MHPY_C[i].bMode)
                 return i;
             else
                 return -1;
         }
     }
+
     return -1;
 }
 
-int GetMHIndex_S (char map, Bool bMode)
+int GetMHIndex_S(MHPY* MHPY_S, char map, boolean bMode)
 {
     int             i;
 
-    for (i = 0; MHPY_S[i].strMap[0]; i++) {
-        if (map == MHPY_S[i].strMap[0] || map == MHPY_S[i].strMap[1]) {
+    for (i = 0; MHPY_S[i].strMap[0]; i++)
+    {
+        if (map == MHPY_S[i].strMap[0] || map == MHPY_S[i].strMap[1])
+        {
             if (MHPY_S[i].bMode || bMode)
                 return i;
             else
@@ -1195,10 +1206,118 @@ int GetMHIndex_S (char map, Bool bMode)
 
 }
 
-Bool IsZ_C_S (char map)
+boolean IsZ_C_S(char map)
 {
-    if (map=='c' || map=='H'|| map=='B')
-        return True;
-    return False;
+    if (map == 'c' || map == 'H' || map == 'B')
+        return true;
+
+    return false;
 }
 
+void InitMHPY(MHPY** pMHPY, const MHPY_TEMPLATE* MHPYtemplate)
+{
+    int iBaseCount = 0;
+
+    while (MHPYtemplate[iBaseCount].strMap[0] != '\0')
+        iBaseCount++;
+
+    iBaseCount++;
+
+    *pMHPY = fcitx_malloc0(sizeof(MHPY) * iBaseCount);
+
+    MHPY *mhpy = *pMHPY;
+
+    iBaseCount = 0;
+
+    while (MHPYtemplate[iBaseCount].strMap[0] != '\0')
+    {
+        strcpy(mhpy[iBaseCount].strMap, MHPYtemplate[iBaseCount].strMap);
+        mhpy[iBaseCount].bMode = false;
+        iBaseCount++;
+    }
+}
+
+void InitPYTable(FcitxPinyinConfig* pyconfig)
+{
+
+    int iBaseCount = 0;
+
+    while (PYTable_template[iBaseCount].strPY[0] != '\0')
+        iBaseCount++;
+
+    iBaseCount++;
+
+    pyconfig->PYTable = fcitx_malloc0(sizeof(PYTABLE) * iBaseCount);
+
+    iBaseCount = 0;
+
+    while (PYTable_template[iBaseCount].strPY[0] != '\0')
+    {
+        strcpy(pyconfig->PYTable[iBaseCount].strPY, PYTable_template[iBaseCount].strPY);
+
+        switch (PYTable_template[iBaseCount].control)
+        {
+
+        case PYTABLE_NONE:
+            pyconfig->PYTable[iBaseCount].pMH = NULL;
+            break;
+
+        case PYTABLE_NG_GN:
+            pyconfig->PYTable[iBaseCount].pMH = &pyconfig->bMisstype;
+            break;
+
+        case PYTABLE_AN_ANG: // 0
+            pyconfig->PYTable[iBaseCount].pMH = &pyconfig->MHPY_C[0].bMode;
+            break;
+
+        case PYTABLE_EN_ENG: // 1
+            pyconfig->PYTable[iBaseCount].pMH = &pyconfig->MHPY_C[1].bMode;
+            break;
+
+        case PYTABLE_IAN_IANG: // 2
+            pyconfig->PYTable[iBaseCount].pMH = &pyconfig->MHPY_C[2].bMode;
+            break;
+
+        case PYTABLE_IN_ING: // 3
+            pyconfig->PYTable[iBaseCount].pMH = &pyconfig->MHPY_C[3].bMode;
+            break;
+
+        case PYTABLE_U_OU: // 4
+            pyconfig->PYTable[iBaseCount].pMH = &pyconfig->MHPY_C[4].bMode;
+            break;
+
+        case PYTABLE_UAN_UANG: // 5
+            pyconfig->PYTable[iBaseCount].pMH = &pyconfig->MHPY_C[5].bMode;
+            break;
+
+        case PYTABLE_C_CH: // 0
+            pyconfig->PYTable[iBaseCount].pMH = &pyconfig->MHPY_S[0].bMode;
+            break;
+
+        case PYTABLE_F_H: // 1
+            pyconfig->PYTable[iBaseCount].pMH = &pyconfig->MHPY_S[1].bMode;
+            break;
+
+        case PYTABLE_L_N: // 2
+            pyconfig->PYTable[iBaseCount].pMH = &pyconfig->MHPY_S[2].bMode;
+            break;
+
+        case PYTABLE_S_SH: // 3
+            pyconfig->PYTable[iBaseCount].pMH = &pyconfig->MHPY_S[3].bMode;
+            break;
+
+        case PYTABLE_Z_ZH: // 4
+            pyconfig->PYTable[iBaseCount].pMH = &pyconfig->MHPY_S[4].bMode;
+            break;
+
+        case PYTABLE_AN_ANG_S: //5
+            pyconfig->PYTable[iBaseCount].pMH = &pyconfig->MHPY_S[5].bMode;
+            break;
+        }
+
+        iBaseCount++;
+    }
+}
+
+
+// kate: indent-mode cstyle; space-indent on; indent-width 0; 

@@ -1,11 +1,1 @@
 debian/im-switch/fcitx etc/X11/xinit/xinput.d/
-usr/bin/fcitx*
-usr/include/
-/usr/lib/pkgconfig/
-/usr/lib/libfcitx-config.so*
-/usr/lib/libfcitx-config.a
-usr/share/doc/fcitx/pinyin.txt
-usr/share/doc/fcitx/API.txt
-usr/share/doc/fcitx/Develop_Readme
-usr/share/man/
-usr/share/locale/

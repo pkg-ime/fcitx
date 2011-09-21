@@ -1,0 +1,7 @@
+usr/lib/fcitx/fcitx-x11.so
+usr/share/fcitx/addon/fcitx-x11.conf
+usr/lib/fcitx/fcitx-xim.so
+usr/share/fcitx/addon/fcitx-xim.conf
+usr/lib/fcitx/fcitx-vk.so
+usr/share/fcitx/addon/fcitx-vk.conf
+usr/share/fcitx/data/vk.conf

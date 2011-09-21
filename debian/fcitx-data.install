@@ -1,4 +1,8 @@
-usr/share/pixmaps/
-usr/share/fcitx/skin/
-usr/share/fcitx/data/*.*
-usr/share/fcitx/data/table/disable-table.conf.template
+usr/share/icons/*
+usr/share/locale/*
+usr/share/fcitx/configdesc/addon.desc
+usr/share/fcitx/configdesc/config.desc
+usr/share/fcitx/configdesc/profile.desc
+usr/share/fcitx/configdesc/skin.desc
+usr/share/applications/fcitx.desktop
+usr/share/applications/fcitx-configtool.desktop

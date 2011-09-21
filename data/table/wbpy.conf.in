@@ -1,0 +1,14 @@
+[CodeTable]
+_Name=WubiPinyin
+IconName=wbpy
+File=wbpy.mb
+AdjustOrder=AdjustFreq
+Priority=4
+UsePY=False
+PYKey=z
+AutoSend=-1
+NoneMatchAutoSend=-1
+AutoPhrase=True
+SaveAutoPhrase=3
+ExactMatch=False
+PromptTableCode=False

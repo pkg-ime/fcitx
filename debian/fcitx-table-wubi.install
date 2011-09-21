@@ -1,3 +1,4 @@
-usr/share/fcitx/data/table/wbx.*
+usr/share/fcitx/table/wbx.mb
+usr/share/fcitx/table/wbx.conf
 usr/share/doc/fcitx/cjkvinput.txt
 usr/share/doc/fcitx/wb_fh.htm

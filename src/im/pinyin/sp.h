@@ -20,10 +20,9 @@
 #ifndef _SP_H
 #define _SP_H
 
-#define strNameOfShuangpin __("Shuangpin")
-#define strIconNameOfShuangpin "shuangpin"
+#include "fcitx-config/fcitx-config.h"
 
-typedef enum {
+typedef enum _SP_FROM {
     SP_FROM_USER=0,
     SP_FROM_SYSTEM_CONFIG,
     SP_FROM_SYSTEM_SP_CONFIG
@@ -39,14 +38,19 @@ typedef struct _SP_S {
     char            cJP;
 } SP_S;
 
-void            SPInit (void);
-void            LoadSPData (void);
+struct _FcitxPinyinConfig;
+struct _FcitxPinyinState;
+
+boolean         SPInit (void* arg);
+void            LoadSPData (struct _FcitxPinyinState* pystate);
 
 //void            QP2SP (char *strQP, char *strSP);
-void            SP2QP (char *strSP, char *strQP);
-int             GetSPIndexQP_C (char *str);
-int             GetSPIndexQP_S (char *str);
-int             GetSPIndexJP_C (char c, int iStart);
-int             GetSPIndexJP_S (char c);
+void            SP2QP (struct _FcitxPinyinConfig* pyconfig, char* strSP, char* strQP);
+int             GetSPIndexQP_C (struct _FcitxPinyinConfig* pyconfig, char *str);
+int             GetSPIndexQP_S (struct _FcitxPinyinConfig* pyconfig, char *str);
+int             GetSPIndexJP_C (struct _FcitxPinyinConfig* pyconfig, char c, int iStart);
+int             GetSPIndexJP_S (struct _FcitxPinyinConfig* pyconfig, char c);
 
 #endif
+
+// kate: indent-mode cstyle; space-indent on; indent-width 0; 

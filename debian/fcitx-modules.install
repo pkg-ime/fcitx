@@ -1,0 +1,15 @@
+usr/lib/fcitx/fcitx-autoeng.so
+usr/lib/fcitx/fcitx-chttrans.so
+usr/lib/fcitx/fcitx-fullwidth-char.so
+usr/lib/fcitx/fcitx-punc.so
+usr/lib/fcitx/fcitx-quickphrase.so
+usr/lib/fcitx/fcitx-remote-module.so
+usr/share/fcitx/addon/fcitx-autoeng.conf
+usr/share/fcitx/addon/fcitx-chttrans.conf
+usr/share/fcitx/addon/fcitx-fullwidth-char.conf
+usr/share/fcitx/addon/fcitx-punc.conf
+usr/share/fcitx/addon/fcitx-quickphrase.conf
+usr/share/fcitx/addon/fcitx-remote-module.conf
+usr/share/fcitx/data/AutoEng.dat
+usr/share/fcitx/data/gbks2t.tab
+usr/share/fcitx/data/punc.mb

@@ -20,213 +20,92 @@
 #ifndef _TABLE_H
 #define _TABLE_H
 
-#include <X11/Xlib.h>
+#include "fcitx/configfile.h"
+#include "fcitx/ime.h"
+#include "fcitx-utils/utarray.h"
+#include "tabledict.h"
+#include "fcitx/candidate.h"
 
-#include "tools/configfile.h"
-#include "core/ime.h"
-#include "tools/utarray.h"
+struct _FcitxInstance;
 
-#define MAX_CODE_LENGTH  30
-#define PHRASE_MAX_LENGTH 10
-#define FH_MAX_LENGTH  10
-#define TABLE_AUTO_SAVE_AFTER 1024
-#define AUTO_PHRASE_COUNT 10000
-#define SINGLE_HZ_COUNT 66000
-
-typedef struct _RULE_RULE {
-    unsigned char   iFlag;	// 1 --> 正序   0 --> 逆序
-    unsigned char   iWhich;	//第几个字
-    unsigned char   iIndex;	//第几个编码
-} RULE_RULE;
-
-typedef struct _RULE {
-    unsigned char   iWords;	//多少个字
-    unsigned char   iFlag;	//1 --> 大于等于iWords  0 --> 等于iWords
-    RULE_RULE      *rule;
-} RULE;
-
-typedef struct _TABLE {
-    GenericConfig   config;
-    char           *strPath;
-    char           *strSymbolFile;
-    char           *strName;
-    char           *strIconName;
-    char           *strInputCode;
-    unsigned char   iCodeLength;
-    unsigned char   iPYCodeLength;
-    char           *strEndCode;	//中止键，按下该键相当于输入该键后再按一个空格
-    char           *strIgnoreChars;
-    char            cMatchingKey;
-    char           *strSymbol;
-    char            cPinyin;	//输入该键后，表示进入临时拼音状态
-    unsigned char   bRule;
-
-    RULE           *rule;	//组词规则
-    int             iIMIndex;	//记录该码表对应于输入法的顺序
-    unsigned int    iRecordCount;
-    ADJUSTORDER     tableOrder;
-
-    int             iPriority;
-    Bool            bUsePY;	//使用拼音
-    int             iTableAutoSendToClient;	//自动上屏
-    int             iTableAutoSendToClientWhenNone;	//空码自动上屏
-    Bool            bUseMatchingKey;	//是否模糊匹配
-    Bool            bAutoPhrase;	//是否自动造词
-    int             iSaveAutoPhraseAfter;	//选择N次后保存自动词组，0-不保存，1-立即保存
-    Bool            bAutoPhrasePhrase;	//词组是否参与造词
-    int             iAutoPhrase;	//自动造词长度
-    Bool            bTableExactMatch;	//是否只显示精确匹配的候选字/词
-    Bool            bPromptTableCode;	//输入完毕后是否提示编码
-
-    Bool            bHasPinyin;		//标记该码表中是否有拼音
-    char           *strChoose;		//设置选择键
-    Bool            bEnabled;
-} TABLE;
-
-typedef struct _RECORD {
-    char           *strCode;
-    char           *strHZ;
-    struct _RECORD *next;
-    struct _RECORD *prev;
-    unsigned int    iHit;
-    unsigned int    iIndex;
-    unsigned int    flag:1;
-    unsigned int    bPinyin:1;
-} RECORD;
-
-/* 根据键码生成一个简单的索引，指向该键码起始的第一个记录 */
-typedef struct _RECORD_INDEX {
-    RECORD         *record;
-    char            cCode;
-} RECORD_INDEX;
-
-typedef struct _FH {
-    char            strFH[FH_MAX_LENGTH * 2 + 1];
-} FH;
-
-typedef struct _AUTOPHRASE {
-    char           *strHZ;
-    char           *strCode;
-    INT8            iSelected;
-    unsigned int    flag:1;
-    struct _AUTOPHRASE *next;	//构造一个队列
-} AUTOPHRASE;
-
-//用union就会出错，不知道是啥原因
-typedef struct {
+typedef union _CANDWORD {
     AUTOPHRASE     *autoPhrase;
     RECORD         *record;
-    char            strPYPhrase[PHRASE_MAX_LENGTH * 2 + 1];
+    int             iFHIndex;
 } CANDWORD;
 
+typedef enum _CANDTYPE {
+    CT_NORMAL = 0,
+    CT_AUTOPHRASE,
+    CT_REMIND,
+    CT_FH
+} CANDTYPE;
+
 typedef struct _TABLECANDWORD {
-    unsigned int    flag:2;	//指示该候选字/词是自动组的词还是正常的字/词
+    CANDTYPE        flag;	//指示该候选字/词是自动组的词还是正常的字/词
     CANDWORD        candWord;
 } TABLECANDWORD;
 
-typedef enum {
-    CT_NORMAL = 0,
-    CT_AUTOPHRASE,
-    CT_PYPHRASE			//临时拼音转换过来的候选字/词
-} CANDTYPE;
-
-typedef struct TableState {
+typedef struct _FcitxTableState {
     UT_array* table; /* 码表 */
-    
-    INT8            iTableIMIndex;
-    INT8            iTableCount;
-    
-    INT8            iCurrentTableLoaded;
-    
-    RECORD         *currentRecord;
-    RECORD	       *recordHead;
-    
-    RECORD         *tableSingleHZ[SINGLE_HZ_COUNT];		//Records the single characters in table to speed auto phrase
+
+    char            iTableIMIndex;
+    char            iTableCount;
+
+    char            iCurrentTableLoaded;
     RECORD	       *pCurCandRecord;	//Records current cand word selected, to update the hit-frequency information
-    TABLECANDWORD   tableCandWord[MAX_CAND_WORD*2];
-    
+
     RECORD_INDEX   *recordIndex;
-    
-    AUTOPHRASE     *autoPhrase;
-    AUTOPHRASE     *insertPoint;
-    
-    uint            iAutoPhrase;
-    uint            iTableCandDisplayed;
-    uint            iTableTotalCandCount;
-    char            strTableLegendSource[PHRASE_MAX_LENGTH * UTF8_MAX_LENGTH + 1];
-    
-    FH             *fh;
-    int             iFH ;
-    unsigned int    iTableIndex;
-    
-    Bool            bIsTableDelPhrase;
+
+    char            strTableRemindSource[PHRASE_MAX_LENGTH * UTF8_MAX_LENGTH + 1];
+
+    boolean            bIsTableDelPhrase;
     HOTKEYS         hkTableDelPhrase[HOT_KEY_COUNT];
-    Bool            bIsTableAdjustOrder;
+    boolean            bIsTableAdjustOrder;
     HOTKEYS         hkTableAdjustOrder[HOT_KEY_COUNT];
-    Bool            bIsTableAddPhrase;
+    boolean            bIsTableAddPhrase;
     HOTKEYS         hkTableAddPhrase[HOT_KEY_COUNT];
-    
-    INT8            iTableChanged;
-    INT8            iTableNewPhraseHZCount;
-    Bool            bCanntFindCode;	//Records if new phrase has corresponding code - should be always false
-    char           *strNewPhraseCode;
-    
-    SINGLE_HZ       hzLastInput[PHRASE_MAX_LENGTH];	//Records last HZ input
-    INT16           iHZLastInputCount ;
-    Bool            bTablePhraseTips;
-    
+
+    char            iTableNewPhraseHZCount;
+
+    boolean            bTablePhraseTips;
+
     ADJUSTORDER     PYBaseOrder;
-    Bool		    isSavingTableDic;
-} TableState;
+    boolean		    isSavingTableDic;
 
-extern TableState tbl;
+    struct _FcitxInstance* owner;
+    struct _FcitxAddon* pyaddon;
+    CandidateWordCommitCallback pygetcandword;
+} FcitxTableState;
 
-void            LoadTableInfo (void);
-Bool            LoadTableDict (void);
-void            TableInit (void);
-void            FreeTableIM (INT8 index);
-void            SaveTableIM (void);
-void            SaveTableDict (void);
-Bool            IsInputKey (int iKey);
-Bool            IsIgnoreChar (char cChar);
-Bool            IsEndKey (char cChar);
-INT8            IsChooseKey (int iKey);
+void            LoadTableInfo (FcitxTableState* tbl);
+boolean TableInit (void* arg);
+void            FreeTableIM (FcitxTableState* tbl, char i);
+void            SaveTableIM (void* arg);
 
-INPUT_RETURN_VALUE DoTableInput (unsigned int sym, unsigned int state, int keyCount);
-INPUT_RETURN_VALUE TableGetCandWords (SEARCH_MODE mode);
-void            TableAddCandWord (RECORD * wbRecord, SEARCH_MODE mode);
-void            TableAddAutoCandWord (INT16 which, SEARCH_MODE mode);
-INPUT_RETURN_VALUE TableGetLegendCandWords (SEARCH_MODE mode);
-void            TableAddLegendCandWord (RECORD * record, SEARCH_MODE mode);
-INPUT_RETURN_VALUE TableGetFHCandWords (SEARCH_MODE mode);
-INPUT_RETURN_VALUE TableGetPinyinCandWords (SEARCH_MODE mode);
-void            TableResetStatus (void);
-char           *TableGetLegendCandWord (int iIndex);
-char           *TableGetFHCandWord (int iIndex);
-Bool            HasMatchingKey (void);
-int             TableCompareCode (char *strUser, char *strDict);
-int             TableFindFirstMatchCode (void);
-void            TableAdjustOrderByIndex (int iIndex);
-void            TableDelPhraseByIndex (int iIndex);
-void            TableDelPhraseByHZ (char *strHZ);
-void            TableDelPhrase (RECORD * record);
-RECORD         *TableHasPhrase (char *strCode, char *strHZ);
-RECORD         *TableFindPhrase (char *strHZ);
-void            TableInsertPhrase (char *strCode, char *strHZ);
-char	       *_TableGetCandWord (int iIndex, Bool _bLegend);		//Internal
-char           *TableGetCandWord (int iIndex);
-void		TableUpdateHitFrequency (RECORD * record);
-void            TableCreateNewPhrase (void);
-void            TableCreatePhraseCode (char *strHZ);
-Bool            TablePhraseTips (void);
-void            TableSetCandWordsFlag (int iCount, Bool flag);
-void            TableResetFlags (void);
+INPUT_RETURN_VALUE DoTableInput (void* arg, FcitxKeySym sym, unsigned int state);
+INPUT_RETURN_VALUE TableGetCandWords ();
+void TableAddCandWord (RECORD * record, TABLECANDWORD* tableCandWord);
+void            TableAddAutoCandWord (FcitxTableState* tbl, short int which, TABLECANDWORD* tableCandWord);
+INPUT_RETURN_VALUE TableGetRemindCandWords (FcitxTableState* tbl);
+void TableAddRemindCandWord (RECORD * record, TABLECANDWORD* tableCandWord);
+INPUT_RETURN_VALUE TableGetFHCandWords (FcitxTableState* tbl);
+INPUT_RETURN_VALUE TableGetPinyinCandWords (FcitxTableState* tbl);
+void            TableResetStatus (void* arg);
+INPUT_RETURN_VALUE TableGetRemindCandWord (void* arg, TABLECANDWORD* tableCandWord);
+INPUT_RETURN_VALUE TableGetFHCandWord (FcitxTableState* tbl, TABLECANDWORD* tableCandWord);
+void TableAdjustOrderByIndex (FcitxTableState* tbl, TABLECANDWORD* tableCandWord);
+void            TableDelPhraseByIndex (FcitxTableState* tbl, TABLECANDWORD* tableCandWord);
+void            TableCreateNewPhrase (FcitxTableState* tbl);
+INPUT_RETURN_VALUE _TableGetCandWord (FcitxTableState* tbl, TABLECANDWORD* tableCandWord, boolean _bRemind);
+INPUT_RETURN_VALUE TableGetCandWord (void* arg, CandidateWord* candWord);
+boolean            TablePhraseTips (void* arg);
+void            TableSetCandWordsFlag (FcitxTableState* tbl, int iCount, boolean flag);
 
-void            TableCreateAutoPhrase (INT8 iCount);
-
-void            UpdateHZLastInput (char *);
+void            UpdateHZLastInput (FcitxTableState* tbl, char* str);
 
 ConfigFileDesc *GetTableConfigDesc();
-CONFIG_BINDING_DECLARE(TABLE);
 
 #endif
+
+// kate: indent-mode cstyle; space-indent on; indent-width 0;
