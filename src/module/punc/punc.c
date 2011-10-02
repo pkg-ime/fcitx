@@ -56,9 +56,9 @@ unsigned        iWhich:
     2;
 } WidePunc;
 
-static boolean LoadPuncDict (struct _FcitxPuncState* puncState);
-static char *GetPunc (struct _FcitxPuncState* puncState, int iKey);
-static void FreePunc (struct _FcitxPuncState* puncState);
+static boolean LoadPuncDict(struct _FcitxPuncState* puncState);
+static char *GetPunc(struct _FcitxPuncState* puncState, int iKey);
+static void FreePunc(struct _FcitxPuncState* puncState);
 static void* PuncCreate(FcitxInstance* instance);
 static boolean ProcessPunc(void* arg, FcitxKeySym sym, unsigned int state, INPUT_RETURN_VALUE* retVal);
 static void* PuncGetPunc(void* a, FcitxModuleFunctionArg arg);
@@ -86,10 +86,13 @@ FcitxModule module = {
     ReloadPunc
 };
 
+FCITX_EXPORT_API
+int ABI_VERSION = FCITX_ABI_VERSION;
+
 void* PuncCreate(FcitxInstance* instance)
 {
     FcitxPuncState* puncState = fcitx_malloc0(sizeof(FcitxPuncState));
-    FcitxAddon* puncaddon = GetAddonByName(&instance->addons, FCITX_PUNC_NAME);
+    FcitxAddon* puncaddon = GetAddonByName(FcitxInstanceGetAddons(instance), FCITX_PUNC_NAME);
     puncState->owner = instance;
     LoadPuncDict(puncState);
     KeyFilterHook hk;
@@ -102,7 +105,7 @@ void* PuncCreate(FcitxInstance* instance)
     puncState->bLastIsNumber = false;
 
     HotkeyHook hotkey;
-    hotkey.hotkey = instance->config->hkPunc;
+    hotkey.hotkey = FcitxInstanceGetConfig(instance)->hkPunc;
     hotkey.hotkeyhandle = TogglePuncStateWithHotkey;
     hotkey.arg = puncState;
     RegisterHotkeyFilter(instance, hotkey);
@@ -113,7 +116,7 @@ void* PuncCreate(FcitxInstance* instance)
 
     RegisterResetInputHook(instance, hook);
 
-    RegisterStatus(instance, puncState, "punc", "Full Width Punctuation", "Full Width Punctuation", TogglePuncState, GetPuncState);
+    RegisterStatus(instance, puncState, "punc", _("Full Width Punctuation"), _("Full Width Punctuation"), TogglePuncState, GetPuncState);
 
     AddFunction(puncaddon, PuncGetPunc);
     return puncState;
@@ -138,7 +141,10 @@ boolean ProcessPunc(void* arg, FcitxKeySym sym, unsigned int state, INPUT_RETURN
 {
     FcitxPuncState* puncState = (FcitxPuncState*) arg;
     FcitxInstance* instance = puncState->owner;
-    FcitxInputState* input = &puncState->owner->input;
+    FcitxInputState* input = FcitxInstanceGetInputState(puncState->owner);
+    FcitxProfile* profile = FcitxInstanceGetProfile(instance);
+    FcitxConfig* config = FcitxInstanceGetConfig(instance);
+
     char *pPunc = NULL;
 
     if (*retVal != IRV_TO_PROCESS)
@@ -146,13 +152,12 @@ boolean ProcessPunc(void* arg, FcitxKeySym sym, unsigned int state, INPUT_RETURN
 
     FcitxKeySym origsym = sym;
     sym = KeyPadToMain(sym);
-    if (instance->profile->bUseWidePunc) {
+    if (profile->bUseWidePunc) {
 
-        if (puncState->bLastIsNumber && instance->config->bEngPuncAfterNumber
+        if (puncState->bLastIsNumber && config->bEngPuncAfterNumber
                 && (IsHotKey(origsym, state, FCITX_PERIOD)
                     || IsHotKey(origsym, state, FCITX_SEMICOLON)
-                    || IsHotKey(origsym, state, FCITX_COMMA)))
-        {
+                    || IsHotKey(origsym, state, FCITX_COMMA))) {
             puncState->cLastIsAutoConvert = origsym;
             puncState->bLastIsNumber = false;
             *retVal = IRV_DONOT_PROCESS;
@@ -168,28 +173,22 @@ boolean ProcessPunc(void* arg, FcitxKeySym sym, unsigned int state, INPUT_RETURN
     if (IsHotKeyPunc(sym, state)) {
         GetOutputString(input)[0] = '\0';
         INPUT_RETURN_VALUE ret = IRV_TO_PROCESS;
-        if (!puncState->owner->input.bIsInRemind)
-            ret = CandidateWordChooseByIndex(input->candList, 0);
+        if (!FcitxInputStateGetIsInRemind(input))
+            ret = CandidateWordChooseByIndex(FcitxInputStateGetCandidateList(input), 0);
 
         /* if there is nothing to commit */
-        if (ret == IRV_TO_PROCESS)
-        {
-            if (pPunc)
-            {
+        if (ret == IRV_TO_PROCESS) {
+            if (pPunc) {
                 strcat(GetOutputString(input), pPunc);
                 *retVal = IRV_PUNC;
                 CleanInputWindow(instance);
                 return true;
-            }
-            else
+            } else
                 return false;
-        }
-        else
-        {
+        } else {
             if (pPunc)
                 strcat(GetOutputString(input), pPunc);
-            else
-            {
+            else {
                 char buf[2] = { sym, 0 };
                 strcat(GetOutputString(input), buf);
             }
@@ -202,10 +201,9 @@ boolean ProcessPunc(void* arg, FcitxKeySym sym, unsigned int state, INPUT_RETURN
         return false;
     }
 
-    if (instance->profile->bUseWidePunc)
-    {
+    if (profile->bUseWidePunc) {
         if (IsHotKey(sym, state, FCITX_BACKSPACE)
-                 && puncState->cLastIsAutoConvert) {
+                && puncState->cLastIsAutoConvert) {
             char *pPunc;
 
             ForwardKey(puncState->owner, GetCurrentIC(instance), FCITX_PRESS_KEY, sym, state);
@@ -235,7 +233,7 @@ boolean ProcessPunc(void* arg, FcitxKeySym sym, unsigned int state, INPUT_RETURN
  * @note 文件中数据的格式为： 对应的英文符号 中文标点 <中文标点>
  * 加载标点词典。标点词典定义了一组标点转换，如输入‘.’就直接转换成‘。’
  */
-boolean LoadPuncDict (FcitxPuncState* puncState)
+boolean LoadPuncDict(FcitxPuncState* puncState)
 {
     FILE           *fpDict;             // 词典文件指针
     int             iRecordNo;
@@ -254,17 +252,17 @@ boolean LoadPuncDict (FcitxPuncState* puncState)
      * 这个函数非常简单，就是计算该文件有多少行（包含空行）。
      * 因为空行，在下面会略去，所以，这儿存在内存的浪费现象。
      * 没有一个空行就是浪费sizeof (WidePunc)字节内存*/
-    iRecordNo = CalculateRecordNumber (fpDict);
+    iRecordNo = CalculateRecordNumber(fpDict);
     // 申请空间，用来存放这些数据。这儿没有检查是否申请到内存，严格说有小隐患
-    puncState->chnPunc = (WidePunc *) malloc (sizeof (WidePunc) * (iRecordNo + 1));
+    puncState->chnPunc = (WidePunc *) malloc(sizeof(WidePunc) * (iRecordNo + 1));
 
     iRecordNo = 0;
 
     // 下面这个循环，就是一行一行的读入词典文件的数据。并将其放入到chnPunc里面去。
     for (;;) {
-        if (!fgets (strText, (MAX_PUNC_LENGTH * UTF8_MAX_LENGTH + 3), fpDict))
+        if (!fgets(strText, (MAX_PUNC_LENGTH * UTF8_MAX_LENGTH + 3), fpDict))
             break;
-        i = strlen (strText) - 1;
+        i = strlen(strText) - 1;
 
         // 先找到最后一个字符
         while ((strText[i] == '\n') || (strText[i] == ' ')) {
@@ -307,17 +305,17 @@ boolean LoadPuncDict (FcitxPuncState* puncState)
     }
 
     puncState->chnPunc[iRecordNo].ASCII = '\0';
-    fclose (fpDict);
+    fclose(fpDict);
 
     return true;
 }
 
-void FreePunc (FcitxPuncState* puncState)
+void FreePunc(FcitxPuncState* puncState)
 {
     if (!puncState->chnPunc)
         return;
 
-    free (puncState->chnPunc);
+    free(puncState->chnPunc);
     puncState->chnPunc = (WidePunc *) NULL;
 }
 
@@ -325,7 +323,7 @@ void FreePunc (FcitxPuncState* puncState)
  * 根据字符得到相应的标点符号
  * 如果该字符不在标点符号集中，则返回NULL
  */
-char           *GetPunc (FcitxPuncState* puncState, int iKey)
+char           *GetPunc(FcitxPuncState* puncState, int iKey)
 {
     int             iIndex = 0;
     char           *pPunc;
@@ -350,16 +348,17 @@ char           *GetPunc (FcitxPuncState* puncState, int iKey)
 
 void TogglePuncState(void* arg)
 {
-    FcitxPuncState* puncState = (FcitxPuncState* )arg;
+    FcitxPuncState* puncState = (FcitxPuncState*)arg;
     FcitxInstance* instance = puncState->owner;
-    instance->profile->bUseWidePunc = !instance->profile->bUseWidePunc;
-    SaveProfile(instance->profile);
+    FcitxProfile* profile = FcitxInstanceGetProfile(instance);
+    profile->bUseWidePunc = !profile->bUseWidePunc;
+    SaveProfile(profile);
     ResetInput(puncState->owner);
 }
 
 INPUT_RETURN_VALUE TogglePuncStateWithHotkey(void* arg)
 {
-    FcitxPuncState* puncState = (FcitxPuncState* )arg;
+    FcitxPuncState* puncState = (FcitxPuncState*)arg;
     UpdateStatus(puncState->owner, "punc");
     return IRV_DO_NOTHING;
 }
@@ -368,7 +367,8 @@ boolean GetPuncState(void* arg)
 {
     FcitxPuncState* puncState = (FcitxPuncState*) arg;
     FcitxInstance* instance = puncState->owner;
-    return instance->profile->bUseWidePunc;
+    FcitxProfile* profile = FcitxInstanceGetProfile(instance);
+    return profile->bUseWidePunc;
 }
 
 void ReloadPunc(void* arg)
@@ -381,10 +381,10 @@ void ReloadPunc(void* arg)
 boolean IsHotKeyPunc(FcitxKeySym sym, unsigned int state)
 {
     if (IsHotKeySimple(sym, state)
-        && !IsHotKeyDigit(sym, state)
-        && !IsHotKeyLAZ(sym, state)
-        && !IsHotKeyUAZ(sym, state)
-        && !IsHotKey(sym, state, FCITX_SPACE))
+            && !IsHotKeyDigit(sym, state)
+            && !IsHotKeyLAZ(sym, state)
+            && !IsHotKeyUAZ(sym, state)
+            && !IsHotKey(sym, state, FCITX_SPACE))
         return true;
 
     return false;

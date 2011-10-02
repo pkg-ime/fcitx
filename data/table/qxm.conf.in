@@ -1,4 +1,5 @@
 [CodeTable]
+UniqueName=bingchan
 _Name=Bingchan
 IconName=bingchan
 File=qxm.mb
@@ -13,3 +14,4 @@ AutoPhrasePhrase=True
 SaveAutoPhrase=True
 ExactMatch=False
 PromptTableCode=True
+LangCode=zh_CN

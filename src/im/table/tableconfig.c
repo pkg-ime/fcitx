@@ -23,6 +23,7 @@
 #include "tabledict.h"
 
 CONFIG_BINDING_BEGIN(TableMetaData)
+CONFIG_BINDING_REGISTER("CodeTable", "UniqueName", uniqueName)
 CONFIG_BINDING_REGISTER("CodeTable", "Name", strName)
 CONFIG_BINDING_REGISTER("CodeTable", "IconName", strIconName)
 CONFIG_BINDING_REGISTER("CodeTable", "File", strPath)
@@ -44,8 +45,9 @@ CONFIG_BINDING_REGISTER("CodeTable", "PromptTableCode", bPromptTableCode)
 CONFIG_BINDING_REGISTER("CodeTable", "Symbol", strSymbol)
 CONFIG_BINDING_REGISTER("CodeTable", "SymbolFile", strSymbolFile)
 CONFIG_BINDING_REGISTER("CodeTable", "Choose", strChoose)
+CONFIG_BINDING_REGISTER("CodeTable", "LangCode", langCode)
 CONFIG_BINDING_REGISTER("CodeTable", "Enabled", bEnabled)
 CONFIG_BINDING_END()
 
 
-// kate: indent-mode cstyle; space-indent on; indent-width 0; 
+// kate: indent-mode cstyle; space-indent on; indent-width 0;

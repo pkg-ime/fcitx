@@ -33,14 +33,25 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <limits.h>
+#include <libgen.h>
+#include <ctype.h>
 
+#include "config.h"
 #include "fcitx/fcitx.h"
 #include "utils.h"
 #include "utf8.h"
-#include <ctype.h>
+
+#if defined(LIBKVM_FOUND)
+#include <kvm.h>
+#include <fcntl.h>
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#include <sys/user.h>
+#endif
 
 FCITX_EXPORT_API
-int CalculateRecordNumber (FILE * fpDict)
+int CalculateRecordNumber(FILE * fpDict)
 {
     char           *strBuf = NULL;
     size_t          bufLen = 0;
@@ -49,7 +60,7 @@ int CalculateRecordNumber (FILE * fpDict)
     while (getline(&strBuf, &bufLen, fpDict) != -1) {
         nNumber++;
     }
-    rewind (fpDict);
+    rewind(fpDict);
 
     if (strBuf)
         free(strBuf);
@@ -64,19 +75,17 @@ void *custom_bsearch(const void *key, const void *base,
 {
     if (accurate)
         return bsearch(key, base, nmemb, size, compar);
-    else
-    {
+    else {
         size_t l, u, idx;
         const void *p;
         int comparison;
 
         l = 0;
         u = nmemb;
-        while (l < u)
-        {
+        while (l < u) {
             idx = (l + u) / 2;
-            p = (void *) (((const char *) base) + (idx * size));
-            comparison = (*compar) (key, p);
+            p = (void *)(((const char *) base) + (idx * size));
+            comparison = (*compar)(key, p);
             if (comparison <= 0)
                 u = idx;
             else if (comparison > 0)
@@ -86,7 +95,7 @@ void *custom_bsearch(const void *key, const void *base,
         if (u >= nmemb)
             return NULL;
         else
-            return (void *) (((const char *) base) + (l * size));
+            return (void *)(((const char *) base) + (l * size));
     }
 }
 
@@ -94,8 +103,7 @@ FCITX_EXPORT_API
 void InitAsDaemon()
 {
     pid_t pid;
-    if ((pid = fork()) > 0)
-    {
+    if ((pid = fork()) > 0) {
         waitpid(pid, NULL, 0);
         exit(0);
     }
@@ -122,10 +130,8 @@ UT_array* SplitString(const char *str, char delm)
     char *bakstr = strdup(str);
     size_t len = strlen(bakstr);
     size_t i = 0, last = 0;
-    for (i =0 ; i <= len ; i++)
-    {
-        if (bakstr[i] == delm || bakstr[i] == '\0')
-        {
+    for (i = 0 ; i <= len ; i++) {
+        if (bakstr[i] == delm || bakstr[i] == '\0') {
             bakstr[i] = '\0';
             char *p = &bakstr[last];
             if (strlen(p) > 0)
@@ -162,7 +168,7 @@ char *fcitx_trim(char *s)
 
     while (isspace(*s))                 /* skip leading space */
         ++s;
-    end = strchr(s,'\0') - 1;
+    end = strchr(s, '\0') - 1;
     while (end >= s && isspace(*end))               /* skip trailing space */
         --end;
 
@@ -177,9 +183,8 @@ FCITX_EXPORT_API
 int FcitxGetDisplayNumber()
 {
     int displayNumber = 0;
-    char* display = getenv ("DISPLAY"), *strDisplayNumber = NULL;
-    if (display != NULL)
-    {
+    char* display = getenv("DISPLAY"), *strDisplayNumber = NULL;
+    if (display != NULL) {
         display = strdup(display);
         char* p = display;
         for (; *p != ':' && *p != '\0'; p++);
@@ -201,4 +206,47 @@ int FcitxGetDisplayNumber()
     }
     return displayNumber;
 }
-// kate: indent-mode cstyle; space-indent on; indent-width 0; 
+
+FCITX_EXPORT_API
+char* fcitx_get_process_name()
+{
+#if defined(__linux__)
+    char buf[PATH_MAX + 1];
+    char *result = NULL;
+    ssize_t len;
+    if ((len = readlink("/proc/self/exe", buf, PATH_MAX)) != -1) {
+        buf[len] = '\0';
+        result = basename(buf);
+    } else {
+        buf[0] = '\0';
+        result = buf;
+    }
+
+    return fcitx_trim(result);
+#elif defined(LIBKVM_FOUND)
+    kvm_t *vm = kvm_open(0, "/dev/null", 0, O_RDONLY, NULL);
+    if (vm == 0)
+        return strdup("");
+
+    int cnt;
+    int mypid = getpid();
+    struct kinfo_proc * kp = kvm_getprocs(vm, KERN_PROC_PID, mypid, &cnt);
+    if ((cnt != 1) || (kp == 0))
+        return strdup("");
+    int i;
+    for (i = 0; i < cnt; i++)
+        if (kp->ki_pid == mypid)
+            break;
+    char* result = NULL;
+    if (i != cnt)
+        result = strdup(kp->ki_comm);
+    else
+        result = strdup("");
+    kvm_close(vm);
+    return result;
+#else
+    return strdup("");
+#endif
+}
+
+// kate: indent-mode cstyle; space-indent on; indent-width 0;

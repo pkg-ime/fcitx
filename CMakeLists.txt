@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.6)
 
 project(fcitx)
 
-set(version 4.1.1)
+set(version 4.1.2)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -43,6 +43,7 @@ FIND_PACKAGE(Libintl REQUIRED)
 FIND_PACKAGE(Libiconv REQUIRED)
 FIND_PACKAGE(Pthread REQUIRED)
 FIND_PACKAGE(Libexecinfo REQUIRED)
+FIND_PACKAGE(Libkvm)
 FIND_PACKAGE(DL REQUIRED)
 FIND_PROGRAM(WGET wget)
 FIND_PROGRAM(TAR tar)
@@ -135,6 +136,7 @@ add_definitions("-D_GNU_SOURCE -DFCITX_HAVE_CONFIG_H")
 configure_file(${PROJECT_SOURCE_DIR}/config.h.in ${PROJECT_BINARY_DIR}/config.h)
 configure_file("${PROJECT_SOURCE_DIR}/cmake/FcitxConfigVersion.cmake.in"
                "${PROJECT_BINARY_DIR}/cmake/FcitxConfigVersion.cmake"
+                IMMEDIATE @ONLY
 )
 
 include_directories(${PROJECT_BINARY_DIR})

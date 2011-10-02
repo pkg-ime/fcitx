@@ -60,10 +60,13 @@ FcitxModule module = {
     NULL
 };
 
+FCITX_EXPORT_API
+int ABI_VERSION = FCITX_ABI_VERSION;
+
 void* DBusCreate(FcitxInstance* instance)
 {
     FcitxDBus *dbusmodule = (FcitxDBus*) fcitx_malloc0(sizeof(FcitxDBus));
-    FcitxAddon* dbusaddon = GetAddonByName(&instance->addons, FCITX_DBUS_NAME);
+    FcitxAddon* dbusaddon = GetAddonByName(FcitxInstanceGetAddons(instance), FCITX_DBUS_NAME);
     DBusError err;
 
     dbus_threads_init_default();
@@ -82,22 +85,19 @@ void* DBusCreate(FcitxInstance* instance)
             dbus_error_init(&err);
         }
 
-        if (NULL == conn)
-        {
+        if (NULL == conn) {
             sleep(RETRY_INTERVAL);
             retry ++;
         }
     } while (NULL == conn && retry < MAX_RETRY_TIMES);
 
-    if ( NULL == conn )
-    {
+    if (NULL == conn) {
         free(dbusmodule);
         return NULL;
     }
 
     if (!dbus_connection_set_watch_functions(conn, FcitxDBusAddWatch, FcitxDBusRemoveWatch,
-            NULL, dbusmodule, NULL))
-    {
+            NULL, dbusmodule, NULL)) {
         FcitxLog(WARNING, _("Add Watch Function Error"));
         dbus_error_free(&err);
         free(dbusmodule);
@@ -165,14 +165,11 @@ static void FcitxDBusRemoveWatch(DBusWatch *watch, void *data)
     FcitxDBusWatch **up, *w;
     FcitxDBus* dbusmodule = (FcitxDBus*) data;
 
-    for (up = &(dbusmodule->watches), w = dbusmodule->watches; w; w = w->next)
-    {
-        if (w->watch == watch)
-        {
+    for (up = &(dbusmodule->watches), w = dbusmodule->watches; w; w = w->next) {
+        if (w->watch == watch) {
             *up = w->next;
             free(w);
-        }
-        else
+        } else
             up = &(w->next);
     }
 }
@@ -184,21 +181,20 @@ void DBusSetFD(void* arg)
     FcitxInstance* instance = dbusmodule->owner;
 
     for (w = dbusmodule->watches; w; w = w->next)
-        if (dbus_watch_get_enabled(w->watch))
-        {
+        if (dbus_watch_get_enabled(w->watch)) {
             unsigned int flags = dbus_watch_get_flags(w->watch);
             int fd = dbus_watch_get_unix_fd(w->watch);
 
-            if (dbusmodule->owner->maxfd < fd)
-                dbusmodule->owner->maxfd = fd;
+            if (FcitxInstanceGetMaxFD(instance) < fd)
+                FcitxInstanceSetMaxFD(instance, fd);
 
             if (flags & DBUS_WATCH_READABLE)
-                FD_SET(fd, &instance->rfds);
+                FD_SET(fd, FcitxInstanceGetReadFDSet(instance));
 
             if (flags & DBUS_WATCH_WRITABLE)
-                FD_SET(fd, &instance->wfds);
+                FD_SET(fd, FcitxInstanceGetWriteFDSet(instance));
 
-            FD_SET(fd, &instance->efds);
+            FD_SET(fd, FcitxInstanceGetExceptFDSet(instance));
         }
 }
 
@@ -207,22 +203,21 @@ void DBusProcessEvent(void* arg)
 {
     FcitxDBus* dbusmodule = (FcitxDBus*) arg;
     DBusConnection *connection = (DBusConnection *)dbusmodule->conn;
+    FcitxInstance* instance = dbusmodule->owner;
     FcitxDBusWatch *w;
 
-    for (w = dbusmodule->watches; w; w = w->next)
-    {
-        if (dbus_watch_get_enabled(w->watch))
-        {
+    for (w = dbusmodule->watches; w; w = w->next) {
+        if (dbus_watch_get_enabled(w->watch)) {
             unsigned int flags = 0;
             int fd = dbus_watch_get_unix_fd(w->watch);
 
-            if (FD_ISSET(fd, &dbusmodule->owner->rfds))
+            if (FD_ISSET(fd, FcitxInstanceGetReadFDSet(instance)))
                 flags |= DBUS_WATCH_READABLE;
 
-            if (FD_ISSET(fd, &dbusmodule->owner->wfds))
+            if (FD_ISSET(fd, FcitxInstanceGetWriteFDSet(instance)))
                 flags |= DBUS_WATCH_WRITABLE;
 
-            if (FD_ISSET(fd, &dbusmodule->owner->efds))
+            if (FD_ISSET(fd, FcitxInstanceGetExceptFDSet(instance)))
                 flags |= DBUS_WATCH_ERROR;
 
             if (flags != 0)
@@ -230,11 +225,10 @@ void DBusProcessEvent(void* arg)
         }
     }
 
-    if (connection)
-    {
-        dbus_connection_ref (connection);
-        while (dbus_connection_dispatch (connection) == DBUS_DISPATCH_DATA_REMAINS);
-        dbus_connection_unref (connection);
+    if (connection) {
+        dbus_connection_ref(connection);
+        while (dbus_connection_dispatch(connection) == DBUS_DISPATCH_DATA_REMAINS);
+        dbus_connection_unref(connection);
     }
 }
 // kate: indent-mode cstyle; space-indent on; indent-width 0;

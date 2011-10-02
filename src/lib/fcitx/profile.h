@@ -26,6 +26,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+    struct _FcitxInstance;
 
     /**
      * @file profile.h
@@ -36,8 +37,7 @@ extern "C" {
     /**
      * @brief struct for ~/.config/fcitx/profile
      **/
-    typedef struct _FcitxProfile
-    {
+    typedef struct _FcitxProfile {
         /**
          * @brief derives from GenericConfig
          **/
@@ -46,14 +46,17 @@ extern "C" {
          * @brief use remind mode
          **/
         boolean bUseRemind;
+
         /**
          * @brief current im index
          **/
-        int iIMIndex;
+        char* imName;
+
         /**
          * @brief use full width punc
          **/
         boolean bUseWidePunc;
+
         /**
          * @brief use full width char
          **/
@@ -63,6 +66,12 @@ extern "C" {
          * @brief show preedit string in client or not
          **/
         boolean bUsePreedit;
+
+        /**
+         * @brief enabled im list
+         **/
+        char* imList;
+
     } FcitxProfile;
 
     /**
@@ -71,7 +80,7 @@ extern "C" {
      * @param profile profile instance
      * @return boolean loading successful
      **/
-    boolean LoadProfile(FcitxProfile* profile);
+    boolean LoadProfile(FcitxProfile* profile, struct _FcitxInstance* instance);
     /**
      * @brief save profile
      *
@@ -79,13 +88,6 @@ extern "C" {
      * @return void
      **/
     void SaveProfile(FcitxProfile* profile);
-    /**
-     * @brief get bUseRemind
-     *
-     * @param profile profile instance
-     * @return boolean bUseRemind
-     **/
-    boolean UseRemind(FcitxProfile* profile);
 
 #ifdef __cplusplus
 }

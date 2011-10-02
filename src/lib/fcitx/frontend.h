@@ -50,8 +50,7 @@ extern "C" {
     /**
      * @brief Input Context, normally one for one program
      **/
-    typedef struct _FcitxInputContext
-    {
+    typedef struct _FcitxInputContext {
         IME_STATE state; /* im state */
         int offset_x, offset_y;
         int frontendid;
@@ -63,13 +62,12 @@ extern "C" {
     /**
      * @brief Program IM Module Frontend
      **/
-    typedef struct _FcitxFrontend
-    {
+    typedef struct _FcitxFrontend {
         void* (*Create)(struct _FcitxInstance*, int frontendindex);
-        boolean (*Destroy)(void *arg);
+        boolean(*Destroy)(void *arg);
         void (*CreateIC)(void* arg, FcitxInputContext*, void* priv);
-        boolean (*CheckIC)(void* arg, FcitxInputContext* arg1, void* arg2);
-        void (*DestroyIC) (void* arg, FcitxInputContext *context);
+        boolean(*CheckIC)(void* arg, FcitxInputContext* arg1, void* arg2);
+        void (*DestroyIC)(void* arg, FcitxInputContext *context);
         void (*EnableIM)(void* arg, FcitxInputContext* arg1);
         void (*CloseIM)(void* arg, FcitxInputContext* arg1);
         void (*CommitString)(void* arg, FcitxInputContext* arg1, char* arg2);
@@ -78,27 +76,10 @@ extern "C" {
         void (*GetWindowPosition)(void* arg, FcitxInputContext* ic, int* x, int* y);
         void (*UpdatePreedit)(void* arg, FcitxInputContext* ic);
         void (*UpdateClientSideUI)(void* arg, FcitxInputContext* ic);
-        void (*padding2)();
-        void (*padding3)();
+        void (*ReloadConfig)(void* arg);
+        boolean(*CheckICFromSameApplication)(void* arg, FcitxInputContext* icToCheck, FcitxInputContext* ic);
         void (*padding4)();
     } FcitxFrontend;
-
-    /**
-     * @brief Get Current Input Context
-     *
-     * @param instance
-     * @return FcitxInputContext*
-     **/
-    FcitxInputContext* GetCurrentIC(struct _FcitxInstance* instance);
-
-    /**
-     * @brief Set Current Input Context
-     *
-     * @param instance
-     * @param ic new input context
-     * @return current ic changed
-     **/
-    boolean SetCurrentIC(struct _FcitxInstance* instance, FcitxInputContext* ic);
 
     /**
      * @brief Initial frontends array
@@ -106,7 +87,7 @@ extern "C" {
      * @param  frontends array
      * @return void
      **/
-    void InitFcitxFrontends(UT_array* );
+    void InitFcitxFrontends(UT_array*);
 
     /**
      * @brief Find Input Context By Frontend Specific filter
@@ -144,16 +125,7 @@ extern "C" {
      * @param instance
      * @return void
      **/
-    boolean LoadFrontend(struct _FcitxInstance* instance );
-
-    /**
-     * @brief End Input
-     *
-     * @param instance
-     * @param ic input context
-     * @return void
-     **/
-    void CloseIM(struct _FcitxInstance* instance, FcitxInputContext* ic);
+    boolean LoadFrontend(struct _FcitxInstance* instance);
 
     /**
      * @brief Commit String to Client
@@ -166,24 +138,15 @@ extern "C" {
     void CommitString(struct _FcitxInstance* instance, FcitxInputContext* ic, char* str);
 
     /**
-     * @brief ...
-     *
-     * @param  ...
-     * @param ic ...
-     * @return void
-     **/
-    void ChangeIMState (struct _FcitxInstance*, FcitxInputContext* ic);
-
-    /**
      * @brief Set Cursor Position
      *
-     * @param  ...
+     * @param instance fcitx instance
      * @param ic input context
      * @param x xpos
      * @param y ypos
      * @return void
      **/
-    void SetWindowOffset(struct _FcitxInstance*, FcitxInputContext* ic, int x, int y);
+    void SetWindowOffset(struct _FcitxInstance* instance, FcitxInputContext* ic, int x, int y);
 
     /**
      * @brief Get Cursor Position
@@ -229,6 +192,8 @@ extern "C" {
      * @return CapacityFlags
      **/
     CapacityFlags GetCurrentCapacity(struct _FcitxInstance* instance);
+
+    void SetICStateFromSameApplication(struct _FcitxInstance* instance, int frontendid, FcitxInputContext *ic);
 
 #ifdef __cplusplus
 }

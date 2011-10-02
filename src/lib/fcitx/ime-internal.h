@@ -35,6 +35,34 @@
 struct _FcitxInputContext;
 struct _FcitxInstance;
 
+struct _FcitxInputState {
+    long unsigned int lastKeyPressedTime;
+    boolean bIsDoInputOnly;
+    KEY_RELEASED keyReleased;
+    int iCodeInputCount;
+    char strCodeInput[MAX_USER_INPUT + 1];
+    char strStringGet[MAX_USER_INPUT + 1];  //保存输入法返回的需要送到客户程序中的字串
+    boolean bIsInRemind;
+
+    time_t dummy;
+    int iCursorPos;
+    int iClientCursorPos;
+    boolean bShowCursor;
+    int dummy2;
+    int lastIsSingleHZ;
+    boolean bLastIsNumber;
+    boolean dummy3;
+
+    /* the ui message part, if there is something in it, then it will be shown */
+    struct _CandidateWordList* candList;
+    Messages* msgPreedit;
+    Messages* msgAuxUp;
+    Messages* msgAuxDown;
+    Messages* msgClientPreedit;
+
+    int padding[63];
+};
+
 /**
  * @brief init fcitx im array
  *
@@ -57,7 +85,7 @@ void InitBuiltInHotkey(struct _FcitxInstance* instance);
  * @param instance fcitx instance
  * @return void
  **/
-void DoPhraseTips (struct _FcitxInstance* instance);
+void DoPhraseTips(struct _FcitxInstance* instance);
 
 /**
  * @brief unload all input method
@@ -73,7 +101,7 @@ void UnloadAllIM(UT_array* ims);
  * @param instance instance
  * @return boolean
  **/
-boolean LoadAllIM (struct _FcitxInstance* instance);
+boolean LoadAllIM(struct _FcitxInstance* instance);
 
 /**
  * @brief init builtin im menu
@@ -138,6 +166,11 @@ INPUT_RETURN_VALUE ImProcessSaveAll(void *arg);
  * @return INPUT_RETURN_VALUE
  **/
 INPUT_RETURN_VALUE ImSwitchEmbeddedPreedit(void *arg);
+
+int GetIMIndexByName(struct _FcitxInstance* instance, char* imName);
+
+boolean IMIsInIMNameList(UT_array* imList, FcitxIM* ime);
+
 
 #endif
 

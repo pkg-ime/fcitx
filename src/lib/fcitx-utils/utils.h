@@ -80,7 +80,7 @@ extern "C" {
      * @param fpDict file pointer
      * @return int line number
      **/
-    int CalculateRecordNumber (FILE* fpDict);
+    int CalculateRecordNumber(FILE* fpDict);
 
     /**
      * @brief Split a string by delm
@@ -118,10 +118,12 @@ extern "C" {
 
     int FcitxGetDisplayNumber();
 
+    char* fcitx_get_process_name();
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif
 
-// kate: indent-mode cstyle; space-indent on; indent-width 0; 
+// kate: indent-mode cstyle; space-indent on; indent-width 0;

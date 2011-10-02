@@ -22,16 +22,18 @@
 
 #include <fcitx-config/fcitx-config.h>
 #include <fcitx-config/hotkey.h>
+#include <fcitx/frontend.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
     typedef enum _SWITCHKEY {
-        S_R_CTRL = 0,
-        S_R_SHIFT = 1,
-        S_L_SHIFT = 2,
-        S_L_CTRL = 3
+        SWITCHKEY_R_CTRL = 0,
+        SWITCHKEY_R_SHIFT = 1,
+        SWITCHKEY_L_SHIFT = 2,
+        SWITCHKEY_L_CTRL = 3,
+        SWITCHKEY_NONE = 4
     } SWITCHKEY;
 
     typedef enum _ENTER_TO_DO {
@@ -46,11 +48,16 @@ extern "C" {
         K_SEMICOLON_QUICKPHRASE = 2
     } SEMICOLON_TO_DO;
 
+    typedef enum _ShareState {
+        ShareState_None = 0,
+        ShareState_All = 1,
+        ShareState_PerProgram = 2
+    } ShareState;
+
     /**
      * @brief struct opposite to ~/.config/fcitx/config
      **/
-    typedef struct _FcitxConfig
-    {
+    typedef struct _FcitxConfig {
         /**
          * @brief derives GenericConfig
          **/
@@ -186,6 +193,23 @@ extern "C" {
          * @brief switch the preedit should show in client window or not
          **/
         HOTKEYS hkSwitchEmbeddedPreedit[2];
+
+        /**
+         * @brief Input method use global shared state
+         **/
+        ShareState shareState;
+
+        /**
+         * @brief Input method enable by default
+         **/
+        IME_STATE defaultIMState;
+
+        /**
+         * @brief Enable Left Ctrl + Left Shift to Switch Between Input Method
+         **/
+        boolean bIMSwitchKey;
+
+        int padding[63];
     } FcitxConfig;
 
     /**
@@ -202,20 +226,6 @@ extern "C" {
      * @return void
      **/
     void SaveConfig(FcitxConfig* fc);
-    /**
-     * @brief get max candidate word number
-     *
-     * @param fc config instance
-     * @return int number
-     **/
-    int ConfigGetMaxCandWord(FcitxConfig* fc);
-    /**
-     * @brief get bPointAfterNumber
-     *
-     * @param fc config instance
-     * @return boolean bPointAfterNumber
-     **/
-    boolean ConfigGetPointAfterNumber(FcitxConfig* fc);
 
 #ifdef __cplusplus
 }

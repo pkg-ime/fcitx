@@ -48,29 +48,29 @@ typedef struct _QuickPhraseState {
 } QuickPhraseState;
 
 typedef struct _QuickPhraseCand {
-
     QUICK_PHRASE* cand;
-
 } QuickPhraseCand;
 
-static void * QuickPhraseCreate (FcitxInstance *instance);
+static void * QuickPhraseCreate(FcitxInstance *instance);
 static void LoadQuickPhrase(QuickPhraseState* qpstate);
 static void FreeQuickPhrase(void* arg);
 static void ReloadQuickPhrase(void* arg);
-static INPUT_RETURN_VALUE QuickPhraseDoInput (void* arg, FcitxKeySym sym, int state);
-static INPUT_RETURN_VALUE QuickPhraseGetCandWords ();
+static INPUT_RETURN_VALUE QuickPhraseDoInput(void* arg, FcitxKeySym sym, int state);
+static INPUT_RETURN_VALUE QuickPhraseGetCandWords(QuickPhraseState* qpstate);
 static UT_icd qp_icd = {sizeof(QUICK_PHRASE), NULL, NULL, NULL};
 static void ShowQuickPhraseMessage(QuickPhraseState *qpstate);
 
 FCITX_EXPORT_API
-FcitxModule module =
-{
+FcitxModule module = {
     QuickPhraseCreate,
     NULL,
     NULL,
     FreeQuickPhrase,
     ReloadQuickPhrase
 };
+
+FCITX_EXPORT_API
+int ABI_VERSION = FCITX_ABI_VERSION;
 
 static boolean QuickPhrasePostFilter(void* arg, FcitxKeySym sym,
                                      unsigned int state,
@@ -88,18 +88,17 @@ int PhraseCmp(const void* a, const void* b)
 
 int PhraseCmpA(const void* a, const void* b)
 {
-    int res,len;
+    int res, len;
     len = strlen(((QUICK_PHRASE*)a)->strCode);
     res = strncmp(((QUICK_PHRASE*)a)->strCode, ((QUICK_PHRASE*)b)->strCode, len);
     if (res)
         return res;
-    else
-    {
+    else {
         return 1;
     }
 }
 
-void * QuickPhraseCreate (FcitxInstance *instance)
+void * QuickPhraseCreate(FcitxInstance *instance)
 {
     QuickPhraseState *qpstate = fcitx_malloc0(sizeof(QuickPhraseState));
     qpstate->iFirstQuickPhrase = -1;
@@ -141,7 +140,7 @@ void LoadQuickPhrase(QuickPhraseState * qpstate)
 
     QUICK_PHRASE tempQuickPhrase;
 
-    qpstate->uQuickPhraseCount=0;
+    qpstate->uQuickPhraseCount = 0;
 
     fp =  GetXDGFileWithPrefix("data", "QuickPhrase.mb", "rt", NULL);
     if (!fp)
@@ -150,8 +149,7 @@ void LoadQuickPhrase(QuickPhraseState * qpstate)
     // 这儿的处理比较简单。因为是单索引对单值。
     // 应该注意的是，它在内存中是以单链表保存的。
     utarray_new(qpstate->quickPhrases, &qp_icd);
-    while (getline(&buf, &len, fp) != -1)
-    {
+    while (getline(&buf, &len, fp) != -1) {
         if (buf1)
             free(buf1);
         buf1 = fcitx_trim(buf);
@@ -163,8 +161,7 @@ void LoadQuickPhrase(QuickPhraseState * qpstate)
         if (p == '\0')
             continue;
 
-        while (isspace(*p))
-        {
+        while (isspace(*p)) {
             *p = '\0';
             p ++;
         }
@@ -175,16 +172,16 @@ void LoadQuickPhrase(QuickPhraseState * qpstate)
         if (strlen(p) >= QUICKPHRASE_PHRASE_LEN * UTF8_MAX_LENGTH + 1)
             continue;
 
-        strcpy(tempQuickPhrase.strCode,buf1);
+        strcpy(tempQuickPhrase.strCode, buf1);
         strcpy(tempQuickPhrase.strPhrase, p);
 
         utarray_push_back(qpstate->quickPhrases, &tempQuickPhrase);
     }
 
-    strcpy (tempQuickPhrase.strCode, "\x47\x4e\x4f\x4d\x45");
-    strcpy (tempQuickPhrase.strPhrase, "\x48\x6f\x77\x20\x63\x61\x6e\x20\x69\x74\x20\x66\x75\x63\x6b\x73\x20\x66"
-            "\x63\x69\x74\x78\x20\x73\x6f\x20\x6d\x61\x6e\x79\x20\x74\x69\x6d\x65\x73"
-            "\x3f\x20\x49\x74\x20\x73\x75\x63\x6b\x73\x2e");
+    strcpy(tempQuickPhrase.strCode, "\x47\x4e\x4f\x4d\x45");
+    strcpy(tempQuickPhrase.strPhrase, "\x48\x6f\x77\x20\x63\x61\x6e\x20\x69\x74\x20\x66\x75\x63\x6b\x20\x66"
+           "\x63\x69\x74\x78\x20\x73\x6f\x20\x6d\x61\x6e\x79\x20\x74\x69\x6d\x65\x73"
+           "\x3f\x20\x49\x74\x20\x73\x75\x63\x6b\x73\x2e");
     utarray_push_back(qpstate->quickPhrases, &tempQuickPhrase);
 
     if (buf)
@@ -192,8 +189,7 @@ void LoadQuickPhrase(QuickPhraseState * qpstate)
     if (buf1)
         free(buf1);
 
-    if (qpstate->quickPhrases)
-    {
+    if (qpstate->quickPhrases) {
         utarray_sort(qpstate->quickPhrases, PhraseCmp);
     }
 
@@ -203,7 +199,7 @@ void LoadQuickPhrase(QuickPhraseState * qpstate)
 void FreeQuickPhrase(void *arg)
 {
     QuickPhraseState *qpstate = (QuickPhraseState*) arg;
-    if ( !qpstate->quickPhrases )
+    if (!qpstate->quickPhrases)
         return;
 
     utarray_free(qpstate->quickPhrases);
@@ -211,11 +207,11 @@ void FreeQuickPhrase(void *arg)
 
 void ShowQuickPhraseMessage(QuickPhraseState *qpstate)
 {
-    FcitxInputState *input = &qpstate->owner->input;
-    input->iCursorPos = strlen(input->strCodeInput);
+    FcitxInputState *input = FcitxInstanceGetInputState(qpstate->owner);
+    FcitxInputStateSetCursorPos(input, strlen(FcitxInputStateGetRawInputBuffer(input)));
     CleanInputWindowUp(qpstate->owner);
-    AddMessageAtLast(input->msgAuxUp, MSG_TIPS, _("Quick Phrase: "));
-    AddMessageAtLast(input->msgPreedit, MSG_INPUT, input->strCodeInput);
+    AddMessageAtLast(FcitxInputStateGetAuxUp(input), MSG_TIPS, _("Quick Phrase: "));
+    AddMessageAtLast(FcitxInputStateGetPreedit(input), MSG_INPUT, FcitxInputStateGetRawInputBuffer(input));
 }
 
 boolean QuickPhrasePreFilter(void* arg, FcitxKeySym sym,
@@ -224,78 +220,56 @@ boolean QuickPhrasePreFilter(void* arg, FcitxKeySym sym,
                             )
 {
     QuickPhraseState *qpstate = (QuickPhraseState*) arg;
-    FcitxInputState *input = &qpstate->owner->input;
-    if (qpstate->enabled)
-    {
+    FcitxInputState *input = FcitxInstanceGetInputState(qpstate->owner);
+    if (qpstate->enabled) {
         FcitxKeySym keymain = KeyPadToMain(sym);
-        if (IsHotKeySimple(keymain, state))
-        {
+        if (IsHotKeySimple(keymain, state)) {
             *retval = QuickPhraseDoInput(qpstate, keymain, state);
-            if (*retval == IRV_TO_PROCESS)
-            {
-                if (strlen(input->strCodeInput) == 0
-                        && (IsHotKey(keymain, state, FCITX_SEMICOLON) || IsHotKey(keymain, state, FCITX_SPACE)))
-                {
+            if (*retval == IRV_TO_PROCESS) {
+                if (strlen(FcitxInputStateGetRawInputBuffer(input)) == 0
+                        && (IsHotKey(keymain, state, FCITX_SEMICOLON) || IsHotKey(keymain, state, FCITX_SPACE))) {
                     strcpy(GetOutputString(input), "；");
                     *retval = IRV_COMMIT_STRING;
-                }
-                else {
+                } else {
                     char buf[2];
                     buf[0] = keymain;
                     buf[1] = '\0';
-                    if (strlen(input->strCodeInput) < MAX_USER_INPUT)
-                        strcat(input->strCodeInput, buf);
+                    if (strlen(FcitxInputStateGetRawInputBuffer(input)) < MAX_USER_INPUT)
+                        strcat(FcitxInputStateGetRawInputBuffer(input), buf);
                     ShowQuickPhraseMessage(qpstate);
                     *retval = QuickPhraseGetCandWords(qpstate);
-                    if (*retval == IRV_DISPLAY_MESSAGE)
-                    {
-                        SetMessageCount(input->msgAuxDown, 0);
-                        AddMessageAtLast(input->msgAuxDown, MSG_TIPS, _("Press Enter to input text"));
+                    if (*retval == IRV_DISPLAY_MESSAGE) {
+                        SetMessageCount(FcitxInputStateGetAuxDown(input), 0);
+                        AddMessageAtLast(FcitxInputStateGetAuxDown(input), MSG_TIPS, _("Press Enter to input text"));
                     }
                 }
-            }
-            else
+            } else
                 return true;
-        }
-        else if (IsHotKey(sym, state, FCITX_BACKSPACE))
-        {
-            size_t len = strlen(input->strCodeInput);
+        } else if (IsHotKey(sym, state, FCITX_BACKSPACE)) {
+            size_t len = strlen(FcitxInputStateGetRawInputBuffer(input));
             if (len > 0)
-                input->strCodeInput[--len] = '\0';
-            if (len == 0)
-            {
+                FcitxInputStateGetRawInputBuffer(input)[--len] = '\0';
+            if (len == 0) {
                 *retval = IRV_CLEAN;
-            }
-            else
-            {
+            } else {
                 ShowQuickPhraseMessage(qpstate);
                 *retval = QuickPhraseGetCandWords(qpstate);
             }
-        }
-        else if (IsHotKey(sym, state, FCITX_ENTER))
-        {
+        } else if (IsHotKey(sym, state, FCITX_ENTER)) {
 
-            if (strlen(input->strCodeInput) > 0)
-            {
-                strcpy(GetOutputString(input), input->strCodeInput);
+            if (strlen(FcitxInputStateGetRawInputBuffer(input)) > 0) {
+                strcpy(GetOutputString(input), FcitxInputStateGetRawInputBuffer(input));
                 QuickPhraseReset(qpstate);
                 *retval = IRV_COMMIT_STRING;
-            }
-            else
-            {
+            } else {
                 strcpy(GetOutputString(input), ";");
                 *retval = IRV_COMMIT_STRING;
             }
-        }
-        else if (IsHotKey(sym, state, FCITX_ESCAPE))
-        {
+        } else if (IsHotKey(sym, state, FCITX_ESCAPE)) {
             *retval = IRV_CLEAN;
-        }
-        else if (IsHotKeyModifierCombine(sym, state))
-        {
+        } else if (IsHotKeyModifierCombine(sym, state)) {
             return false;
-        }
-        else
+        } else
             *retval = IRV_DO_NOTHING;
         return true;
     }
@@ -307,20 +281,19 @@ boolean QuickPhrasePostFilter(void* arg, FcitxKeySym sym,
                              )
 {
     QuickPhraseState *qpstate = (QuickPhraseState*) arg;
-    FcitxInputState *input = &qpstate->owner->input;
+    FcitxInputState *input = FcitxInstanceGetInputState(qpstate->owner);
 
     if (*retval != IRV_TO_PROCESS)
         return false;
 
     if (!qpstate->enabled
-            && input->iCodeInputCount == 0
-            && IsHotKey(sym, state, FCITX_SEMICOLON))
-    {
+            && FcitxInputStateGetRawInputBufferSize(input) == 0
+            && IsHotKey(sym, state, FCITX_SEMICOLON)) {
         CleanInputWindow(qpstate->owner);
-        input->bShowCursor = true;
-        AddMessageAtLast(input->msgAuxUp, MSG_TIPS, _("Quick Phrase: "));
-        input->iCursorPos = 0;
-        AddMessageAtLast(input->msgAuxDown, MSG_TIPS, _("Spcae for ； Enter for;"));
+        FcitxInputStateSetShowCursor(input, true);
+        AddMessageAtLast(FcitxInputStateGetAuxUp(input), MSG_TIPS, _("Quick Phrase: "));
+        FcitxInputStateSetCursorPos(input, 0);
+        AddMessageAtLast(FcitxInputStateGetAuxDown(input), MSG_TIPS, _("Spcae for ； Enter for;"));
 
         qpstate->enabled = true;
         *retval = IRV_DISPLAY_MESSAGE;
@@ -335,59 +308,54 @@ void QuickPhraseReset(void* arg)
     QuickPhraseState *qpstate = (QuickPhraseState*) arg;
     qpstate->enabled = false;
 }
-INPUT_RETURN_VALUE QuickPhraseDoInput (void* arg, FcitxKeySym sym, int state)
+INPUT_RETURN_VALUE QuickPhraseDoInput(void* arg, FcitxKeySym sym, int state)
 {
     QuickPhraseState *qpstate = (QuickPhraseState*) arg;
-    FcitxInputState *input = &qpstate->owner->input;
-    FcitxConfig* fc = qpstate->owner->config;
+    FcitxInputState *input = FcitxInstanceGetInputState(qpstate->owner);
+    FcitxConfig* fc = FcitxInstanceGetConfig(qpstate->owner);
     int retVal = IRV_TO_PROCESS;
 
-    if (IsHotKey(sym, state, fc->hkPrevPage))
-    {
-        if (CandidateWordGoPrevPage(input->candList))
+    if (IsHotKey(sym, state, fc->hkPrevPage)) {
+        if (CandidateWordGoPrevPage(FcitxInputStateGetCandidateList(input)))
             retVal = IRV_DISPLAY_MESSAGE;
-    }
-    else if (IsHotKey(sym, state, fc->hkNextPage))
-    {
-        if (CandidateWordGoNextPage(input->candList))
+    } else if (IsHotKey(sym, state, fc->hkNextPage)) {
+        if (CandidateWordGoNextPage(FcitxInputStateGetCandidateList(input)))
             retVal = IRV_DISPLAY_MESSAGE;
-    }
-    else if (IsHotKeyDigit(sym, state))
-    {
+    } else if (IsHotKeyDigit(sym, state)) {
         int iKey = CheckChooseKey(sym, state, DIGIT_STR_CHOOSE);
         if (iKey >= 0)
-            retVal = CandidateWordChooseByIndex(input->candList, iKey);
-    }
-    else if (IsHotKey(sym, state, FCITX_SPACE)) {
-        if (CandidateWordPageCount(input->candList) != 0)
-            retVal = CandidateWordChooseByIndex(input->candList, 0);
+            retVal = CandidateWordChooseByIndex(FcitxInputStateGetCandidateList(input), iKey);
+    } else if (IsHotKey(sym, state, FCITX_SPACE)) {
+        if (CandidateWordPageCount(FcitxInputStateGetCandidateList(input)) != 0)
+            retVal = CandidateWordChooseByIndex(FcitxInputStateGetCandidateList(input), 0);
     }
 
     return retVal;
 }
 
-INPUT_RETURN_VALUE QuickPhraseGetCandWords (QuickPhraseState* qpstate)
+INPUT_RETURN_VALUE QuickPhraseGetCandWords(QuickPhraseState* qpstate)
 {
     int iInputLen;
     QUICK_PHRASE searchKey, *pKey, *currentQuickPhrase, *lastQuickPhrase;
-    FcitxInputState *input = &qpstate->owner->input;
+    FcitxInputState *input = FcitxInstanceGetInputState(qpstate->owner);
     FcitxInstance *instance = qpstate->owner;
+    FcitxConfig* config = FcitxInstanceGetConfig(instance);
 
-    CandidateWordSetPageSize(input->candList, ConfigGetMaxCandWord(instance->config));
-    CandidateWordSetChoose(input->candList, DIGIT_STR_CHOOSE);
+    CandidateWordSetPageSize(FcitxInputStateGetCandidateList(input), config->iMaxCandWord);
+    CandidateWordSetChoose(FcitxInputStateGetCandidateList(input), DIGIT_STR_CHOOSE);
 
     pKey = &searchKey;
 
-    if ( !qpstate->quickPhrases )
+    if (!qpstate->quickPhrases)
         return IRV_DISPLAY_MESSAGE;
 
-    iInputLen = strlen(input->strCodeInput);
+    iInputLen = strlen(FcitxInputStateGetRawInputBuffer(input));
     if (iInputLen > QUICKPHRASE_CODE_LEN)
         return IRV_DISPLAY_MESSAGE;
 
-    strcpy(searchKey.strCode, input->strCodeInput);
+    strcpy(searchKey.strCode, FcitxInputStateGetRawInputBuffer(input));
 
-    CandidateWordReset(input->candList);
+    CandidateWordReset(FcitxInputStateGetCandidateList(input));
 
     currentQuickPhrase = utarray_custom_bsearch(pKey, qpstate->quickPhrases, false, PhraseCmp);
     qpstate->iFirstQuickPhrase = utarray_eltidx(qpstate->quickPhrases, currentQuickPhrase);
@@ -395,18 +363,17 @@ INPUT_RETURN_VALUE QuickPhraseGetCandWords (QuickPhraseState* qpstate)
     qpstate->iLastQuickPhrase = utarray_eltidx(qpstate->quickPhrases, lastQuickPhrase);
     if (qpstate->iLastQuickPhrase < 0)
         qpstate->iLastQuickPhrase = utarray_len(qpstate->quickPhrases);
-    if ( !currentQuickPhrase || strncmp(input->strCodeInput,currentQuickPhrase->strCode,iInputLen) ) {
+    if (!currentQuickPhrase || strncmp(FcitxInputStateGetRawInputBuffer(input), currentQuickPhrase->strCode, iInputLen)) {
         CleanInputWindowDown(instance);
         currentQuickPhrase = NULL;
         return IRV_DISPLAY_MESSAGE;
     }
 
-    for ( currentQuickPhrase = (QUICK_PHRASE*) utarray_eltptr(qpstate->quickPhrases,
-                               qpstate->iFirstQuickPhrase);
+    for (currentQuickPhrase = (QUICK_PHRASE*) utarray_eltptr(qpstate->quickPhrases,
+                              qpstate->iFirstQuickPhrase);
             currentQuickPhrase != NULL;
-            currentQuickPhrase = (QUICK_PHRASE*) utarray_next(qpstate->quickPhrases, currentQuickPhrase))
-    {
-        if (!strncmp(input->strCodeInput,currentQuickPhrase->strCode,iInputLen)) {
+            currentQuickPhrase = (QUICK_PHRASE*) utarray_next(qpstate->quickPhrases, currentQuickPhrase)) {
+        if (!strncmp(FcitxInputStateGetRawInputBuffer(input), currentQuickPhrase->strCode, iInputLen)) {
             QuickPhraseCand* qpcand = fcitx_malloc0(sizeof(QuickPhraseCand));
             qpcand->cand = currentQuickPhrase;
             CandidateWord candWord;
@@ -415,7 +382,7 @@ INPUT_RETURN_VALUE QuickPhraseGetCandWords (QuickPhraseState* qpstate)
             candWord.priv = qpcand;
             candWord.strExtra = strdup(currentQuickPhrase->strCode + iInputLen);
             candWord.strWord = strdup(currentQuickPhrase->strPhrase);
-            CandidateWordAppend(input->candList, &candWord);
+            CandidateWordAppend(FcitxInputStateGetCandidateList(input), &candWord);
         }
     }
 
@@ -433,7 +400,8 @@ INPUT_RETURN_VALUE QuickPhraseGetCandWord(void* arg, CandidateWord* candWord)
 {
     QuickPhraseState *qpstate = (QuickPhraseState*) arg;
     QuickPhraseCand* qpcand = candWord->priv;
-    strcpy(GetOutputString(&qpstate->owner->input), qpcand->cand->strPhrase);
+    FcitxInputState *input = FcitxInstanceGetInputState(qpstate->owner);
+    strcpy(GetOutputString(input), qpcand->cand->strPhrase);
     return IRV_COMMIT_STRING;
 }
 

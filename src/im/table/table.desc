@@ -1,3 +1,8 @@
+[CodeTable/UniqueName]
+Description=Unique Name for Table
+Type=String
+DefaultValue=
+
 [CodeTable/Name]
 Description=Code Table Name
 Type=I18NString
@@ -22,7 +27,7 @@ Enum2=AdjustFreq
 [CodeTable/Priority]
 Description=Order of Code Table
 Type=Integer
-DefaultValue=99
+DefaultValue=100
 
 [CodeTable/UsePY]
 Description=Use Pinyin
@@ -101,6 +106,11 @@ DefaultValue=
 Description=Choose
 Type=String
 DefaultValue=1234567890
+
+[CodeTable/LangCode]
+Description=Language Code for this table
+Type=String
+DefaultValue=
 
 [CodeTable/Enabled]
 Description=Enable This Table or Not

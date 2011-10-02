@@ -1,4 +1,5 @@
 [CodeTable]
+UniqueName=wanfeng
 _Name=Wanfeng
 IconName=wanfeng
 File=wanfeng.mb
@@ -11,3 +12,4 @@ UseMatchingKey=False
 AutoPhrase=False
 ExactMatch=False
 PromptTableCode=True
+LangCode=zh_CN

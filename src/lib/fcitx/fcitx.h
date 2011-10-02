@@ -47,10 +47,12 @@ extern "C" {
 
 #define FCITX_UNUSED(x) (void)(x)
 
+#define FCITX_ABI_VERSION 1
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif/*_FCITX_H_*/
 
-// kate: indent-mode cstyle; space-indent on; indent-width 0; 
+// kate: indent-mode cstyle; space-indent on; indent-width 0;

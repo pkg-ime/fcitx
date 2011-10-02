@@ -1,4 +1,5 @@
 [CodeTable]
+UniqueName=erbi
 _Name=Erbi
 IconName=erbi
 File=erbi.mb
@@ -15,3 +16,4 @@ AutoPhrasePhrase=False
 SaveAutoPhrase=False
 ExactMatch=False
 PromptTableCode=False
+LangCode=zh_CN

@@ -1,4 +1,5 @@
 [CodeTable]
+UniqueName=ziranma
 _Name=Ziranma
 IconName=ziranma
 File=zrm.mb
@@ -9,3 +10,4 @@ UseMatchingKey=False
 AutoPhrase=True
 ExactMatch=False
 PromptTableCode=True
+LangCode=zh_CN

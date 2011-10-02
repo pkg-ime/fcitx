@@ -51,6 +51,9 @@ FcitxModule module = {
     NULL
 };
 
+FCITX_EXPORT_API
+int ABI_VERSION = FCITX_ABI_VERSION;
+
 typedef struct _FcitxRemote {
     char socketfile[PATH_MAX];
     FcitxInstance* owner;
@@ -65,7 +68,7 @@ void* RemoteCreate(FcitxInstance* instance)
     char *socketfile = remote->socketfile;
     sprintf(socketfile, "/tmp/fcitx-socket-:%d", FcitxGetDisplayNumber());
     remote->socket_fd = CreateSocket(socketfile);
-    if ( remote->socket_fd < 0) {
+    if (remote->socket_fd < 0) {
         FcitxLog(ERROR, _("Can't open socket %s: %s"), socketfile, strerror(errno));
         free(remote);
         return NULL;
@@ -137,7 +140,7 @@ static void SendIMState(FcitxRemote* remote, int fd)
     write(fd, &r, sizeof(r));
 }
 
-static void RemoteProcessEvent (void* p)
+static void RemoteProcessEvent(void* p)
 {
     FcitxRemote* remote = (FcitxRemote*) p;
     unsigned int O;  // 低16位, 0 = get, 1 = set;
@@ -149,8 +152,7 @@ static void RemoteProcessEvent (void* p)
     unsigned int cmd = O & 0xFFFF;
     unsigned int arg = (O >> 16) & 0xFFFF;
     FcitxLock(remote->owner);
-    switch (cmd)
-    {
+    switch (cmd) {
         /// {{{
     case 0:
         SendIMState(remote, client_fd);
@@ -172,13 +174,13 @@ static void RemoteProcessEvent (void* p)
     close(client_fd);
 }
 
-void RemoteSetFD (void* arg)
+void RemoteSetFD(void* arg)
 {
     FcitxRemote* remote = (FcitxRemote*) arg;
-    FD_SET(remote->socket_fd, &remote->owner->rfds);
-    if (remote->owner->maxfd < remote->socket_fd)
-        remote->owner->maxfd = remote->socket_fd;
+    FD_SET(remote->socket_fd, FcitxInstanceGetReadFDSet(remote->owner));
+    if (FcitxInstanceGetMaxFD(remote->owner) < remote->socket_fd)
+        FcitxInstanceSetMaxFD(remote->owner, remote->socket_fd);
 }
 
 
-// kate: indent-mode cstyle; space-indent on; indent-width 0; 
+// kate: indent-mode cstyle; space-indent on; indent-width 0;
