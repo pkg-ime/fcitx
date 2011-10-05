@@ -1,3 +1,25 @@
+fcitx (1:4.1.2-2) unstable; urgency=low
+
+  [ YunQiang Su ]
+  * Install usr/share/fcitx/configdesc/fcitx-xim.desc
+    into fcitx-module-x11.
+  * Install usr/share/fcitx/configdesc/fcitx-chttrans.desc
+    into fcitx-modules.
+  * debian/patches/01-fix_wm_class_setting.patch:
+    - [UPSTREAM] Fix wm_class setting to  make it work better with
+      gnome-shell, the tray can displayed as system status icon now.
+
+  [ Aron Xu ]
+  * debian/patches/01-dont_fileter_all_release_events.patch:
+    - [UPSTREAM] Don't filter all release events.
+  * debian/patches/01-fix-duplicate-entry.patch:
+    - [UPSTREAM] Add a return to avoid duplicate entry.
+  * debian/im-switch/fcitx: use QT4_IM_MODULE instead of QT_IM_MODULE.
+  * debian/control: 
+    - Recommends to install both GTK2/3 IM Modules.
+
+ -- YunQiang Su <wzssyqa@gmail.com>  Wed, 05 Oct 2011 19:00:56 +0800
+
 fcitx (1:4.1.2-1) unstable; urgency=low
 
   * New upstream release.

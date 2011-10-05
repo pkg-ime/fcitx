@@ -1,0 +1,19 @@
+Index: fcitx/src/module/x11/x11stuff.c
+===================================================================
+--- fcitx.orig/src/module/x11/x11stuff.c	2011-10-02 18:43:11.000000000 +0800
++++ fcitx/src/module/x11/x11stuff.c	2011-10-05 19:22:29.512721306 +0800
+@@ -293,7 +293,13 @@
+     pid_t pid = getpid();
+     XChangeProperty(x11priv->dpy, window, x11priv->pidAtom, XA_CARDINAL, 32,
+                     PropModeReplace, (unsigned char *)&pid, 1);
+-    XChangeProperty(x11priv->dpy, window, XA_WM_CLASS, XA_STRING, 8, PropModeReplace, (const unsigned char*) "Fcitx", strlen("Fcitx") + 1);
++    
++	char res_name[] = "fcitx";
++	char res_class[] = "fcitx";
++	XClassHint ch;
++	ch.res_name = res_name;
++	ch.res_class = res_class;
++	XSetClassHint(x11priv->dpy, window, &ch);
+ 
+     if (windowTitle) {
+         XTextProperty   tp;

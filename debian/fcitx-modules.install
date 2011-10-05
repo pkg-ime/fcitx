@@ -6,6 +6,7 @@ usr/lib/fcitx/fcitx-quickphrase.so
 usr/lib/fcitx/fcitx-remote-module.so
 usr/share/fcitx/addon/fcitx-autoeng.conf
 usr/share/fcitx/addon/fcitx-chttrans.conf
+usr/share/fcitx/configdesc/fcitx-chttrans.desc
 usr/share/fcitx/addon/fcitx-fullwidth-char.conf
 usr/share/fcitx/addon/fcitx-punc.conf
 usr/share/fcitx/addon/fcitx-quickphrase.conf
