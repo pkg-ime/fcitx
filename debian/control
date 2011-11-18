@@ -7,7 +7,7 @@ Uploaders: Aron Xu <aron@debian.org>, LI Daobing <lidaobing@debian.org>,
 DM-Upload-Allowed: yes
 Build-Depends: debhelper (>= 8), cmake, intltool (>= 0.35.0),
     libdbus-1-dev (>= 1.1.0), libpango1.0-dev (>= 1.0), libcairo2-dev (>= 1.0),
-    libdbus-glib-1-dev, libopencc-dev (>= 0.1.1), libicu-dev,
+    libdbus-glib-1-dev, libopencc-dev (>= 0.1.1~), libicu-dev,
     libgtk2.0-dev, libqt4-dev, libgtk-3-dev, libkvm-dev [kfreebsd-any]
 Standards-Version: 3.9.2
 Homepage: http://code.google.com/p/fcitx/
@@ -16,45 +16,44 @@ Vcs-Browser: http://git.debian.org/?p=pkg-ime/fcitx.git
 
 Package: fcitx
 Architecture: all
-Depends: ${misc:Depends}, fcitx-bin, fcitx-data (>= 1:4.1.1), fcitx-modules, 
-    fcitx-module-x11, fcitx-frontend-gtk2, fcitx-ui-classic
+Depends: ${misc:Depends}, fcitx-bin, fcitx-data, fcitx-modules,
+    fcitx-module-x11, fcitx-ui-classic
 Recommends: fcitx-pinyin, fcitx-googlepinyin | fcitx-sunpinyin, 
     fcitx-table-wubi | fcitx-table-wbpy, fcitx-config-gtk,
-    im-config | im-switch
-Suggests: fcitx-frontend-gtk3, fcitx-frontend-qt4, fcitx-tools
-Description: Free Chinese Input Toy of X
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+    fcitx-frontend-gtk2, fcitx-frontend-gtk3, fcitx-frontend-qt4,
+    im-config (>= 0.5) | im-switch
+Suggests: fcitx-tools
+Description: Flexible Input Method Framework
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
- This metapackage pulls in a set of recommended Fcitx components, which
- is expected to be fit for most desktop users.
+ This metapackage pulls in a set of components recommended for most desktop
+ users.
 
 Package: fcitx-bin
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Recommends: fcitx-data (>= 1:4.1.1), fcitx-modules
-Suggests: fcitx (>= 1:4.1.1)
-Replaces: fcitx (<< 1:4.1.1)
-Breaks: fcitx (<< 1:4.1.1)
-Description: Free Chinese Input Toy of X - essential binaries
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Recommends: fcitx-data, fcitx-modules
+Suggests: fcitx (>= 1:4.1.2)
+Replaces: fcitx (<< 1:4.1.2)
+Breaks: fcitx (<< 1:4.1.2)
+Description: Flexible Input Method Framework - essential binaries
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This package provides the essential executable binaries. If you are
  looking for a working input experience, please install the package 
@@ -64,21 +63,19 @@ Package: fcitx-data
 Architecture: all
 Depends: ${misc:Depends}
 Recommends: fcitx-bin
-Suggests: fcitx (>= 1:4.1.1)
-Replaces: fcitx (<< 1:4.1.1)
-Breaks: fcitx (<< 1:4.1.1)
-Description: Free Chinese Input Toy of X - essential data files
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Suggests: fcitx (>= 1:4.1.2)
+Replaces: fcitx (<< 1:4.1.2)
+Breaks: fcitx (<< 1:4.1.2)
+Description: Flexible Input Method Framework - essential data files
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions becomes much easier than
- ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This package provides the essential data files. If you are looking for a
  working input experience, please install the package "fcitx" instead.
@@ -87,20 +84,19 @@ Package: fcitx-libs
 Architecture: any
 Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Suggests: fcitx (>= 1:4.1.1)
-Replaces: fcitx (<< 1:4.1.1)
-Breaks: fcitx (<< 1:4.1.1)
-Description: Free Chinese Input Toy of X - library files
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Suggests: fcitx (>= 1:4.1.2)
+Replaces: fcitx (<< 1:4.1.2)
+Breaks: fcitx (<< 1:4.1.2)
+Description: Flexible Input Method Framework - library files
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This package contains three libraries:
   * libfcitx-core - core functions of Fcitx
@@ -111,19 +107,18 @@ Package: fcitx-libs-dev
 Architecture: any
 Section: libdevel
 Depends: ${misc:Depends}, fcitx-libs (= ${binary:Version})
-Replaces: fcitx (<< 1:4.1.1)
-Breaks: fcitx (<< 1:4.1.1)
-Description: Free Chinese Input Toy of X - library development files
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Replaces: fcitx (<< 1:4.1.2)
+Breaks: fcitx (<< 1:4.1.2)
+Description: Flexible Input Method Framework - library development files
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This package provides the library development files.
 
@@ -132,60 +127,60 @@ Architecture: any
 Section: debug
 Priority: extra
 Depends: ${misc:Depends}, fcitx-libs (= ${binary:Version})
-Replaces: fcitx (<< 1:4.1.1)
-Breaks: fcitx (<< 1:4.1.1)
-Description: Free Chinese Input Toy of X - library debugging symbols
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Replaces: fcitx (<< 1:4.1.2)
+Breaks: fcitx (<< 1:4.1.2)
+Description: Flexible Input Method Framework - library debugging symbols
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This package provides the library debugging symbols.
 
 Package: fcitx-ui-kimpanel
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx (>= 1:4.1.1),
-    fcitx-module-dbus, plasma-widgets-addons
-Replaces: fcitx (<< 1:4.1.1)
-Breaks: fcitx (<< 1:4.1.1)
-Description: Free Chinese Input Toy of X - KIMPanel user interface
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx (>= 1:4.1.2),
+    fcitx-module-dbus
+Replaces: fcitx (<< 1:4.1.2)
+Breaks: fcitx (<< 1:4.1.2)
+Suggests: plasma-widgets-addons
+Description: Flexible Input Method Framework - KIMPanel user interface
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This package provides the KIMPanel user interface of Fcitx, which is a
- good choice for KDE4 users.
+ good choice for KDE4 users. Also it implements a protocol to talk with
+ D-Bus, so it might be needed by other desktop environment users like
+ GNOME Shell and Unity.
 
 Package: fcitx-ui-classic
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-module-x11
-Recommends: fcitx (>= 1:4.1.1)
-Replaces: fcitx (<< 1:4.1.1)
-Breaks: fcitx (<< 1:4.1.1)
-Description: Free Chinese Input Toy of X - Classic user interface
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Recommends: fcitx (>= 1:4.1.2)
+Replaces: fcitx (<< 1:4.1.2)
+Breaks: fcitx (<< 1:4.1.2)
+Description: Flexible Input Method Framework - Classic user interface
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This package provides the classic user interface, which is suitable 
  for most users. It also provides the following skins:
@@ -197,17 +192,16 @@ Package: fcitx-frontend-all
 Architecture: all
 Depends: ${misc:Depends}, fcitx-frontend-gtk2, fcitx-frontend-gtk3, 
     fcitx-frontend-qt4, fcitx-module-x11, fcitx-module-dbus
-Description: Free Chinese Input Toy of X - frontends metapackage
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Description: Flexible Input Method Framework - frontends metapackage
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This metapackage pulls in the following frontends:
   * XIM protocol client
@@ -219,17 +213,16 @@ Package: fcitx-frontend-gtk2
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-module-dbus
 Recommends: fcitx-frontend-gtk3
-Description: Free Chinese Input Toy of X - GTK+ 2 IM Module frontend
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Description: Flexible Input Method Framework - GTK+ 2 IM Module frontend
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This package provides the GTK+ 2 IM Module frontend, which is
  recommended for all desktop users.
@@ -238,17 +231,16 @@ Package: fcitx-frontend-gtk3
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-module-dbus
 Recommends: fcitx-frontend-gtk2
-Description: Free Chinese Input Toy of X - GTK+ 3 IM Module frontend
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Description: Flexible Input Method Framework - GTK+ 3 IM Module frontend
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This package provides the GTK+ 3 IM Module frontend, which is
  recommended for all desktop users. This is the best solution if you are
@@ -257,17 +249,16 @@ Description: Free Chinese Input Toy of X - GTK+ 3 IM Module frontend
 Package: fcitx-frontend-qt4
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-module-dbus
-Description: Free Chinese Input Toy of X - QT 4 IM Module frontend
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Description: Flexible Input Method Framework - QT 4 IM Module frontend
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This package provides the QT 4 IM Module frontend, which is recommended
  for KDE4 desktop users.
@@ -275,21 +266,20 @@ Description: Free Chinese Input Toy of X - QT 4 IM Module frontend
 Package: fcitx-pinyin
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-bin,
-  fcitx-data (>= 1:4.1.1), fcitx-modules
-Recommends: fcitx (>= 1:4.1.1)
-Replaces: fcitx (<< 1:4.1.1)
-Breaks: fcitx (<< 1:4.1.1)
-Description: Free Chinese Input Toy of X - classic Pinyin engine
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+  fcitx-data (>= 1:4.1.2), fcitx-modules
+Recommends: fcitx (>= 1:4.1.2)
+Replaces: fcitx (<< 1:4.1.2)
+Breaks: fcitx (<< 1:4.1.2)
+Description: Flexible Input Method Framework - classic Pinyin engine
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This package provides the classic Pinyin input method, which features
  very short responding time by reading all words into RAM during
@@ -297,39 +287,37 @@ Description: Free Chinese Input Toy of X - classic Pinyin engine
 
 Package: fcitx-qw
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx (>= 1:4.1.1)
-Replaces: fcitx (<< 1:4.1.1)
-Breaks: fcitx (<< 1:4.1.1)
-Description: Free Chinese Input Toy of X - QuWei engine
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx (>= 1:4.1.2)
+Replaces: fcitx (<< 1:4.1.2)
+Breaks: fcitx (<< 1:4.1.2)
+Description: Flexible Input Method Framework - QuWei engine
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This package provides the QuWei input method.
 
 Package: fcitx-table
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx (>= 1:4.1.1), fcitx-pinyin (>= 1:4.1.1)
-Replaces: fcitx (<< 1:4.1.1)
-Breaks: fcitx (<< 1:4.1.1)
-Description: Free Chinese Input Toy of X - table engine
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx (>= 1:4.1.2), fcitx-pinyin (>= 1:4.1.2)
+Replaces: fcitx (<< 1:4.1.2)
+Breaks: fcitx (<< 1:4.1.2)
+Description: Flexible Input Method Framework - table engine
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This package provides the table engine. By using this engine, Fcitx can
  support a large number of table-based input methods such as Wubi,
@@ -340,17 +328,16 @@ Architecture: all
 Depends: ${misc:Depends}, fcitx-table-bingchan, fcitx-table-cangjie, 
     fcitx-table-dianbaoma, fcitx-table-erbi, fcitx-table-wanfeng, 
     fcitx-table-wbpy, fcitx-table-wubi, fcitx-table-ziranma
-Description: Free Chinese Input Toy of X - tables metapackage
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Description: Flexible Input Method Framework - tables metapackage
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This metapackage pulls in the following tables:
   * Cangjie
@@ -365,156 +352,148 @@ Description: Free Chinese Input Toy of X - tables metapackage
 Package: fcitx-table-bingchan
 Architecture: any
 Depends: ${misc:Depends}, fcitx-table
-Description: Free Chinese Input Toy of X - Bingchan table
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Description: Flexible Input Method Framework - Bingchan table
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  . 
  This package provides Bingchan table used by the Fcitx table engine.
 
 Package: fcitx-table-cangjie
 Architecture: any
 Depends: ${misc:Depends}, fcitx-table
-Description: Free Chinese Input Toy of X - Cangjie table
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Description: Flexible Input Method Framework - Cangjie table
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  . 
  This package provides Cangjie table used by the Fcitx table engine.
 
 Package: fcitx-table-dianbaoma
 Architecture: any
 Depends: ${misc:Depends}, fcitx-table
-Description: Free Chinese Input Toy of X - Dianbaoma table
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Description: Flexible Input Method Framework - Dianbaoma table
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  . 
  This package provides Dianbaoma table used by the Fcitx table engine.
 
 Package: fcitx-table-erbi
 Architecture: any
 Depends: ${misc:Depends}, fcitx-table
-Description: Free Chinese Input Toy of X - Erbi table
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Description: Flexible Input Method Framework - Erbi table
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  . 
  This package provides Erbi table used by the Fcitx table engine.
 
 Package: fcitx-table-wanfeng
 Architecture: any
 Depends: ${misc:Depends}, fcitx-table
-Description: Free Chinese Input Toy of X - Wanfeng table
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Description: Flexible Input Method Framework - Wanfeng table
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  . 
  This package provides Wanfeng table used by the Fcitx table engine.
 
 Package: fcitx-table-wbpy
 Architecture: any
 Depends: ${misc:Depends}, fcitx-table
-Description: Free Chinese Input Toy of X - WubiPinyin table
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Description: Flexible Input Method Framework - WubiPinyin table
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  . 
  This package provides WubiPinyin table used by the Fcitx table engine.
 
 Package: fcitx-table-wubi
 Architecture: any
 Depends: ${misc:Depends}, fcitx-table
-Description: Free Chinese Input Toy of X - Wubi table
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Description: Flexible Input Method Framework - Wubi table
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  . 
  This package provides Wubi table used by the Fcitx table engine.
 
 Package: fcitx-table-ziranma
 Architecture: any
 Depends: ${misc:Depends}, fcitx-table
-Description: Free Chinese Input Toy of X - Ziranma table
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Description: Flexible Input Method Framework - Ziranma table
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  . 
  This package provides Ziranma table used by the Fcitx table engine.
 
 Package: fcitx-modules
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Recommends: fcitx (>=1:4.1.1), fcitx-module-vk, fcitx-module-x11, fcitx-module-dbus
-Replaces: fcitx (<< 1:4.1.1)
-Breaks: fcitx (<< 1:4.1.1)
-Description: Free Chinese Input Toy of X - core modules
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Recommends: fcitx (>= 1:4.1.2), fcitx-module-vk, fcitx-module-x11, 
+ fcitx-module-dbus
+Replaces: fcitx (<< 1:4.1.2)
+Breaks: fcitx (<< 1:4.1.2)
+Description: Flexible Input Method Framework - core modules
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  . 
  This metapackage pulls in the following modules:
   * autoeng: automatically change to English mode while inputing specific string
@@ -527,17 +506,16 @@ Description: Free Chinese Input Toy of X - core modules
 Package: fcitx-module-dbus
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-modules
-Description: Free Chinese Input Toy of X - D-Bus module and IPC frontend
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Description: Flexible Input Method Framework - D-Bus module and IPC frontend
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This package provides the D-Bus module and IPC frontend which are directly
  used by various IM Modules and UIs like KIMPanel support for instance.
@@ -545,18 +523,16 @@ Description: Free Chinese Input Toy of X - D-Bus module and IPC frontend
 Package: fcitx-module-x11
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-modules
-Description: Free Chinese Input Toy of X - X11 module and XIM frontend
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Description: Flexible Input Method Framework - X11 module and XIM frontend
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions becomes much easier than
- ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This package provides the X11 module, X11 utilities used by other addons
  such as fcitx-ui-classic, and is required for all desktop users. An Xlibs
@@ -569,20 +545,19 @@ Description: Free Chinese Input Toy of X - X11 module and XIM frontend
 Package: fcitx-tools
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Suggests: fcitx (>= 1:4.1.1)
+Suggests: fcitx
 Replaces: fcitx (<< 1:4.0.0)
 Breaks: fcitx (<< 1:4.0.0)
-Description: Free Chinese Input Toy of X - various tools
- Fcitx is the Free Chinese Input Toy of X, which was initially designed
- for Chinese users, and used XIM protocol. Now it has already evolved
- into a highly modularized, feature rich input method framework for
- Unix-like platforms supporting a considerable amount of frontends,
- backends and modules.
+Description: Flexible Input Method Framework - various tools
+ Fcitx is a input method framework with extension support, which provides
+ an interface for entering characters of different scripts in applications
+ using a variety of mapping systems. 
  .
- It is an ideal choice for the vast majority. Many of its features make
- users of Unix-like platforms have a fully modern input experience for
- the first time. It has also greatly lower the threshold for developers,
- making the development of extended funtions much easier than ever before.
+ It offers a pleasant and modern experience, with intuitive graphical
+ configuration tools and customizable skins and mapping tables. It is
+ highly modularized and extensible, with GTK+ 2/3 and Qt4 IM Modules, support
+ for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
+ API.
  .
  This package provides the following tools:
   * createPYMB: create a Pinyin data file (.mb)

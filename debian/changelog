@@ -1,3 +1,20 @@
+fcitx (1:4.1.2-3) unstable; urgency=low
+
+  * debian/patches/01-fix_input_percent_sign.patch:
+    - [UPSTREAM] Behave correctly when meet percent sign (%).
+  * debian/patches/01-run_posix_shell_script.patch:
+    - [UPSTREAM] Change from bash to sh.
+  * debian/control:
+    + Recommend to install all available IM Modules.
+    + Improve descriptions (Closes: #643004).
+      Thanks to debian-l10n-en, especially Justin B Rye.
+    + Recommend to install im-config (>= 0.5), since version 0.5
+      has the correct setup for complex situation of IM Modules.
+    - Lower plasma-widget-addons to Suggests for fcitx-ui-kimpanel,
+      in favor of the usage of this module in gnome-shell and unity.
+
+ -- Aron Xu <aron@debian.org>  Sat, 19 Nov 2011 00:23:14 +0800
+
 fcitx (1:4.1.2-2) unstable; urgency=low
 
   [ YunQiang Su ]
@@ -16,7 +33,7 @@ fcitx (1:4.1.2-2) unstable; urgency=low
     - [UPSTREAM] Add a return to avoid duplicate entry.
   * debian/im-switch/fcitx: use QT4_IM_MODULE instead of QT_IM_MODULE.
   * debian/control: 
-    - Recommends to install both GTK2/3 IM Modules.
+    + Recommends to install both GTK2/3 IM Modules.
 
  -- YunQiang Su <wzssyqa@gmail.com>  Wed, 05 Oct 2011 19:00:56 +0800
 
