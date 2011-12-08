@@ -129,7 +129,7 @@ Priority: extra
 Depends: ${misc:Depends}, fcitx-libs (= ${binary:Version})
 Replaces: fcitx (<< 1:4.1.2)
 Breaks: fcitx (<< 1:4.1.2)
-Description: Flexible Input Method Framework - library debugging symbols
+Description: Flexible Input Method Framework - debugging symbols
  Fcitx is a input method framework with extension support, which provides
  an interface for entering characters of different scripts in applications
  using a variety of mapping systems. 
@@ -140,12 +140,11 @@ Description: Flexible Input Method Framework - library debugging symbols
  for UIs based on Fbterm, pure Xlib, GTK+, or KDE, and a developer-friendly
  API.
  .
- This package provides the library debugging symbols.
+ This package provides the debugging symbols of the whole Fcitx.
 
 Package: fcitx-ui-kimpanel
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx (>= 1:4.1.2),
-    fcitx-module-dbus
+Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-module-dbus
 Replaces: fcitx (<< 1:4.1.2)
 Breaks: fcitx (<< 1:4.1.2)
 Suggests: plasma-widgets-addons

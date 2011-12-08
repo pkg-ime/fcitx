@@ -4,3 +4,4 @@
 01-fix_a_little_about_client_preedit_string.patch
 01-run_posix_shell_script.patch
 01-fix_input_percent_sign.patch
+02-desktop_nodisplay.patch

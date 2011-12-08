@@ -1,3 +1,14 @@
+fcitx (1:4.1.2-4) unstable; urgency=low
+
+  [ Aron Xu ]
+  * Add NoDisplay=true to fcitx.desktop.in file.
+
+  [ YunQiang Su ]
+  * Improve the descriotion of fcitx-libs-dbg, as it contains
+    all debug symbols of the whole fcitx.
+
+ -- YunQiang Su <wzssyqa@gmail.com>  Fri, 09 Dec 2011 00:09:43 +0800
+
 fcitx (1:4.1.2-3) unstable; urgency=low
 
   * debian/patches/01-fix_input_percent_sign.patch:
