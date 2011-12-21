@@ -1,3 +1,5 @@
+02_dont_show_dialog_first_run.patch
+02_dbus_max_retry_times.patch
 01-fix_wm_class_setting.patch
 01-dont_fileter_all_release_events.patch
 01-fix_duplicate_entry.patch

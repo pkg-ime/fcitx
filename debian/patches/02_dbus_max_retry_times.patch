@@ -1,0 +1,13 @@
+Index: fcitx/src/module/dbus/dbusstuff.c
+===================================================================
+--- fcitx.orig/src/module/dbus/dbusstuff.c	2011-10-05 11:52:45.158323095 +0800
++++ fcitx/src/module/dbus/dbusstuff.c	2011-12-21 22:01:14.783993349 +0800
+@@ -42,7 +42,7 @@
+ } FcitxDBus;
+ 
+ #define RETRY_INTERVAL 1
+-#define MAX_RETRY_TIMES 5
++#define MAX_RETRY_TIMES 20
+ 
+ static void* DBusCreate(FcitxInstance* instance);
+ static void DBusSetFD(void* arg);

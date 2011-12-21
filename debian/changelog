@@ -1,3 +1,13 @@
+fcitx (1:4.1.2-5) unstable; urgency=low
+
+  [ 02_dont_show_dialog_first_run.patch ]
+  * Don't show dialog about immodules, which will confuse users,
+    while we use im-config.
+  [ 02_dbus_max_retry_times.patch ]
+  * MAX_RETRY_TIMES to 20 from 5.
+
+ -- YunQiang Su <wzssyqa@gmail.com>  Wed, 21 Dec 2011 22:01:57 +0800
+
 fcitx (1:4.1.2-4) unstable; urgency=low
 
   [ Aron Xu ]
