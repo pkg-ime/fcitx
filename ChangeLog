@@ -1,0 +1,168 @@
+2004-12-5  Yuking <yukig_net@sohu.com>
+	   * 版本为3.0.3
+
+
+2004-12-5  Yuking <yukig_net@sohu.com>
+	   * 修改仓颉码表中的错误
+	   * 改进码表输入法匹配的速度
+	   
+2004-12-5  Yuking <yukig_net@sohu.com>
+	   * src/table.c:改进查找词组的算法
+
+2004-12-3  Yuking <yukig_net@sohu.com>
+	   * src/MyErrorsHandlers.c:程序接到SIGHUP后将重新读取配置文件
+	   * src/xim.c:修改了lumaQQ支持，以解决打开支持时会删除QT程序中选中文字的问题
+
+2004-12-2  Yuking <yukig_net@sohu.com>
+	   * src/table.c:改进自动组词的查重
+
+2004-10-29 Yuking <yukig_net@sohu.com>
+	   * src/table.c:增加一个单字表，以便提高自动组词的速度
+
+2004-10-24 Yuking <yukig_net@sohu.com>
+	   * src/table.c:使用临时拼音功能时，按空格键所选择的字不能调整到第一个
+	   
+2004-10-20 Yuking <yukig_net@sohu.com>
+	   * 候选字与序号间加入一个小数点
+	   * 更新文档
+	   * 版本为3.0.2
+ 
+2004-10-11 Yuking <yuking_net@sohu.com>
+	   * src/table.c:将词组是否参与组词以及自动组词保存条件设置为选项
+
+2004-10-5 Yuking <yuking_net@sohu.com>
+	   * src/table.c:修正自动组词的一个内存溢出问题
+
+2004-09-27 Yuking <yuking_net@sohu.com>
+	   * src/py.c:在联想方式下，按下以词定字键会出问题
+
+2004-09-18 Yuking <yuking_net@sohu.com>
+	   * 将码表输入法临时使用拼音时，拼音单字按快速排序排列
+	   * 修正其它一些小问题
+	   * 版本为3.0.1
+
+2004-09-15 Yuking <yuking_net@sohu.com>
+	   * 将码表的保存改为先写入临时文件，以避免码表被损坏
+	   * src/tools.c:修正使用全拼的设置
+
+2004-09-9 Yuking <yuking_net@sohu.com>
+	   * src/table.c:只对录入的单字自动组词
+	   * src/ime.c:修正支持lumaQQ时按键释放的一个问题
+	   * tools/createPYMB.c:修正在某些C编译器中不能编译的问题
+
+2004-09-6 Yuking <yuking_net@sohu.com>
+	   * src/table.c:修正码表输入法中自动组词的一个BUG
+	   * src/ime.c,src/xim.c:解决LumaQQ支持打开时与qt-3.3.3的兼容性问题
+
+2004-09-5 Yuking <yuking_net@sohu.com>
+	   * 重写文档
+	   * 发布3.0
+	   
+2004-08   Yuking <yuking_net@sohu.com>
+	   * 将分号输入英文恢复到2.X的情形
+	   * 修正全角空格
+	   * 修正xft模式下字间距过宽的问题
+	   * ……
+	   
+2004-07-21 Yuking <yuking_net@sohu.com>
+	   * 修正双拼翻页中的一个问题
+
+2004-07-19 Yuking <yuking_net@sohu.com>
+	   * 修改打开/关闭输入法的一个小问题
+	   * 修改自动词组中的一个重复操作，提高速度
+
+2004-07-16 "Xie Yanbo"<xyb76@sina.com> 
+           * (打印错误改为 fprintf(stderr, ...)，这是做osx patch的jeff改的
+	   * 添加 config.h，好象也是jeff加的
+	   * 在需要的文件里添加对config.h的调用和一些必要的宏
+	   * 增加对 iconv 函数的检测
+	   * tools 目录中的程序整理，比如变量定义，fcloseall 没有太大用处，去除
+	   
+2004-07-12 Yuking <yuking_net@sohu.com>
+	   * 将针对lumaQQ的兼容代码改为一个选项
+
+2004-07-08 Yuking <yuking_net@sohu.com>
+	   * 整理拼音码表制作模块，并去掉原有的DARWIN的支持。
+
+2004-07-07 Yuking <yuking_net@sohu.com>
+	   * 版本号改为3.0.0-rc
+	   * 针对LumaQQ进行了修改，现在可以和它正常地协同工作
+	   * 查明出现双字符的原因，并添加一些代码试图阻止出这种情况<但可能会有问题>
+	   * 添加区位输入法
+	   * 添加码表输入模块，将五笔、二笔等作为码表
+	   * 为码表输入添加自动造词的功能(取自极点五笔的构思)
+	   * ……
+	   
+2004-05-20 Yuking <yuking_net@sohu.com>
+           * 为主窗口增加一个简洁模式。
+
+2004-05-19 Yuking <yuking_net@sohu.com>
+           * src/ime.c：更改分号的输出，改为回车输入全角分号，空格输出半角分号。
+
+2004-05-17 Yuking <yuking_net@sohu.com>
+           * 更改界面，将输入法名称用文字显示。
+	   * 主窗口和输入条是否使用3D显示可以分别设置。
+
+2004-05-16 Yuking <yuking_net@sohu.com>
+           * 去掉设置“区域设置”；
+	   * 将五笔码表从文本文件改为格式文件；
+	   * 增加一个工具，将原来的五笔码表文件转换为新的格式；
+	   * 五笔重码的自动调频可以设置为不调/快速/按频率；
+	   * 版本号改为2.1.0.
+
+2004-05-15 Yuking <yuking_net@sohu.com>
+           * 将添加新输入法改为调用函数RegisterNewIM，以便为以后可能的应用作准备。
+	   * src/ui.c:XFT创建字体的函数改为调用XftFontOpen(CreateFont);
+	   * 将CheckLocale改名为CheckHZCharset，并移入文件tools.c中，去掉SetLocale.c/.h。
+
+2004-05-09 Yuking <yuking_net@sohu.com>
+           * src/xim.c:修正UnsetFocus时有关CurrentIC的一个判断错误(MyUnsetFocusHandler)。
+
+2004-04-30 Yuking <yuking_net@sohu.com>
+           * src/main.c:修改了命令行参数。
+
+2004-04-29 Yuking <yuking_net@sohu.com>
+           * src/ime.c:修正xine播放时，第二个候选字/词自动上屏的问题(ProcessKey)。
+	   * src/py.c:修正拼音输入法中候选字词排序错误。
+
+2004-04-25 Yuking <yuking_net@sohu.com>
+           * 用户可以自定义打开/关闭输入法的热键--配置文件中增加选项“打开/关闭输入法”。
+           * 修改了readme.htm文档。
+
+2004-04-25 Yuking <yuking_net@sohu.com>
+           * 取自共创联盟的包，其中包括对BIGENDIAN的修正。
+           * src/xim.c: 修改生成IC时将CurrentIC设置为新的值的问题(MyCreateICHandler)。
+           * src/xim.c: 如果动作的IC值与CurrentIC不相同，将不处理(MyForwardEventHandler)──试图解决出现双字母的问题。
+           * src/InputWindow.h: 将INPUTWND_WIDTH的默认值设置为200。
+           * src/py.c: 修改一处错误的变量调用，此问题会导致联想候选字表显示不正常(PYGetLegendCandWords)。
+           * src/MainWindow.c,src/tools.c,src/xim.c: 在主窗口上增加一个锁定按钮，打开时将无法用键盘来切换输入法。
+
+2004-03-01  Xiao Huo  <xiaohuo@mail.com>
+
+	* src/xim.c: Make this XIM server serve clients using zh_CN and
+	en_US.UTF-8 locales.  It is simply done by setting the line
+            IMLocale, "zh_CN,en_US.UTF-8",
+	with locales to be served.
+
+2004-03-01  Xiao Huo  <xiaohuo@mail.com>
+
+	* src/SetLocale.[ch] main.c: Remove SetLocale(), GetLocale() and
+	strDefaultLocale.  Use setlocale() and nl_langinfo() instead.
+
+2004-03-01  Xiao Huo  <xiaohuo@mail.com>
+
+	* src/Makefile.am: Define PKGDATADIR.  It is used as a prefix
+	to all the data files.
+	* src/erbi.c punc.c py.c wbx.c: Data files are installed under
+	PKGDATADIR/data directory.  Remove DATA_DIR and bRunLocal which
+	are no longer needed.
+	* src/ime.h main.c xim.c: Remove DATA_DIR and bRunLocal which
+	are no longer needed.
+
+2004-03-01  Xiao Huo  <xiaohuo@mail.com>
+
+	* configure.in: Define _USE_XFT if Xft is enabled.
+
+2004-02-02  Xie Yanbo  <xyb@users.cosoft.org.cn>
+
+	* configure.in created(based on fcitx2.0.1).
