@@ -11,12 +11,11 @@
 #include <memory.h>
 #include <string.h>
 #include <strings.h> // bzero()
+#include <ctype.h>
 
 #ifndef _ENABLE_DBUS
 Bool bUseDBus = False;
 #else
-
-//#define DEBUG_DBUS
 
 Bool bUseDBus = False;
 DBusConnection *conn;
@@ -56,10 +55,30 @@ extern int iCurrentCandPage;
 extern int iCurrentLegendCandPage;
 extern int iCandPageCount;
 extern int iLegendCandPageCount;
+extern int iCursorPos;
+extern Bool bShowCursor;
 
 void fixProperty(Property *prop);
 char* convertMessage(char* in);
 static void MyDBusEventHandler();
+int calKIMCursorPos();
+
+char sLogoLabel[MAX_IM_NAME * 2 + 1];
+
+//#define DEBUG_DBUS
+
+#ifdef DEBUG_DBUS
+#define debug_dbus(fmt,arg...) \
+    fprintf(stderr,fmt,##arg)
+#else
+static int /* inline */ debug_dbus(const char* fmt, ...)
+__attribute__((format(printf, 1, 2)));
+
+static int /* inline */ debug_dbus(const char* fmt, ...)
+{
+     return 0;
+}
+#endif
 
 Bool InitDBus()
 {
@@ -68,7 +87,7 @@ Bool InitDBus()
     dbus_error_init(&err);
     conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
     if (dbus_error_is_set(&err)) {
-        fprintf(stderr, "Connection Error (%s)\n", err.message); 
+        debug_dbus("Connection Error (%s)\n", err.message); 
         dbus_error_free(&err); 
     }
     if (NULL == conn) { 
@@ -80,7 +99,7 @@ Bool InitDBus()
             DBUS_NAME_FLAG_REPLACE_EXISTING,
             &err);
     if (dbus_error_is_set(&err)) { 
-        fprintf(stderr, "Name Error (%s)\n", err.message); 
+        debug_dbus( "Name Error (%s)\n", err.message); 
         dbus_error_free(&err); 
     }
     if (DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER != ret) { 
@@ -94,9 +113,11 @@ Bool InitDBus()
             &err);
     dbus_connection_flush(conn);
     if (dbus_error_is_set(&err)) { 
-        fprintf(stderr, "Match Error (%s)\n", err.message);
+        debug_dbus("Match Error (%s)\n", err.message);
         return False;
     }
+
+    logo_prop.label = sLogoLabel;
 
     return True;
 }
@@ -126,24 +147,24 @@ static void MyDBusEventHandler()
             continue;
         }
         if (dbus_message_is_signal(msg, "org.kde.impanel", "MovePreeditCaret")) {
-            fprintf(stderr,"MovePreeditCaret\n");
+            debug_dbus("MovePreeditCaret\n");
             // read the parameters
             if (!dbus_message_iter_init(msg, &args))
-                fprintf(stderr, "Message has no arguments!\n"); 
+                debug_dbus("Message has no arguments!\n"); 
             else if (DBUS_TYPE_INT32 != dbus_message_iter_get_arg_type(&args)) 
-                fprintf(stderr, "Argument is not INT32!\n"); 
+                debug_dbus("Argument is not INT32!\n"); 
             else {
                 dbus_message_iter_get_basic(&args, &int0);
                 printf("Got Signal with value %d\n", int0);
             }
         }
         if (dbus_message_is_signal(msg, "org.kde.impanel", "SelectCandidate")) {
-            fprintf(stderr,"SelectCandidate: ");
+            debug_dbus("SelectCandidate: ");
             // read the parameters
             if (!dbus_message_iter_init(msg, &args))
-                fprintf(stderr, "Message has no arguments!\n"); 
+                debug_dbus( "Message has no arguments!\n"); 
             else if (DBUS_TYPE_INT32 != dbus_message_iter_get_arg_type(&args)) 
-                fprintf(stderr, "Argument is not INT32!\n"); 
+                debug_dbus( "Argument is not INT32!\n"); 
             else {
                 dbus_message_iter_get_basic(&args, &int0);
 
@@ -168,42 +189,42 @@ static void MyDBusEventHandler()
                     }
                     updateMessages();
                 }
-                fprintf(stderr,"%d:%s\n", int0,pstr);
+                debug_dbus("%d:%s\n", int0,pstr);
             }
         }
         if (dbus_message_is_signal(msg, "org.kde.impanel", "LookupTablePageUp")) {
-            fprintf(stderr,"LookupTablePageUp\n");
+            debug_dbus("LookupTablePageUp\n");
             im[iIMIndex].GetCandWords (SM_PREV);
             updateMessages();
         }
         if (dbus_message_is_signal(msg, "org.kde.impanel", "LookupTablePageDown")) {
-            fprintf(stderr,"LookupTablePageDown\n");
+            debug_dbus("LookupTablePageDown\n");
             im[iIMIndex].GetCandWords (SM_NEXT);
             updateMessages();
         }
         if (dbus_message_is_signal(msg, "org.kde.impanel", "TriggerProperty")) {
-            fprintf(stderr,"TriggerProperty: ");
+            debug_dbus("TriggerProperty: ");
             // read the parameters
             if (!dbus_message_iter_init(msg, &args))
-                fprintf(stderr, "Message has no arguments!\n"); 
+                debug_dbus( "Message has no arguments!\n"); 
             else if (DBUS_TYPE_STRING != dbus_message_iter_get_arg_type(&args)) 
-                fprintf(stderr, "Argument is not STRING!\n"); 
+                debug_dbus( "Argument is not STRING!\n"); 
             else {
                 dbus_message_iter_get_basic(&args, &s0);
-                fprintf(stderr,"%s\n", s0);
+                debug_dbus("%s\n", s0);
 
                 triggerProperty(s0);
             }
         }
         if (dbus_message_is_signal(msg, "org.kde.impanel", "PanelCreated")) {
-            fprintf(stderr,"PanelCreated\n");
+            debug_dbus("PanelCreated\n");
             registerProperties();
         }
         if (dbus_message_is_signal(msg, "org.kde.impanel", "Exit")) {
-            fprintf(stderr,"Exit\n");
+            debug_dbus("Exit\n");
         }
         if (dbus_message_is_signal(msg, "org.kde.impanel", "ReloadConfig")) {
-            fprintf(stderr,"ReloadConfig\n");
+            debug_dbus("ReloadConfig\n");
         }
         // free the message
         dbus_message_unref(msg);
@@ -224,18 +245,19 @@ void KIMExecDialog(char *prop)
             "ExecDialog"); // name of the signal
     if (NULL == msg) 
     { 
-        fprintf(stderr, "Message Null\n"); 
+        debug_dbus( "Message Null\n");
+        return;
     }
 
     // append arguments onto signal
     dbus_message_iter_init_append(msg, &args);
     if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &prop)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
 
     // send the message and flush the connection
     if (!dbus_connection_send(conn, msg, &serial)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     dbus_connection_flush(conn);
 
@@ -257,7 +279,8 @@ void KIMExecMenu(char *props[],int n)
             "ExecMenu"); // name of the signal
     if (NULL == msg) 
     { 
-        fprintf(stderr, "Message Null\n"); 
+        debug_dbus( "Message Null\n"); 
+        return;
     }
 
     if (n == -1) {
@@ -274,14 +297,14 @@ void KIMExecMenu(char *props[],int n)
     dbus_message_iter_open_container(&args,DBUS_TYPE_ARRAY,"s",&sub);
     for (i = 0; i < n; i++) {
         if (!dbus_message_iter_append_basic(&sub, DBUS_TYPE_STRING, &props[i])) { 
-            fprintf(stderr, "Out Of Memory!\n"); 
+            debug_dbus( "Out Of Memory!\n"); 
         }
     }
     dbus_message_iter_close_container(&args,&sub);
 
     // send the message and flush the connection
     if (!dbus_connection_send(conn, msg, &serial)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     dbus_connection_flush(conn);
 
@@ -303,7 +326,8 @@ void KIMRegisterProperties(char *props[], int n)
             "RegisterProperties"); // name of the signal
     if (NULL == msg) 
     { 
-        fprintf(stderr, "Message Null\n"); 
+        debug_dbus( "Message Null\n"); 
+        return;
     }
 
     if (n == -1) {
@@ -320,14 +344,14 @@ void KIMRegisterProperties(char *props[], int n)
     dbus_message_iter_open_container(&args,DBUS_TYPE_ARRAY,"s",&sub);
     for (i = 0; i < n; i++) {
         if (!dbus_message_iter_append_basic(&sub, DBUS_TYPE_STRING, &props[i])) { 
-            fprintf(stderr, "Out Of Memory!\n"); 
+            debug_dbus( "Out Of Memory!\n"); 
         }
     }
     dbus_message_iter_close_container(&args,&sub);
 
     // send the message and flush the connection
     if (!dbus_connection_send(conn, msg, &serial)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     dbus_connection_flush(conn);
 
@@ -349,18 +373,19 @@ void KIMUpdateProperty(char *prop)
             "UpdateProperty"); // name of the signal
     if (NULL == msg) 
     { 
-        fprintf(stderr, "Message Null\n"); 
+        debug_dbus( "Message Null\n"); 
+        return;
     }
 
     // append arguments onto signal
     dbus_message_iter_init_append(msg, &args);
     if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &prop)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
 
     // send the message and flush the connection
     if (!dbus_connection_send(conn, msg, &serial)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     dbus_connection_flush(conn);
 
@@ -382,18 +407,19 @@ void KIMRemoveProperty(char *prop)
             "RemoveProperty"); // name of the signal
     if (NULL == msg) 
     { 
-        fprintf(stderr, "Message Null\n"); 
+        debug_dbus( "Message Null\n"); 
+        return;
     }
 
     // append arguments onto signal
     dbus_message_iter_init_append(msg, &args);
     if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &prop)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
 
     // send the message and flush the connection
     if (!dbus_connection_send(conn, msg, &serial)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     dbus_connection_flush(conn);
 
@@ -415,18 +441,19 @@ void KIMEnable(Bool toEnable)
             "Enable"); // name of the signal
     if (NULL == msg) 
     { 
-        fprintf(stderr, "Message Null\n"); 
+        debug_dbus( "Message Null\n"); 
+        return;
     }
 
     // append arguments onto signal
     dbus_message_iter_init_append(msg, &args);
     if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_BOOLEAN, &toEnable)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
 
     // send the message and flush the connection
     if (!dbus_connection_send(conn, msg, &serial)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     dbus_connection_flush(conn);
 
@@ -448,18 +475,19 @@ void KIMShowAux(Bool toShow)
             "ShowAux"); // name of the signal
     if (NULL == msg) 
     { 
-        fprintf(stderr, "Message Null\n"); 
+        debug_dbus( "Message Null\n"); 
+        return;
     }
 
     // append arguments onto signal
     dbus_message_iter_init_append(msg, &args);
     if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_BOOLEAN, &toShow)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
 
     // send the message and flush the connection
     if (!dbus_connection_send(conn, msg, &serial)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     dbus_connection_flush(conn);
 
@@ -481,18 +509,19 @@ void KIMShowPreedit(Bool toShow)
             "ShowPreedit"); // name of the signal
     if (NULL == msg) 
     { 
-        fprintf(stderr, "Message Null\n"); 
+        debug_dbus( "Message Null\n"); 
+        return;
     }
 
     // append arguments onto signal
     dbus_message_iter_init_append(msg, &args);
     if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_BOOLEAN, &toShow)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
 
     // send the message and flush the connection
     if (!dbus_connection_send(conn, msg, &serial)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     dbus_connection_flush(conn);
 
@@ -514,18 +543,19 @@ void KIMShowLookupTable(Bool toShow)
             "ShowLookupTable"); // name of the signal
     if (NULL == msg) 
     { 
-        fprintf(stderr, "Message Null\n"); 
+        debug_dbus( "Message Null\n"); 
+        return;
     }
 
     // append arguments onto signal
     dbus_message_iter_init_append(msg, &args);
     if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_BOOLEAN, &toShow)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
 
     // send the message and flush the connection
     if (!dbus_connection_send(conn, msg, &serial)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     dbus_connection_flush(conn);
 
@@ -547,7 +577,8 @@ void KIMUpdateLookupTable(char *labels[], int nLabel, char *texts[], int nText, 
             "UpdateLookupTable"); // name of the signal
     if (NULL == msg) 
     { 
-        fprintf(stderr, "Message Null\n"); 
+        debug_dbus( "Message Null\n"); 
+        return;
     }
 
     int i;
@@ -559,7 +590,7 @@ void KIMUpdateLookupTable(char *labels[], int nLabel, char *texts[], int nText, 
     dbus_message_iter_open_container(&args,DBUS_TYPE_ARRAY,"s",&subLabel);
     for (i = 0; i < nLabel; i++) {
         if (!dbus_message_iter_append_basic(&subLabel, DBUS_TYPE_STRING, &labels[i])) { 
-            fprintf(stderr, "Out Of Memory!\n"); 
+            debug_dbus( "Out Of Memory!\n"); 
         }
     }
     dbus_message_iter_close_container(&args,&subLabel);
@@ -567,7 +598,7 @@ void KIMUpdateLookupTable(char *labels[], int nLabel, char *texts[], int nText, 
     dbus_message_iter_open_container(&args,DBUS_TYPE_ARRAY,"s",&subText);
     for (i = 0; i < nText; i++) {
         if (!dbus_message_iter_append_basic(&subText, DBUS_TYPE_STRING, &texts[i])) { 
-            fprintf(stderr, "Out Of Memory!\n"); 
+            debug_dbus( "Out Of Memory!\n"); 
         }
     }
     dbus_message_iter_close_container(&args,&subText);
@@ -576,7 +607,7 @@ void KIMUpdateLookupTable(char *labels[], int nLabel, char *texts[], int nText, 
     dbus_message_iter_open_container(&args,DBUS_TYPE_ARRAY,"s",&subAttrs);
     for (i = 0; i < nLabel; i++) {
         if (!dbus_message_iter_append_basic(&subAttrs, DBUS_TYPE_STRING, &attr)) { 
-            fprintf(stderr, "Out Of Memory!\n"); 
+            debug_dbus( "Out Of Memory!\n"); 
         }
     }
     dbus_message_iter_close_container(&args,&subAttrs);
@@ -586,7 +617,7 @@ void KIMUpdateLookupTable(char *labels[], int nLabel, char *texts[], int nText, 
 
     // send the message and flush the connection
     if (!dbus_connection_send(conn, msg, &serial)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     dbus_connection_flush(conn);
 
@@ -608,18 +639,19 @@ void KIMUpdatePreeditCaret(int position)
             "UpdatePreeditCaret"); // name of the signal
     if (NULL == msg) 
     { 
-        fprintf(stderr, "Message Null\n"); 
+        debug_dbus( "Message Null\n"); 
+        return;
     }
 
     // append arguments onto signal
     dbus_message_iter_init_append(msg, &args);
     if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_INT32, &position)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
 
     // send the message and flush the connection
     if (!dbus_connection_send(conn, msg, &serial)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     dbus_connection_flush(conn);
 
@@ -641,22 +673,23 @@ void KIMUpdatePreeditText(char *text)
             "UpdatePreeditText"); // name of the signal
     if (NULL == msg) 
     { 
-        fprintf(stderr, "Message Null\n"); 
+        debug_dbus( "Message Null\n"); 
+        return;
     }
 
     char *attr = "";
     // append arguments onto signal
     dbus_message_iter_init_append(msg, &args);
     if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &text)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &attr)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
 
     // send the message and flush the connection
     if (!dbus_connection_send(conn, msg, &serial)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     dbus_connection_flush(conn);
 
@@ -678,7 +711,8 @@ void KIMUpdateAux(char *text)
             "UpdateAux"); // name of the signal
     if (NULL == msg) 
     { 
-        fprintf(stderr, "Message Null\n"); 
+        debug_dbus( "Message Null\n"); 
+        return;
     }
 
     char *attr = "";
@@ -686,15 +720,15 @@ void KIMUpdateAux(char *text)
     // append arguments onto signal
     dbus_message_iter_init_append(msg, &args);
     if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &text)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &attr)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
 
     // send the message and flush the connection
     if (!dbus_connection_send(conn, msg, &serial)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     dbus_connection_flush(conn);
 
@@ -716,21 +750,22 @@ void KIMUpdateSpotLocation(int x,int y)
             "UpdateSpotLocation"); // name of the signal
     if (NULL == msg) 
     { 
-        fprintf(stderr, "Message Null\n"); 
+        debug_dbus( "Message Null\n"); 
+        return;
     }
 
     // append arguments onto signal
     dbus_message_iter_init_append(msg, &args);
     if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_INT32, &x)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_INT32, &y)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
 
     // send the message and flush the connection
     if (!dbus_connection_send(conn, msg, &serial)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     dbus_connection_flush(conn);
 
@@ -752,18 +787,19 @@ void KIMUpdateScreen(int id)
             "UpdateScreen"); // name of the signal
     if (NULL == msg) 
     { 
-        fprintf(stderr, "Message Null\n"); 
+        debug_dbus( "Message Null\n"); 
+        return;
     }
 
     // append arguments onto signal
     dbus_message_iter_init_append(msg, &args);
     if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_INT32, &id)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
 
     // send the message and flush the connection
     if (!dbus_connection_send(conn, msg, &serial)) { 
-        fprintf(stderr, "Out Of Memory!\n"); 
+        debug_dbus( "Out Of Memory!\n"); 
     }
     dbus_connection_flush(conn);
 
@@ -787,7 +823,7 @@ void updateMessages()
 
     if (n) {
         for (i=0;i<n;i++) {
-            fprintf(stderr,"Type: %d Text: %s\n",messageDown[i].type,(utfmsg=convertMessage(messageDown[i].strMsg)));
+            debug_dbus("Type: %d Text: %s\n",messageDown[i].type,(utfmsg=convertMessage(messageDown[i].strMsg)));
             free(utfmsg);
             if (messageDown[i].type == MSG_INDEX) {
                 if (nLabels) {
@@ -814,7 +850,7 @@ void updateMessages()
                 text[nTexts] = strdup("");
             }
         }
-        fprintf(stderr,"Labels %d, Texts %d\n, CMB:%s",nLabels,nTexts, cmb); 
+        debug_dbus("Labels %d, Texts %d\n, CMB:%s",nLabels,nTexts, cmb); 
         if (nTexts == 0) {
             KIMShowLookupTable(False);
         }
@@ -843,21 +879,33 @@ void updateMessages()
     }
     
     n = uMessageUp;
-    char aux[100] = "";
+    char aux[MESSAGE_MAX_LENGTH] = "";
+    char empty[MESSAGE_MAX_LENGTH] = "";
     if (n) {
         // FIXME: buffer overflow
         for (i=0;i<n;i++) {
             strcat(aux,(utfmsg=convertMessage(messageUp[i].strMsg)));
             free(utfmsg);
-            fprintf(stderr,"updateMesssages Up:%s\n", aux);
+            debug_dbus("updateMesssages Up:%s\n", aux);
         }
-        KIMUpdateAux(aux);
-        KIMShowAux(True);
+        if (bShowCursor)
+        {
+            KIMUpdatePreeditText(aux);
+            KIMUpdateAux(empty);
+            KIMShowPreedit(True);
+            KIMUpdatePreeditCaret(calKIMCursorPos());
+            KIMShowAux(False);
+        }
+        else {
+            KIMUpdatePreeditText(empty);
+            KIMUpdateAux(aux);
+            KIMShowPreedit(False);
+            KIMShowAux(True);
+        }
     } else {
+        KIMShowPreedit(False);
         KIMShowAux(False);
     }
-
- 
 }
 
 char* convertMessage(char* in)
@@ -873,6 +921,9 @@ char* convertMessage(char* in)
         result = g2u(strTemp);
         if (bUseGBKT && strTemp)
             free(strTemp);
+
+        if (result == NULL)
+            result = strdup("");
         return result;
     }
     else
@@ -889,8 +940,9 @@ void registerProperties()
 
     int i = 0;
 
+
     logo_prop.key = "/Fcitx/Logo";
-    logo_prop.label = "Fcitx";
+    strcpy(logo_prop.label, "Fcitx");
     logo_prop.icon = PKGDATADIR "/xpm/" "Logo.png";
     logo_prop.tip = "小企鹅输入法";
     props[0] = property2string(&logo_prop);
@@ -1084,8 +1136,17 @@ void triggerProperty(char *propKey)
 
 char* property2string(Property *prop)
 {
-    char *result = (char*)malloc(500*sizeof(char));
-    bzero(result,500*sizeof(char));
+    int len;
+    char *result = NULL;
+
+    len = strlen(prop->key)
+        + strlen(prop->label)
+        + strlen(prop->icon)
+        + strlen(prop->tip)
+        + 3 + 1;
+    result = malloc(len * sizeof(char));
+
+    bzero(result,len*sizeof(char));
     strcat(result,prop->key);
     strcat(result,":");
     strcat(result,prop->label);
@@ -1102,18 +1163,18 @@ char* g2u(char *instr)
     char *inbuf;
     char *outbuf;
     char *outptr;
-    unsigned int insize=strlen(instr);
-    unsigned int outputbufsize=100;
-    unsigned int avail=outputbufsize;
+    size_t insize=strlen(instr);
+    size_t outputbufsize=MESSAGE_MAX_LENGTH;
+    size_t avail=outputbufsize;
     unsigned int nconv;
     inbuf=instr;
-    outbuf=(char *)malloc(outputbufsize);
+    outbuf=(char *)malloc(outputbufsize * sizeof(char));
     outptr=outbuf;    //使用outptr作为空闲空间指针以避免outbuf被改变
     memset(outbuf,'\0',outputbufsize);
     cd=iconv_open("utf-8","gb18030");    //将字符串编码由gtk转换为utf-8
     if(cd==(iconv_t)-1)
     {
-        return "";
+        return NULL;
     }
     nconv=iconv(cd,&inbuf,&insize,&outptr,&avail);
     iconv_close(cd);
@@ -1126,20 +1187,21 @@ char* u2g(char *instr)
     char *inbuf;
     char *outbuf;
     char *outptr;
-    unsigned int insize=strlen(instr);
-    unsigned int outputbufsize=100;
-    unsigned int avail=outputbufsize;
+    size_t insize=strlen(instr);
+    size_t outputbufsize=MESSAGE_MAX_LENGTH;
+    size_t avail=outputbufsize;
     unsigned int nconv;
     inbuf=instr;
-    outbuf=(char *)malloc(outputbufsize);
+    outbuf=(char *)malloc(outputbufsize * sizeof(char));
     outptr=outbuf;    //使用outptr作为空闲空间指针以避免outbuf被改变
     memset(outbuf,'\0',outputbufsize);
     cd=iconv_open("gb18030","utf-8");    //将字符串编码由utf-8转换为gbk
     if(cd==(iconv_t)-1)
     {
-        return "";
+        return NULL;
     }
     nconv=iconv(cd,&inbuf,&insize,&outptr,&avail);
+    iconv_close(cd);
     return outbuf;
 
 }
@@ -1194,25 +1256,75 @@ void updatePropertyByConnectID(CARD16 connect_id) {
 	switch (iIndex) {
 	case IS_CLOSED:
         iState = IS_ENG;
-		logo_prop.label = "Fcitx";
+        strcpy(logo_prop.label, "Fcitx");
 		updateProperty(&logo_prop);
 		updateProperty(&state_prop);
 		break;
 	case IS_CHN:
         iState = IS_CHN;
-		logo_prop.label =(need_free = g2u(im[iIMIndex].strName));
+		strcpy(logo_prop.label, (need_free = g2u(im[iIMIndex].strName)));
 		updateProperty(&logo_prop);
 		updateProperty(&state_prop);
 		break;
 	case IS_ENG:
         iState = IS_ENG;
-		logo_prop.label = (need_free = g2u(im[iIMIndex].strName));
+		strcpy(logo_prop.label, (need_free = g2u(im[iIMIndex].strName)));
 		updateProperty(&logo_prop);
 		updateProperty(&state_prop);
 		break;
 	}
     if (need_free)
         free(need_free);
+}
+
+int calKIMCursorPos()
+{
+    int             i = 0;
+    int             iChar;
+    int             iCount = 0;
+
+    const char      *p1;
+    const char      *pivot;
+    Bool            bEn;
+
+    iChar = iCursorPos;
+
+    for (i = 0; i < uMessageUp ; i++) {
+        if (bShowCursor && iChar) {
+            p1 = pivot = messageUp[i].strMsg;
+            while (*p1 && p1 < pivot + iChar) {
+                if (isprint (*p1))	//使用中文字体
+                    bEn = True;
+                else {
+                    bEn = False;
+                    p1 += 2;
+                    iCount ++;
+                }
+                while (*p1 && p1 < pivot + iChar) {
+                    if (isprint (*p1)) {
+                        if (!bEn)
+                            break;
+                        p1 ++;
+                        iCount ++;
+                    }
+                    else {
+                        if (bEn)
+                            break;
+                        p1 += 2;
+                        iCount ++;
+                    }
+                }
+            }
+            if (strlen (messageUp[i].strMsg) > iChar) {
+            iChar = 0;
+            }
+            else {
+                iChar -= strlen (messageUp[i].strMsg);
+            }
+        }
+    }
+
+    return iCount;
 }
 // vim: sw=4 sts=4 et tw=100
 #endif // DBUS_C

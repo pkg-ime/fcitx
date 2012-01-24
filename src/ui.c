@@ -381,17 +381,23 @@ void MyXEventHandler (XEvent * event)
     
     switch (event->type) {
 #ifdef _ENABLE_TRAY
-    case ReparentNotify:
-	tray_win_redraw();
-	break;
+    /*case ReparentNotify:
+	if ( event->xreparent.window == tray.window ) {
+	    if (ConnectIDGetState (connect_id) == IS_CHN)
+		DrawTrayWindow (ACTIVE_ICON);
+	    else
+		DrawTrayWindow (INACTIVE_ICON);
+	}
+	
+	break;*/
 #endif
     case ClientMessage:
 	if ((event->xclient.message_type == about_protocol_atom) && ((Atom) event->xclient.data.l[0] == about_kill_atom)) {
 	    XUnmapWindow (dpy, aboutWindow);
 	    DrawMainWindow ();
 	}
-#ifdef _ENABLE_TRAY
-	tray_win_redraw();
+#ifdef _ENABLE_TRAY	
+	tray_event_handler(event);
 #endif
 	break;
     case Expose:
@@ -408,10 +414,7 @@ void MyXEventHandler (XEvent * event)
 	    DrawInputWindow ();
 #ifdef _ENABLE_TRAY
 	else if (event->xexpose.window == tray.window) {
-	    if (ConnectIDGetState (connect_id) == IS_CHN)
-		DrawTrayWindow (ACTIVE_ICON);
-	    else
-		DrawTrayWindow (INACTIVE_ICON);
+        tray_event_handler(event);
 	}
 #endif
 	//added by yunfan
@@ -420,6 +423,9 @@ void MyXEventHandler (XEvent * event)
 	//******************************
 	break;
     case DestroyNotify:
+#ifdef _ENABLE_TRAY	
+	tray_event_handler(event);
+#endif
 	break;
     case ButtonPress:
 	switch (event->xbutton.button) {
@@ -444,9 +450,9 @@ void MyXEventHandler (XEvent * event)
 			    ChangeIMState (connect_id);
 #ifdef _ENABLE_TRAY
 			if (ConnectIDGetState (connect_id) == IS_CHN)
-			    DrawTrayWindow (ACTIVE_ICON);
+			    DrawTrayWindow (ACTIVE_ICON, 0, 0, TRAY_ICON_HEIGHT, TRAY_ICON_WIDTH );
 			else
-			    DrawTrayWindow (INACTIVE_ICON);
+			    DrawTrayWindow (INACTIVE_ICON, 0, 0, TRAY_ICON_HEIGHT, TRAY_ICON_WIDTH );
 #endif
 		    }
 		}
@@ -524,11 +530,11 @@ void MyXEventHandler (XEvent * event)
 		    SetIMState (True);
 		    DrawMainWindow ();
 
-		    DrawTrayWindow (ACTIVE_ICON);
+		    DrawTrayWindow (ACTIVE_ICON, 0, 0, TRAY_ICON_HEIGHT, TRAY_ICON_WIDTH );
 		}
 		else {
 		    SetIMState (False);
-		    DrawTrayWindow (INACTIVE_ICON);
+		    DrawTrayWindow (INACTIVE_ICON, 0, 0, TRAY_ICON_HEIGHT, TRAY_ICON_WIDTH );
 	        }
 
 		break;
@@ -575,8 +581,7 @@ int StringWidth (char *str, XftFont * font)
     XGlyphInfo      extents;
     char            str1[100];
     char           *ps;
-    size_t          l1, l2;
-    int             il;
+    size_t          l1 = 0, il = 0, l2 = 0;
 
     if (!font)
 	return 0;
