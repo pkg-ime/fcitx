@@ -1,3 +1,22 @@
+/***************************************************************************
+ *   Copyright (C) 2002~2005 by Yuking                                     *
+ *   yuking_net@sohu.com                                                   *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
 #ifndef _IME_H
 #define _IME_H
 
@@ -6,7 +25,7 @@
 #include "KeyList.h"
 
 #define MAX_CAND_WORD	10
-#define MAX_USER_INPUT 300
+#define MAX_USER_INPUT	300
 
 #define HOT_KEY_COUNT	2
 #define MAX_HZ_SAVED    1024
@@ -54,6 +73,12 @@ typedef enum _ENTER_TO_DO {
     K_ENTER_SEND
 } ENTER_TO_DO;
 
+typedef enum _SEMICOLON_TO_DO {
+    K_SEMICOLON_NOCHANGE,
+    K_SEMICOLON_ENG,
+    K_SEMICOLON_QUICKPHRASE
+} SEMICOLON_TO_DO;
+
 typedef struct _SINGLE_HZ {
     char            strHZ[3];
 } SINGLE_HZ;
@@ -82,7 +107,7 @@ typedef int     HOTKEYS;
 void            ProcessKey (IMForwardEventStruct * call_data);
 void            ResetInput (void);
 void            CloseIM (IMForwardEventStruct * call_data);
-void		ChangeIMState (IMForwardEventStruct * call_data);
+void            ChangeIMState (IMForwardEventStruct * call_data);
 Bool            IsHotKey (int iKey, HOTKEYS * hotkey);
 INPUT_RETURN_VALUE ChangeCorner (void);
 INPUT_RETURN_VALUE ChangePunc (void);
@@ -97,5 +122,6 @@ void            DoPhraseTips ();
 Bool            IsIM (char *strName);
 void            SaveIM (void);
 void            SetIM (void);
+void            ConvertPunc (void);
 
 #endif

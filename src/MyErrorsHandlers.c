@@ -1,3 +1,22 @@
+/***************************************************************************
+ *   Copyright (C) 2002~2005 by Yuking                                     *
+ *   yuking_net@sohu.com                                                   *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -26,7 +45,7 @@
 
 XErrorHandler   oldXErrorHandler;
 
-extern Bool     bLumaQQ;
+//extern Bool     bLumaQQ;
 
 void SetMyExceptionHandler (void)
 {
@@ -43,9 +62,9 @@ void OnException (int signo)
     if (signo == SIGHUP) {
 	SetIM ();
 	LoadConfig (False);
-
+/*
 	if (bLumaQQ)
-	    ConnectIDResetReset ();
+	    ConnectIDResetReset ();*/
 
 	return;
     }
@@ -53,7 +72,7 @@ void OnException (int signo)
     if (signo != SIGSEGV)	//出现SIGSEGV表明程序自己有问题，此时如果还执行保存操作，可能会损坏输入法文件
 	SaveIM ();
 
-    if (signo != SIGCHLD && signo != SIGQUIT && signo != SIGWINCH && signo != SIGTTIN) {
+    if (signo != SIGCHLD && signo != SIGQUIT && signo != SIGWINCH && signo != SIGTTIN && signo != SIGSTOP && signo != SIGTSTP) {
 	fprintf (stderr, "FCITX -- Exit Signal No.: %d\n\n", signo);
 	exit (0);
     }
