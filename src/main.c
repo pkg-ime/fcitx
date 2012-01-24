@@ -46,6 +46,11 @@
 #include "ui.h"
 #include "MainWindow.h"
 #include "InputWindow.h"
+
+#ifdef _ENABLE_TRAY
+#include "TrayWindow.h"
+#endif
+
 #include "vk.h"
 #include "ime.h"
 #include "table.h"
@@ -150,9 +155,9 @@ int main (int argc, char *argv[])
     //处理主窗口的显示
     if (hideMainWindow != HM_HIDE) {
 	DisplayMainWindow ();
-	DrawMainWindow ();
+	DrawMainWindow ();	
     }
-
+    
     //初始化输入法
     if (!InitXIM (inputWindow, imname))
 	exit (4);
@@ -172,6 +177,11 @@ int main (int argc, char *argv[])
     
     SetMyExceptionHandler();		//处理事件
 
+#ifdef _ENABLE_TRAY
+    CreateTrayWindow ();		//创建系统托盘窗口
+    DrawTrayWindow (INACTIVE_ICON);	//显示托盘图标
+#endif
+    
     //主循环，即XWindow的消息循环
     for (;;) {
 	XNextEvent (dpy, &event);					//等待一个事件发生

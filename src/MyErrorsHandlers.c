@@ -43,9 +43,11 @@
 #define SIGUNUSED 32
 #endif
 
-XErrorHandler   oldXErrorHandler;
+#ifdef _ENABLE_LOG
+FILE *logfile;
+#endif
 
-//extern Bool     bLumaQQ;
+XErrorHandler   oldXErrorHandler;
 
 void SetMyExceptionHandler (void)
 {
@@ -57,32 +59,34 @@ void SetMyExceptionHandler (void)
 
 void OnException (int signo)
 {
-
-    fprintf (stdout, "\nFCITX -- Get Signal No.: %d\n", signo);
-
+    fprintf (stderr, "\nFCITX -- Get Signal No.: %d\n", signo);
+    
+#ifdef _ENABLE_LOG    
+    struct tm  *ts;
+    time_t now=time(NULL);
+    char       buf[80];
+    
+    ts = localtime(&now);
+    strftime(buf, sizeof(buf), "%a %Y-%m-%d %H:%M:%S %Z", ts);
+    logfile=fopen("/var/log/fcitx.log", "a+t");     
+    fprintf (logfile, "FCITX -- Get Signal No.: %d (%s)\n", signo,buf);
+    fclose(logfile);
+#endif
+    
+    if ( signo!=SIGSEGV && signo!=SIGCONT)
+        SaveIM();
+    
     switch (signo) {
-	/* 出现SIGSEGV表明程序自己有问题，此时如果还执行保存操作，可能会损坏输入法文件，所以不能调用SaveIM () */
-    case SIGSEGV:
-    case SIGFPE:
-	break;
     case SIGHUP:
 	LoadConfig (False);
 	SetIM ();
 	break;
     case SIGINT:
-    	SaveIM ();
-    	exit (1);
-    case SIGUSR1:
-    case SIGCHLD:
-    case SIGWINCH:
-    case SIGTTIN:
-    case SIGTSTP:	
-    case SIGSTOP:
     case SIGTERM:
-    case SIGQUIT:
-    case SIGKILL:
+    case SIGPIPE:
+    case SIGSEGV:
+	exit (0);
     default:
-    	SaveIM ();
 	break;
     }
 }
@@ -94,12 +98,22 @@ void SetMyXErrorHandler (void)
 
 int MyXErrorHandler (Display * dpy, XErrorEvent * event)
 {
-    /*这个错误信息没有任何用处，去掉好了
-       char            str[256];
+#ifdef _ENABLE_LOG
+    char            str[256];
+    struct tm  *ts;
+    time_t now=time(NULL);
+    char       buf[80];
+    
+    XGetErrorText (dpy, event->error_code, str, 255);
+    
+    ts = localtime(&now);
+    strftime(buf, sizeof(buf), "%a %Y-%m-%d %H:%M:%S %Z", ts);
+    logfile=fopen("/var/log/fcitx.log", "a+t");
+    fprintf (logfile, "fcitx: %s\n", buf);
+    fprintf (logfile, "fcitx: %s\n", str);
+    fclose(logfile);
+#endif
 
-       XGetErrorText (dpy, event->error_code, str, 255);
-       fprintf (stdout, "fcitx: %s\n", str);
-     */
     if (event->error_code != 3 && event->error_code != BadMatch)	// xterm will generate 3
 	oldXErrorHandler (dpy, event);
 

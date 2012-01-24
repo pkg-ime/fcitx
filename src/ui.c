@@ -45,6 +45,7 @@
 #include "tools.h"
 #include "sp.h"
 #include "about.h"
+#include "TrayWindow.h"
 
 Display        *dpy;
 int             iScreen;
@@ -58,7 +59,7 @@ XftFont        *xftMainWindowFontEn = (XftFont *) NULL;
 XftFont        *xftVKWindowFont = (XftFont *) NULL;
 Bool            bUseAA = True;
 Bool            bUseBold = True;
-int             iMainWindowFontSize = 12;
+int             iMainWindowFontSize = 9;
 int             iVKWindowFontSize = 11;
 int             iFontSize = 12;
 char            strUserLocale[50] = "zh_CN.UTF-8";
@@ -101,19 +102,23 @@ extern WINDOW_COLOR mainWindowColor;
 extern WINDOW_COLOR inputWindowColor;
 extern WINDOW_COLOR VKWindowColor;
 extern HIDE_MAINWINDOW hideMainWindow;
-extern IC      *CurrentIC;
+extern Bool	bMainWindow_Hiden;
 extern int      MAINWND_WIDTH;
 extern Bool     bCompactMainWindow;
 extern INT8     iIMIndex;
 extern CARD16   connect_id;
 extern Bool     bShowVK;
 extern Bool     bVK;
+extern Bool 	bIsDisplaying;
+
+#ifdef _ENABLE_TRAY
+extern tray_win_t tray;
+#endif
 
 //added by yunfan
 extern Window   aboutWindow;
 extern Atom     about_protocol_atom;
 extern Atom     about_kill_atom;
-
 //**********************************
 
 Bool InitX (void)
@@ -376,8 +381,7 @@ void MyXEventHandler (XEvent * event)
 	//added by yunfan
     case ClientMessage:
 	if ((event->xclient.message_type == about_protocol_atom) && ((Atom) event->xclient.data.l[0] == about_kill_atom)) {
-	    if (IsWindowVisible(aboutWindow))
-		XUnmapWindow (dpy, aboutWindow);
+	    XUnmapWindow (dpy, aboutWindow);
 	    DrawMainWindow ();
 	}
 	break;
@@ -394,6 +398,14 @@ void MyXEventHandler (XEvent * event)
 	    DrawVKWindow ();
 	else if (event->xexpose.window == inputWindow)
 	    DrawInputWindow ();
+#ifdef _ENABLE_TRAY
+	else if (event->xexpose.window == tray.window) {
+	    if (ConnectIDGetState (connect_id) == IS_CHN)
+		DrawTrayWindow (ACTIVE_ICON);
+	    else
+		DrawTrayWindow (INACTIVE_ICON);
+	}
+#endif		    
 	//added by yunfan
 	else if (event->xexpose.window == aboutWindow)
 	    DrawAboutWindow ();
@@ -410,7 +422,6 @@ void MyXEventHandler (XEvent * event)
 		y = event->xbutton.y;
 		MouseClick (&x, &y, inputWindow);
 		DrawInputWindow ();
-		ConnectIDSetPos(connect_id, x, y);
 	    }
 	    else if (event->xbutton.window == mainWindow) {
 		if (IsInBox (event->xbutton.x, event->xbutton.y, 1, 1, 16, 17)) {
@@ -418,15 +429,17 @@ void MyXEventHandler (XEvent * event)
 		    iMainWindowY = event->xbutton.y;
 		    if (!MouseClick (&iMainWindowX, &iMainWindowY, mainWindow)) {
 			if (ConnectIDGetState (connect_id) != IS_CHN) {
-			    if (IsWindowVisible(inputWindow))
-				XUnmapWindow (dpy, inputWindow);
-			    if (IsWindowVisible(VKWindow))
-				XUnmapWindow (dpy, VKWindow);
 			    SetIMState ((ConnectIDGetState (connect_id) == IS_ENG) ? False : True);
 			    DrawMainWindow ();
 			}
 			else
 			    ChangeIMState (connect_id);
+#ifdef _ENABLE_TRAY			    
+			if (ConnectIDGetState (connect_id) == IS_CHN)
+			    DrawTrayWindow (ACTIVE_ICON);
+			else
+			    DrawTrayWindow (INACTIVE_ICON);
+#endif			    
 		    }
 		}
 	    }
@@ -437,11 +450,10 @@ void MyXEventHandler (XEvent * event)
 		    MouseClick (&iVKWindowX, &iVKWindowY, VKWindow);
 		    DrawVKWindow ();
 		}
-	    }
+	    }	    
 	    //added by yunfan
 	    else if (event->xbutton.window == aboutWindow) {
-		if (IsWindowVisible(aboutWindow))
-		    XUnmapWindow (dpy, aboutWindow);
+		XUnmapWindow (dpy, aboutWindow);
 		DrawMainWindow ();
 	    }
 	    //****************************
@@ -487,10 +499,8 @@ void MyXEventHandler (XEvent * event)
 		break;
 		//********************
 	    case Button3:
-		if (IsInBox (event->xbutton.x, event->xbutton.y, 1, 1, 16, 17)) {
-		    if (IsWindowVisible(mainWindow))
-			XUnmapWindow (dpy, mainWindow);
-		}
+		if (IsInBox (event->xbutton.x, event->xbutton.y, 1, 1, 16, 17))
+		    XUnmapWindow (dpy, mainWindow);
 		else if (!bVK) {
 		    bCompactMainWindow = !bCompactMainWindow;
 		    SwitchIM (iIMIndex);
@@ -498,11 +508,42 @@ void MyXEventHandler (XEvent * event)
 		break;
 	    }
 	}
+#ifdef _ENABLE_TRAY	
+	else if (event->xbutton.window == tray.window) {
+	    switch (event->xbutton.button) {
+	    case Button1:
+		if (ConnectIDGetState (connect_id) != IS_CHN) {
+		    SetIMState (True);
+		    DrawMainWindow ();
+
+		    DrawTrayWindow (ACTIVE_ICON);
+		}
+		else {
+		    SetIMState (False);
+		    DrawTrayWindow (INACTIVE_ICON);
+	        }
+
+		break;
+	    case Button2:
+		if (bMainWindow_Hiden) {
+		    bMainWindow_Hiden = False;
+		    DisplayMainWindow();
+		    DrawMainWindow();
+		}
+		else {
+		    bMainWindow_Hiden = True;
+		    XUnmapWindow(dpy,mainWindow);
+		}
+		SaveProfile();
+		break;
+	    }
+	}
+#endif	
 	break;
     case FocusIn:
 	if (ConnectIDGetState (connect_id) == IS_CHN)
 	    DisplayInputWindow ();
-	if ((hideMainWindow != HM_HIDE) && (!IsWindowVisible(inputWindow)))
+	if (hideMainWindow != HM_HIDE)
 	    XMapRaised (dpy, mainWindow);
 	break;
     default:
@@ -639,19 +680,6 @@ void OutputString (Window window, XFontSet font, char *str, int x, int y, GC gc)
 }
 #endif
 
-Bool IsWindowVisible(Window window)
-{
-    XWindowAttributes wa;
-    
-    if ( !XGetWindowAttributes (dpy, window, &wa) )
-	return False;
-    
-    if ( wa.map_state==IsViewable)
-	return True;
-    
-    return False;
-}
-
 /* *************下列函数取自于 rfinput-2.0 ************************ */
 /*
  * 从xpm图形文件中图形数据填入到XImage变量中
@@ -787,3 +815,34 @@ Bool MouseClick (int *x, int *y, Window window)
 }
 */
 /* ****************************************************************** */
+/* 
+Bool IsWindowVisible(Window window)
+{
+    XWindowAttributes attrs;
+    
+    XGetWindowAttributes( dpy, window, &attrs );
+    
+    if ( attrs.map_state==IsUnmapped)
+	return False;
+
+    return True;
+}
+*/
+
+/* For debug only
+void OutputAsUTF8(char *str)
+{
+    char            strOutput[300];
+    char           *ps;
+    size_t          l1, l2;
+
+    ps = strOutput;
+    l1 = strlen (str);
+    l2 = 299;
+    l1 = iconv (convUTF8, (ICONV_CONST char **) (&str), &l1, &ps, &l2);
+    *ps = '\0';
+    ps = strOutput;
+    
+    puts(strOutput);
+}
+*/

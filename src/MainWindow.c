@@ -101,7 +101,6 @@ char           *strFullCorner = "È«½ÇÄ£Ê½";
 extern Display *dpy;
 extern GC       dimGC;
 extern int      i3DEffect;
-extern IC      *CurrentIC;
 extern Bool     bCorner;
 extern Bool     bLocked;
 extern Bool     bChnPunc;
@@ -146,8 +145,8 @@ Bool CreateMainWindow (void)
 	return False;
 
     XChangeWindowAttributes (dpy, mainWindow, attribmask, &attrib);
-    XSelectInput (dpy, mainWindow, ExposureMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | StructureNotifyMask | EnterWindowMask | PointerMotionMask | LeaveWindowMask | VisibilityChangeMask);
-
+    XSelectInput (dpy, mainWindow, ExposureMask | ButtonPressMask | ButtonReleaseMask  | PointerMotionMask);
+    
     InitMainWindowColor ();
 
     return True;
@@ -159,7 +158,7 @@ void DisplayMainWindow (void)
     fprintf (stderr, "DISPLAY MainWindow\n");
 #endif
 
-    if (!IsWindowVisible(mainWindow) && !bMainWindow_Hiden)
+    if (!bMainWindow_Hiden)
 	XMapRaised (dpy, mainWindow);
 }
 
@@ -341,7 +340,7 @@ void DrawMainWindow (void)
 	    XDrawLine (dpy, mainWindow, mainWindowLineColor.gc, iPos, 4, iPos, MAINWND_HEIGHT - 4);
 	}
     }
-    else if (IsWindowVisible(mainWindow))
+    else
 	XUnmapWindow (dpy, mainWindow);
 }
 

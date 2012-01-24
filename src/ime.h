@@ -92,9 +92,9 @@ typedef enum _KEY_RELEASED {
     KR_OTHER = 0,
     KR_CTRL,
     KR_2ND_SELECTKEY,
-    KR_2ND_SELECTKEY_OTHER,
-    KR_3RD_SELECTKEY,
-    KR_3RD_SELECTKEY_OTHER
+/*    KR_2ND_SELECTKEY_OTHER, */
+    KR_3RD_SELECTKEY
+/*    KR_3RD_SELECTKEY_OTHER */
 } KEY_RELEASED;
 
 typedef struct {
@@ -114,7 +114,7 @@ typedef int     HOTKEYS;
 void            ProcessKey (IMForwardEventStruct * call_data);
 void            ResetInput (void);
 void            CloseIM (IMForwardEventStruct * call_data);
-void            ChangeIMState (CARD16 call_data);
+void            ChangeIMState (CARD16 _connect_id);
 Bool            IsHotKey (int iKey, HOTKEYS * hotkey);
 INPUT_RETURN_VALUE ChangeCorner (void);
 INPUT_RETURN_VALUE ChangePunc (void);
@@ -132,6 +132,6 @@ void            SaveIM (void);
 void            SetIM (void);
 void            ConvertPunc (void);
 
-Bool            IsKeyIgnored (int iKeyCode);
+// Bool            IsKeyIgnored (int iKeyCode);
 
 #endif

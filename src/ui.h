@@ -73,12 +73,14 @@ int             StringWidth (char *str, XFontSet font);
 int             FontHeight (XFontSet font);
 #endif
 
-Bool            IsWindowVisible(Window window);
-
 /*int             FillImageByXPMData (XImage * pImage, char **apcData);*/
 Bool            MouseClick (int *x, int *y, Window window);
 /*
 void            WaitButtonRelease (XPoint * point);
+*/
+/*
+Bool		IsWindowVisible(Window window);
+void		OutputAsUTF8(char *str);
 */
 
 #endif
