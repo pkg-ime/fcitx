@@ -18,10 +18,11 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include "core/fcitx.h"
+#include "fcitx/fcitx.h"
 #include "pyMapTable.h"
 
-ConsonantMap    consonantMapTable[] = {
+const ConsonantMap    consonantMapTable[] =
+{
     {"a", 'A'}
     ,
     {"ai", 'B'}
@@ -93,45 +94,45 @@ ConsonantMap    consonantMapTable[] = {
     ,
     {"ve", 'g'}
     ,
-/*	{"ve",'A'},
-	{"v", 'B'},
-	
-	{"uo", 'C'},
-	{"un", 'D'},
-	{"ui", 'E'},
-	{"ue", 'F'},
-	{"uang", 'G'},
-	{"uan", 'H'},
-	{"uai", 'I'},
-	{"ua", 'J'},
-	{"u", 'K'},
+    /*	{"ve",'A'},
+    	{"v", 'B'},
 
-	{"ou", 'L'},
-	{"ong", 'M'},
-	{"o", 'N'},
+    	{"uo", 'C'},
+    	{"un", 'D'},
+    	{"ui", 'E'},
+    	{"ue", 'F'},
+    	{"uang", 'G'},
+    	{"uan", 'H'},
+    	{"uai", 'I'},
+    	{"ua", 'J'},
+    	{"u", 'K'},
 
-	{"iu", 'O'},
-	{"iong", 'P'},
-	{"ing", 'Q'},
-	{"in", 'R'},
-	{"ie", 'S'},
-	{"iao", 'T'},
-	{"iang", 'U'},
-	{"ian", 'V'},
-	{"ia", 'W'},
-	{"i", 'X'},
-	
-	{"eng", 'Y'},
-	{"en", 'Z'},
-	{"ei", 'a'},
-	{"e", 'b'},
-	
-	{"ao", 'c'},
-	{"ang", 'd'},
-	{"an", 'e'},
-	{"ai", 'f'},
-	{"a", 'g'},
-  */
+    	{"ou", 'L'},
+    	{"ong", 'M'},
+    	{"o", 'N'},
+
+    	{"iu", 'O'},
+    	{"iong", 'P'},
+    	{"ing", 'Q'},
+    	{"in", 'R'},
+    	{"ie", 'S'},
+    	{"iao", 'T'},
+    	{"iang", 'U'},
+    	{"ian", 'V'},
+    	{"ia", 'W'},
+    	{"i", 'X'},
+
+    	{"eng", 'Y'},
+    	{"en", 'Z'},
+    	{"ei", 'a'},
+    	{"e", 'b'},
+
+    	{"ao", 'c'},
+    	{"ang", 'd'},
+    	{"an", 'e'},
+    	{"ai", 'f'},
+    	{"a", 'g'},
+      */
     {"\0", '\0'}
     ,
 };
@@ -139,7 +140,8 @@ ConsonantMap    consonantMapTable[] = {
 /*
  * 声母
  */
-SyllabaryMap    syllabaryMapTable[] = {
+const SyllabaryMap    syllabaryMapTable[] =
+{
     /*{"b", 'A'},
        {"c", 'B'},
        {"ch", 'C'},
@@ -237,3 +239,5 @@ SyllabaryMap    syllabaryMapTable[] = {
 
     {"\0", '\0'}
 };
+
+// kate: indent-mode cstyle; space-indent on; indent-width 0; 

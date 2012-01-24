@@ -1,0 +1,250 @@
+[SkinInfo/Name]
+Type=I18NString
+Description=Skin Name
+
+[SkinInfo/Version]
+Type=String
+Description=Skin Version
+
+[SkinInfo/Author]
+Type=String
+Description=Skin Author
+
+[SkinInfo/Desc]
+Type=I18NString
+Description=Description of Skin
+
+[SkinFont/FontSize]
+Type=Integer
+Description=Input Font Size
+
+[SkinFont/MenuFontSize]
+Type=Integer
+Description=Menu Font Size
+DefaultValue=15
+
+[SkinFont/TipColor]
+Type=Color
+Description=Tip Message Color
+
+[SkinFont/InputColor]
+Type=Color
+Description=Input Message Color
+
+[SkinFont/IndexColor]
+Type=Color
+Description=Candidate Index Color
+
+[SkinFont/FirstCandColor]
+Type=Color
+Description=First Candidate Color
+
+[SkinFont/UserPhraseColor]
+Type=Color
+Description=User Phrase Color
+
+[SkinFont/CodeColor]
+Type=Color
+Description=Table Code Color
+
+[SkinFont/OtherColor]
+Type=Color
+Description=Other Color
+
+[SkinFont/ActiveMenuColor]
+Type=Color
+Description=Active Menu Item Character Color
+
+[SkinFont/InactiveMenuColor]
+Type=Color
+Description=Inactive Menu Item Character Color
+
+[SkinMainBar/BackImg]
+Type=String
+Description=Background Image
+
+[SkinMainBar/Logo]
+Type=String
+Description=Logo Icon
+
+[SkinMainBar/Eng]
+Type=String
+Description=English Mode Icon
+
+[SkinMainBar/Active]
+Type=String
+Description=Chinese Mode Icon
+
+[SkinMainBar/MarginLeft]
+Type=Integer
+Description=Resize Margin Left
+
+[SkinMainBar/MarginRight]
+Type=Integer
+Description=Resize Margin Right
+
+[SkinMainBar/MarginTop]
+Type=Integer
+Description=Resize Margin Top
+
+[SkinMainBar/MarginBottom]
+Type=Integer
+Description=Resize Margin Bottom
+
+[SkinMainBar/FillVertical]
+Type=Enum
+Description=Fill Background Vertical rule
+EnumCount=2
+Enum0=Copy
+Enum1=Resize
+DefaultValue=Resize
+
+[SkinMainBar/FillHorizontal]
+Type=Enum
+Description=Fill Background Horizontal rule
+EnumCount=2
+Enum0=Copy
+Enum1=Resize
+DefaultValue=Resize
+
+[SkinMainBar/Placement]
+Type=String
+Description=Special Icon position
+DefaultValue=
+
+[SkinInputBar/BackImg]
+Type=String
+Description=Background Image
+
+[SkinInputBar/MarginLeft]
+Type=Integer
+Description=Resize Margin Left
+
+[SkinInputBar/MarginRight]
+Type=Integer
+Description=Resize Margin Right
+
+[SkinInputBar/MarginTop]
+Type=Integer
+Description=Resize Margin Top
+
+[SkinInputBar/MarginBottom]
+Type=Integer
+Description=Resize Margin Bottom
+
+[SkinInputBar/CursorColor]
+Type=Color
+Description=Color of Cursor
+
+[SkinInputBar/InputPos]
+Type=Integer
+Description=Left-down position of Input
+
+[SkinInputBar/OutputPos]
+Type=Integer
+Description=Left-down position of Output
+
+[SkinInputBar/BackArrow]
+Type=String
+Description=Prev Page Icon
+
+[SkinInputBar/ForwardArrow]
+Type=String
+Description=Next Page Icon
+
+[SkinInputBar/BackArrowX]
+Type=Integer
+Description=Prev Page Icon
+
+[SkinInputBar/BackArrowY]
+Type=Integer
+Description=Next Page Icon
+
+[SkinInputBar/ForwardArrowX]
+Type=Integer
+Description=Prev Page Icon
+
+[SkinInputBar/ForwardArrowY]
+Type=Integer
+Description=Next Page Icon
+
+[SkinInputBar/FillVertical]
+Type=Enum
+Description=Fill Background Vertical rule
+EnumCount=2
+Enum0=Copy
+Enum1=Resize
+DefaultValue=Resize
+
+[SkinInputBar/FillHorizontal]
+Type=Enum
+Description=Fill Background Horizontal rule
+EnumCount=2
+Enum0=Copy
+Enum1=Resize
+DefaultValue=Resize
+
+[SkinTrayIcon/Active]
+Type=String
+Description=Active Tray Icon
+
+[SkinTrayIcon/Inactive]
+Type=String
+Description=Inctive Tray Icon
+
+[SkinMenu/BackImg]
+Type=String
+Description=Background Image
+
+[SkinMenu/MarginTop]
+Type=Integer
+Description=Resize Margin Top
+
+[SkinMenu/MarginBottom]
+Type=Integer
+Description=Resize Margin Bottom
+
+[SkinMenu/MarginLeft]
+Type=Integer
+Description=Resize Margin Left
+
+[SkinMenu/MarginRight]
+Type=Integer
+Description=Resize Margin Right
+
+[SkinMenu/ActiveColor]
+Type=Color
+Description=Active Menu Color
+
+[SkinMenu/LineColor]
+Type=Color
+Description=Space Line Color
+
+[SkinMenu/FillVertical]
+Type=Enum
+Description=Fill Background Vertical rule
+EnumCount=2
+Enum0=Copy
+Enum1=Resize
+DefaultValue=Resize
+
+[SkinMenu/FillHorizontal]
+Type=Enum
+Description=Fill Background Horizontal rule
+EnumCount=2
+Enum0=Copy
+Enum1=Resize
+DefaultValue=Resize
+
+[SkinKeyboard/BackImg]
+Type=String
+Description=Virtual Keyboard Image
+DefaultValue=keyboard.png
+
+[SkinKeyboard/KeyColor]
+Type=Color
+Description=Key Color On Virutal Keyboard
+DefaultValue=0 0 0
+
+[DescriptionFile]
+LocaleDomain=fcitx
