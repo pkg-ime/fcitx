@@ -22,6 +22,7 @@
 
 #include "fcitx/ui.h"
 #include "fcitx/ime.h"
+#include "fcitx/instance.h"
 #include "fcitx-config/hotkey.h"
 #include "fcitx-utils/log.h"
 #include "xim.h"
@@ -62,12 +63,9 @@ Bool XIMSetFocusHandler(FcitxXimFrontend* xim, IMChangeFocusStruct * call_data)
 
     SetTrackPos(xim, ic, NULL);
 
-    if (ic)
-    {
+    if (ic) {
         OnInputFocus(xim->owner);
-    }
-    else
-    {
+    } else {
         CloseInputWindow(xim->owner);
         MoveInputWindow(xim->owner);
     }
@@ -78,8 +76,7 @@ Bool XIMSetFocusHandler(FcitxXimFrontend* xim, IMChangeFocusStruct * call_data)
 Bool XIMUnsetFocusHandler(FcitxXimFrontend* xim, IMChangeICStruct * call_data)
 {
     FcitxInputContext* ic = GetCurrentIC(xim->owner);
-    if (ic && GetXimIC(ic)->id == call_data->icid)
-    {
+    if (ic && GetXimIC(ic)->id == call_data->icid) {
         SetCurrentIC(xim->owner, NULL);
         CloseInputWindow(xim->owner);
         OnInputUnFocus(xim->owner);
@@ -135,11 +132,10 @@ void SetTrackPos(FcitxXimFrontend* xim, FcitxInputContext* ic, IMChangeICStruct 
 
     int i;
     FcitxXimIC* ximic = GetXimIC(ic);
-    if (call_data)
-    {
+    if (call_data) {
         XICAttribute *pre_attr = ((IMChangeICStruct *) call_data)->preedit_attr;
 
-        for (i = 0; i < (int) ((IMChangeICStruct *) call_data)->preedit_attr_num; i++, pre_attr++) {
+        for (i = 0; i < (int)((IMChangeICStruct *) call_data)->preedit_attr_num; i++, pre_attr++) {
             if (!strcmp(XNSpotLocation, pre_attr->name)) {
                 ximic->bHasCursorLocation = true;
                 ximic->offset_x = (*(XPoint *) pre_attr->value).x;
@@ -155,26 +151,23 @@ void SetTrackPos(FcitxXimFrontend* xim, FcitxInputContext* ic, IMChangeICStruct 
         window = ximic->client_win;
 
 
-    if (window != None)
-    {
+    if (window != None) {
         Window dst;
         XWindowAttributes attr;
         XGetWindowAttributes(xim->display, window, &attr);
 
-        if  (ximic->offset_x < 0 && ximic->offset_y < 0)
-        {
+        if (ximic->offset_x < 0 && ximic->offset_y < 0) {
 
-            XTranslateCoordinates (xim->display, window, RootWindow(xim->display, xim->iScreen),
-                                   0, attr.height,
-                                   &ic->offset_x, &ic->offset_y,
-                                   &dst
-                                  );
-        }
-        else {
-            XTranslateCoordinates (xim->display, window, RootWindow(xim->display, xim->iScreen),
-                                   ximic->offset_x, ximic->offset_y,
-                                   &ic->offset_x, &ic->offset_y,
-                                   &dst);
+            XTranslateCoordinates(xim->display, window, RootWindow(xim->display, xim->iScreen),
+                                  0, attr.height,
+                                  &ic->offset_x, &ic->offset_y,
+                                  &dst
+                                 );
+        } else {
+            XTranslateCoordinates(xim->display, window, RootWindow(xim->display, xim->iScreen),
+                                  ximic->offset_x, ximic->offset_y,
+                                  &ic->offset_x, &ic->offset_y,
+                                  &dst);
         }
     }
 
@@ -191,6 +184,8 @@ void XIMProcessKey(FcitxXimFrontend* xim, IMForwardEventStruct * call_data)
     unsigned int state, originstate;
     char strbuf[STRBUFLEN];
     FcitxInputContext* ic = GetCurrentIC(xim->owner);
+    FcitxConfig* config = FcitxInstanceGetConfig(xim->owner);
+    FcitxInputState* input = FcitxInstanceGetInputState(xim->owner);
 
     if (ic == NULL) {
         ic = FindIC(xim->owner, xim->frontendid, &call_data->icid);
@@ -219,18 +214,33 @@ void XIMProcessKey(FcitxXimFrontend* xim, IMForwardEventStruct * call_data)
 
     xim->currentSerialNumberCallData = call_data->serial_number;
     xim->currentSerialNumberKey = kev->serial;
-    INPUT_RETURN_VALUE retVal = ProcessKey(xim->owner, (call_data->event.type == KeyRelease)?(FCITX_RELEASE_KEY):(FCITX_PRESS_KEY),
+
+    FcitxKeyEventType type = (call_data->event.type == KeyRelease) ? (FCITX_RELEASE_KEY) : (FCITX_PRESS_KEY);
+
+    if (ic->state == IS_CLOSED) {
+        if (type == FCITX_PRESS_KEY && IsHotKey(sym, state, config->hkTrigger)) {
+            EnableIM(xim->owner, ic, false);
+            FcitxInputStateSetKeyReleased(input, KR_OTHER);
+            return;
+        } else {
+            XimForwardKeyInternal(xim,
+                                  GetXimIC(ic),
+                                  &call_data->event
+                                 );
+            return;
+        }
+    }
+
+    INPUT_RETURN_VALUE retVal = ProcessKey(xim->owner, type,
                                            kev->time,
                                            sym, state);
 
-    if ((retVal & IRV_FLAG_FORWARD_KEY) || retVal == IRV_TO_PROCESS)
-    {
+    if ((retVal & IRV_FLAG_FORWARD_KEY) || retVal == IRV_TO_PROCESS) {
         XimForwardKeyInternal(xim,
                               GetXimIC(ic),
                               &call_data->event
                              );
-    }
-    else {
+    } else {
         if (!GetXimIC(ic)->bHasCursorLocation)
             SetTrackPos(xim, ic, NULL);
     }
@@ -253,7 +263,7 @@ void XimForwardKeyInternal(FcitxXimFrontend *xim,
     forwardEvent.serial_number = xim->currentSerialNumberCallData;
 
     memcpy(&(forwardEvent.event), xEvent, sizeof(XEvent));
-    IMForwardEvent(xim->ims, (XPointer) (&forwardEvent));
+    IMForwardEvent(xim->ims, (XPointer)(&forwardEvent));
 }
 
 void XIMClose(FcitxXimFrontend* xim, FcitxInputContext* ic, FcitxKeySym sym, unsigned int state, int count)
@@ -270,7 +280,7 @@ void XIMClose(FcitxXimFrontend* xim, FcitxInputContext* ic, FcitxKeySym sym, uns
 
 
 void
-XimPreeditCallbackStart (FcitxXimFrontend *xim, const FcitxXimIC* ic)
+XimPreeditCallbackStart(FcitxXimFrontend *xim, const FcitxXimIC* ic)
 {
     IMPreeditCBStruct pcb;
 
@@ -279,12 +289,12 @@ XimPreeditCallbackStart (FcitxXimFrontend *xim, const FcitxXimIC* ic)
     pcb.connect_id = ic->connect_id;
     pcb.icid = ic->id;
     pcb.todo.return_value = 0;
-    IMCallCallback (xim->ims, (XPointer) & pcb);
+    IMCallCallback(xim->ims, (XPointer) & pcb);
 }
 
 
 void
-XimPreeditCallbackDone (FcitxXimFrontend *xim, const FcitxXimIC* ic)
+XimPreeditCallbackDone(FcitxXimFrontend *xim, const FcitxXimIC* ic)
 {
     IMPreeditCBStruct pcb;
 
@@ -293,11 +303,11 @@ XimPreeditCallbackDone (FcitxXimFrontend *xim, const FcitxXimIC* ic)
     pcb.connect_id = ic->connect_id;
     pcb.icid = ic->id;
     pcb.todo.return_value = 0;
-    IMCallCallback (xim->ims, (XPointer) & pcb);
+    IMCallCallback(xim->ims, (XPointer) & pcb);
 }
 
 void
-XimPreeditCallbackDraw (FcitxXimFrontend* xim, FcitxXimIC* ic, const char* preedit_string, int cursorPos)
+XimPreeditCallbackDraw(FcitxXimFrontend* xim, FcitxXimIC* ic, const char* preedit_string, int cursorPos)
 {
     IMPreeditCBStruct pcb;
     XIMText text;
@@ -308,15 +318,14 @@ XimPreeditCallbackDraw (FcitxXimFrontend* xim, FcitxXimIC* ic, const char* preed
     if (preedit_string == NULL)
         return;
 
-    len = utf8_strlen (preedit_string);
+    len = utf8_strlen(preedit_string);
 
     if (len + 1 > xim->feedback_len) {
         xim->feedback_len = len + 1;
         if (xim->feedback) {
-            xim->feedback = realloc (xim->feedback, sizeof(XIMFeedback) * xim->feedback_len);
-        }
-        else {
-            xim->feedback = fcitx_malloc0 (sizeof(XIMFeedback) * xim->feedback_len);
+            xim->feedback = realloc(xim->feedback, sizeof(XIMFeedback) * xim->feedback_len);
+        } else {
+            xim->feedback = fcitx_malloc0(sizeof(XIMFeedback) * xim->feedback_len);
         }
     }
 
@@ -337,19 +346,19 @@ XimPreeditCallbackDraw (FcitxXimFrontend* xim, FcitxXimIC* ic, const char* preed
     text.feedback = xim->feedback;
 
     if (len > 0) {
-        Xutf8TextListToTextProperty (xim->display,
-                                     (char **)&preedit_string,
-                                     1, XCompoundTextStyle, &tp);
+        Xutf8TextListToTextProperty(xim->display,
+                                    (char **)&preedit_string,
+                                    1, XCompoundTextStyle, &tp);
         text.encoding_is_wchar = 0;
-        text.length = strlen ((char*)tp.value);
+        text.length = strlen((char*)tp.value);
         text.string.multi_byte = (char*)tp.value;
-        IMCallCallback (xim->ims, (XPointer) & pcb);
-        XFree (tp.value);
+        IMCallCallback(xim->ims, (XPointer) & pcb);
+        XFree(tp.value);
     } else {
         text.encoding_is_wchar = 0;
         text.length = 0;
         text.string.multi_byte = "";
-        IMCallCallback (xim->ims, (XPointer) & pcb);
+        IMCallCallback(xim->ims, (XPointer) & pcb);
         len = 0;
     }
     ic->onspot_preedit_length = len;

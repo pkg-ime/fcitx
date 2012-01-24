@@ -90,39 +90,38 @@ FcitxUI ui = {
     ReloadConfigClassicUI
 };
 
+FCITX_EXPORT_API
+int ABI_VERSION = FCITX_ABI_VERSION;
+
 void* ClassicUICreate(FcitxInstance* instance)
 {
-    FcitxAddon* classicuiaddon = GetAddonByName(&instance->addons, FCITX_CLASSIC_UI_NAME);
+    FcitxAddon* classicuiaddon = GetAddonByName(FcitxInstanceGetAddons(instance), FCITX_CLASSIC_UI_NAME);
     FcitxModuleFunctionArg arg;
     FcitxClassicUI* classicui = fcitx_malloc0(sizeof(FcitxClassicUI));
     classicui->owner = instance;
-    if (!LoadClassicUIConfig(classicui))
-    {
+    if (!LoadClassicUIConfig(classicui)) {
         free(classicui);
         return NULL;
     }
-    if (GetSkinDesc() == NULL)
-    {
+    if (GetSkinDesc() == NULL) {
         free(classicui);
         return NULL;
     }
     classicui->dpy = InvokeFunction(instance, FCITX_X11, GETDISPLAY, arg);
-    if (classicui->dpy == NULL)
-    {
+    if (classicui->dpy == NULL) {
         free(classicui);
         return NULL;
     }
 
-    if (LoadSkinConfig(&classicui->skin, &classicui->skinType))
-    {
+    if (LoadSkinConfig(&classicui->skin, &classicui->skinType)) {
         free(classicui);
         return NULL;
     }
 
     classicui->iScreen = DefaultScreen(classicui->dpy);
 
-    classicui->protocolAtom = XInternAtom (classicui->dpy, "WM_PROTOCOLS", False);
-    classicui->killAtom = XInternAtom (classicui->dpy, "WM_DELETE_WINDOW", False);
+    classicui->protocolAtom = XInternAtom(classicui->dpy, "WM_PROTOCOLS", False);
+    classicui->killAtom = XInternAtom(classicui->dpy, "WM_DELETE_WINDOW", False);
 
 
     InitSkinMenu(classicui);
@@ -135,11 +134,11 @@ void* ClassicUICreate(FcitxInstance* instance)
     AddMenuShell(&classicui->mainMenu, NULL, MENUTYPE_DIVLINE, NULL);
 
     FcitxUIMenu **menupp;
-    for (menupp = (FcitxUIMenu **) utarray_front(&instance->uimenus);
+    UT_array* uimenus = FcitxInstanceGetUIMenus(instance);
+    for (menupp = (FcitxUIMenu **) utarray_front(uimenus);
             menupp != NULL;
-            menupp = (FcitxUIMenu **) utarray_next(&instance->uimenus, menupp)
-        )
-    {
+            menupp = (FcitxUIMenu **) utarray_next(uimenus, menupp)
+        ) {
         FcitxUIMenu * menup = *menupp;
         if (!menup->isSubMenu)
             AddMenuShell(&classicui->mainMenu, menup->name, MENUTYPE_SUBMENU, menup);
@@ -187,6 +186,7 @@ static void ClassicUIInputReset(void *arg)
 {
     FcitxClassicUI* classicui = (FcitxClassicUI*) arg;
     DrawMainWindow(classicui->mainWindow);
+    DrawTrayWindow(classicui->trayWindow);
 }
 
 static void ClassicUICloseInputWindow(void *arg)
@@ -237,12 +237,7 @@ static void ClassicUIRegisterStatus(void *arg, FcitxUIStatus* status)
 static void ClassicUIOnInputFocus(void *arg)
 {
     FcitxClassicUI* classicui = (FcitxClassicUI*) arg;
-    FcitxInstance *instance = classicui->owner;
     DrawMainWindow(classicui->mainWindow);
-    if (GetCurrentState(instance) == IS_ACTIVE)
-    {
-        ShowMainWindow(classicui->mainWindow);
-    }
     DrawTrayWindow(classicui->trayWindow);
 }
 
@@ -355,10 +350,8 @@ void ClassicUIOnTriggerOn(void* arg)
 {
     FcitxClassicUI* classicui = (FcitxClassicUI*) arg;
     FcitxInstance *instance = classicui->owner;
-    if (GetCurrentState(instance) == IS_ACTIVE)
-    {
+    if (GetCurrentState(instance) == IS_ACTIVE) {
         DrawMainWindow(classicui->mainWindow);
-        ShowMainWindow(classicui->mainWindow);
     }
     DrawTrayWindow(classicui->trayWindow);
 }
@@ -381,65 +374,22 @@ boolean MainMenuAction(FcitxUIMenu* menu, int index)
 {
     FcitxClassicUI* classicui = (FcitxClassicUI*) menu->priv;
     int length = utarray_len(&menu->shell);
-    if (index == 0)
-    {
+    if (index == 0) {
         DisplayAboutWindow(classicui->mainWindow->owner->aboutWindow);
-    }
-    else if (index == 1)
-    {
-        pid_t id;
-
-        id = fork();
-
-        if (id < 0)
+    } else if (index == 1) {
+        FILE* p = popen("xdg-open http://fcitx.github.com/handbook/ &", "r");
+        if (p)
+            pclose(p);
+        else
             FcitxLog(ERROR, _("Unable to create process"));
-        else if (id == 0)
-        {
-            id = fork();
-
-            if (id < 0)
-            {
-                FcitxLog(ERROR, _("Unable to create process"));
-                exit(1);
-            }
-            else if (id > 0)
-                exit(0);
-            else
-            {
-                execlp("xdg-open", "xdg-open", "http://fcitx.github.com/handbook/", NULL);
-                exit(0);
-            }
-        }
-    }
-    else if (index == length - 1) /* Exit */
-    {
+    } else if (index == length - 1) { /* Exit */
         EndInstance(classicui->owner);
-    }
-    else if (index == length - 2) /* Configuration */
-    {
-        pid_t id;
-
-        id = fork();
-
-        if (id < 0)
+    } else if (index == length - 2) { /* Configuration */
+        FILE* p = popen(BINDIR "/fcitx-configtool &", "r");
+        if (p)
+            pclose(p);
+        else
             FcitxLog(ERROR, _("Unable to create process"));
-        else if (id == 0)
-        {
-            id = fork();
-
-            if (id < 0)
-            {
-                FcitxLog(ERROR, _("Unable to create process"));
-                exit(1);
-            }
-            else if (id > 0)
-                exit(0);
-            else
-            {
-                execl(BINDIR "/fcitx-configtool", "fcitx-configtool", NULL);
-                exit(0);
-            }
-        }
     }
     return true;
 }
@@ -458,7 +408,7 @@ ClassicUIInitWindowAttribute(FcitxClassicUI* classicui, Visual ** vs, Colormap *
     InvokeFunction(classicui->owner, FCITX_X11, INITWINDOWATTR, arg);
 }
 
-Visual * ClassicUIFindARGBVisual (FcitxClassicUI* classicui)
+Visual * ClassicUIFindARGBVisual(FcitxClassicUI* classicui)
 {
     FcitxModuleFunctionArg arg;
     return InvokeFunction(classicui->owner, FCITX_X11, FINDARGBVISUAL, arg);
@@ -467,23 +417,19 @@ Visual * ClassicUIFindARGBVisual (FcitxClassicUI* classicui)
 void ClassicUIMainWindowSizeHint(void* arg, int* x, int* y, int* w, int* h)
 {
     FcitxClassicUI* classicui = (FcitxClassicUI*) arg;
-    if (x)
-    {
+    if (x) {
         *x = classicui->iMainWindowOffsetX;
     }
-    if (y)
-    {
+    if (y) {
         *y = classicui->iMainWindowOffsetY;
     }
 
     XWindowAttributes attr;
     XGetWindowAttributes(classicui->dpy, classicui->mainWindow->window, &attr);
-    if (w)
-    {
+    if (w) {
         *w = attr.width;
     }
-    if (h)
-    {
+    if (h) {
         *h = attr.height;
     }
 

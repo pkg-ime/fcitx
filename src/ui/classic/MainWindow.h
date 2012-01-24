@@ -43,12 +43,11 @@ typedef struct _FcitxClassicUIStatus {
     int w, h;
 } FcitxClassicUIStatus;
 
-typedef struct _MainWindow
-{
+typedef struct _MainWindow {
     Display* dpy;
     Window window;
-    Pixmap pm_main_bar;
     cairo_surface_t* cs_main_bar;
+    cairo_surface_t* cs_x_main_bar;
     GC main_win_gc;
     boolean bMainWindowHidden;
     FcitxClassicUIStatus logostat;
@@ -58,12 +57,12 @@ typedef struct _MainWindow
     struct _FcitxClassicUI* owner;
 } MainWindow;
 
-MainWindow* CreateMainWindow (struct _FcitxClassicUI* classicui);
+MainWindow* CreateMainWindow(struct _FcitxClassicUI* classicui);
 void CloseMainWindow(MainWindow *mainWindow);
-void DrawMainWindow (MainWindow* mainWindow);
-void ShowMainWindow (MainWindow* mainWindow);
+void DrawMainWindow(MainWindow* mainWindow);
+void ShowMainWindow(MainWindow* mainWindow);
 boolean SetMouseStatus(MainWindow *mainWindow, MouseE* mouseE, MouseE value, MouseE other);
 
 #endif
 
-// kate: indent-mode cstyle; space-indent on; indent-width 0; 
+// kate: indent-mode cstyle; space-indent on; indent-width 0;

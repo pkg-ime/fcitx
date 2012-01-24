@@ -36,6 +36,8 @@ extern "C" {
 
     FcitxIMClient* FcitxIMClientOpen(FcitxIMClientConnectCallback connectcb, FcitxIMClientDestroyCallback destroycb, GObject* data);
     boolean IsFcitxIMClientValid(FcitxIMClient* client);
+    boolean IsFcitxIMClientEnabled(FcitxIMClient* client);
+    void FcitxIMClientSetEnabled(FcitxIMClient* client, boolean enable);
     void FcitxIMClientClose(FcitxIMClient* client);
     void FcitxIMClientFocusIn(FcitxIMClient* client);
     void FcitxIMClientFocusOut(FcitxIMClient* client);
@@ -44,7 +46,7 @@ extern "C" {
     void FcitxIMClientReset(FcitxIMClient* client);
     void FcitxIMClientProcessKey(FcitxIMClient* client, DBusGProxyCallNotify callback, void* user_data, GDestroyNotify notify, uint32_t keyval, uint32_t keycode, uint32_t state, FcitxKeyEventType type, uint32_t t);
     int FcitxIMClientProcessKeySync(FcitxIMClient* client,
-                             uint32_t keyval, uint32_t keycode, uint32_t state, FcitxKeyEventType type, uint32_t t);
+                                    uint32_t keyval, uint32_t keycode, uint32_t state, FcitxKeyEventType type, uint32_t t);
     void FcitxIMClientConnectSignal(FcitxIMClient* imclient,
                                     GCallback enableIM,
                                     GCallback closeIM,

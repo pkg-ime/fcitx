@@ -137,7 +137,7 @@ QFcitxInputContext::QFcitxInputContext()
         connect(m_slave, SIGNAL(destroyed(QObject*)), this, SLOT(destroySlaveContext()));
     }
 
-    m_dbusproxy = new org::freedesktop::DBus(DBUS_SERVICE_DBUS, DBUS_PATH_DBUS, m_connection, this);
+    m_dbusproxy = new org::freedesktop::DBus("org.freedesktop.DBus", "/org/freedesktop/DBus", m_connection, this);
     connect(m_dbusproxy, SIGNAL(NameOwnerChanged(QString,QString,QString)), this, SLOT(imChanged(QString,QString,QString)));
 
     m_triggerKey[0].sym = m_triggerKey[1].sym = (FcitxKeySym) 0;
@@ -481,24 +481,26 @@ void QFcitxInputContext::createInputContext()
     if (!m_improxy->isValid())
         return;
 
-    QDBusPendingReply< int, uint, uint, uint, uint > result = m_improxy->CreateIC();
+    char* name = fcitx_get_process_name();
+    QDBusPendingReply< int, bool, uint, uint, uint, uint > result = m_improxy->CreateICv2(name);
+    free(name);
     QDBusPendingCallWatcher* watcher = new QDBusPendingCallWatcher(result);
     connect(watcher, SIGNAL(finished(QDBusPendingCallWatcher*)), this, SLOT(createInputContextFinished(QDBusPendingCallWatcher*)));
 }
 
 void QFcitxInputContext::createInputContextFinished(QDBusPendingCallWatcher* watcher)
 {
-    QDBusPendingReply< int, uint, uint, uint, uint > result = *watcher;
+    QDBusPendingReply< int, bool, uint, uint, uint, uint > result = *watcher;
     if (result.isError())
         qWarning() << result.error();
     else
     {
-
         this->m_id = qdbus_cast<int>(result.argumentAt(0));
-        m_triggerKey[0].sym = (FcitxKeySym) qdbus_cast<uint>(result.argumentAt(1));
-        m_triggerKey[0].state = qdbus_cast<uint>(result.argumentAt(2));
-        m_triggerKey[1].sym = (FcitxKeySym) qdbus_cast<uint>(result.argumentAt(3));
-        m_triggerKey[1].state = qdbus_cast<uint>(result.argumentAt(4));
+        this->m_enable = qdbus_cast<bool>(result.argumentAt(1));
+        m_triggerKey[0].sym = (FcitxKeySym) qdbus_cast<uint>(result.argumentAt(2));
+        m_triggerKey[0].state = qdbus_cast<uint>(result.argumentAt(3));
+        m_triggerKey[1].sym = (FcitxKeySym) qdbus_cast<uint>(result.argumentAt(4));
+        m_triggerKey[1].state = qdbus_cast<uint>(result.argumentAt(5));
         this->m_path = QString(FCITX_IC_DBUS_PATH_QSTRING).arg(m_id);
         m_icproxy = new org::fcitx::Fcitx::InputContext(m_serviceName, m_path, m_connection, this);
         connect(m_icproxy, SIGNAL(CloseIM()), this, SLOT(closeIM()));

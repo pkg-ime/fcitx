@@ -1,4 +1,5 @@
 [CodeTable]
+UniqueName=wubi
 _Name=Wubi
 IconName=wubi
 File=wbx.mb
@@ -17,3 +18,5 @@ SaveAutoPhrase=3
 ExactMatch=False
 PromptTableCode=False
 Symbol=zzzz
+Enabled=True
+LangCode=zh_CN

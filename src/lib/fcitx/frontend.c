@@ -32,22 +32,10 @@
 #include "hook.h"
 #include "hook-internal.h"
 #include "instance.h"
+#include "instance-internal.h"
+#include "addon-internal.h"
 
 static const UT_icd frontend_icd = {sizeof(FcitxAddon*), NULL, NULL, NULL };
-
-FCITX_EXPORT_API
-FcitxInputContext* GetCurrentIC(FcitxInstance* instance)
-{
-    return instance->CurrentIC;
-}
-
-FCITX_EXPORT_API
-boolean SetCurrentIC(FcitxInstance* instance, FcitxInputContext* ic)
-{
-    boolean changed = (instance->CurrentIC != ic);
-    instance->CurrentIC = ic;
-    return changed;
-}
 
 FCITX_EXPORT_API
 void InitFcitxFrontends(UT_array* frontends)
@@ -59,31 +47,38 @@ FCITX_EXPORT_API
 FcitxInputContext* CreateIC(FcitxInstance* instance, int frontendid, void * priv)
 {
     UT_array* frontends = &instance->frontends;
-    FcitxAddon** pfrontend =(FcitxAddon**) utarray_eltptr(frontends, frontendid);
+    FcitxAddon** pfrontend = (FcitxAddon**) utarray_eltptr(frontends, frontendid);
     if (pfrontend == NULL)
         return NULL;
     FcitxFrontend* frontend = (*pfrontend)->frontend;
 
     FcitxInputContext *rec;
-    if (instance->free_list != NULL)
-    {
+    if (instance->free_list != NULL) {
         rec = instance->free_list;
         instance->free_list = instance->free_list->next;
-    }
-    else
+    } else
         rec = malloc(sizeof(FcitxInputContext));
 
-    memset (rec, 0, sizeof(FcitxInputContext));
+    memset(rec, 0, sizeof(FcitxInputContext));
     rec->frontendid = frontendid;
     rec->offset_x = -1;
     rec->offset_y = -1;
-    rec->state = IS_CLOSED;
+    switch (instance->config->shareState) {
+    case ShareState_All:
+        rec->state = instance->globalState;
+        break;
+    case ShareState_None:
+    case ShareState_PerProgram:
+        rec->state = instance->config->defaultIMState;
+        break;
+    default:
+        break;
+    }
 
     frontend->CreateIC((*pfrontend)->addonInstance, rec, priv);
 
     rec->next = instance->ic_list;
     instance->ic_list = rec;
-
     return rec;
 }
 
@@ -96,13 +91,32 @@ FcitxInputContext* FindIC(FcitxInstance* instance, int frontendid, void *filter)
         return NULL;
     FcitxFrontend* frontend = (*pfrontend)->frontend;
     FcitxInputContext *rec = instance->ic_list;
-    while (rec != NULL)
-    {
+    while (rec != NULL) {
         if (rec->frontendid == frontendid && frontend->CheckIC((*pfrontend)->addonInstance, rec, filter))
             return rec;
         rec = rec->next;
     }
     return NULL;
+}
+
+FCITX_EXPORT_API
+void SetICStateFromSameApplication(FcitxInstance* instance, int frontendid, FcitxInputContext *ic)
+{
+    UT_array* frontends = &instance->frontends;
+    FcitxAddon** pfrontend = (FcitxAddon**) utarray_eltptr(frontends, frontendid);
+    if (pfrontend == NULL)
+        return;
+    FcitxFrontend* frontend = (*pfrontend)->frontend;
+    if (!frontend->CheckICFromSameApplication)
+        return;
+    FcitxInputContext *rec = instance->ic_list;
+    while (rec != NULL) {
+        if (rec->frontendid == frontendid && frontend->CheckICFromSameApplication((*pfrontend)->addonInstance, rec, ic)) {
+            ic->state = rec->state;
+            break;
+        }
+        rec = rec->next;
+    }
 }
 
 FCITX_EXPORT_API
@@ -127,8 +141,7 @@ void DestroyIC(FcitxInstance* instance, int frontendid, void* filter)
             rec->next = instance->free_list;
             instance->free_list = rec;
 
-            if (rec == GetCurrentIC(instance))
-            {
+            if (rec == GetCurrentIC(instance)) {
                 CloseInputWindow(instance);
                 OnInputUnFocus(instance);
                 SetCurrentIC(instance, NULL);
@@ -140,46 +153,6 @@ void DestroyIC(FcitxInstance* instance, int frontendid, void* filter)
     }
 
     return;
-}
-
-FCITX_EXPORT_API
-void CloseIM(FcitxInstance* instance, FcitxInputContext* ic)
-{
-    if (ic == NULL)
-        return ;
-    UT_array* frontends = &instance->frontends;
-    FcitxAddon** pfrontend = (FcitxAddon**) utarray_eltptr(frontends, ic->frontendid);
-    if (pfrontend == NULL)
-        return;
-    FcitxFrontend* frontend = (*pfrontend)->frontend;
-    ic->state = IS_CLOSED;
-    frontend->CloseIM((*pfrontend)->addonInstance, ic);
-
-    if (ic == GetCurrentIC(instance))
-    {
-        OnTriggerOff(instance);
-        CloseInputWindow(instance);
-    }
-}
-
-/**
- * @brief 更改输入法状态
- *
- * @param _connect_id
- */
-FCITX_EXPORT_API
-void ChangeIMState(FcitxInstance* instance, FcitxInputContext* ic)
-{
-    if (!ic)
-        return;
-    if (ic->state == IS_ENG) {
-        ic->state = IS_ACTIVE;
-        ResetInput(instance);
-    } else {
-        ic->state = IS_ENG;
-        ResetInput(instance);
-        CloseInputWindow(instance);
-    }
 }
 
 FCITX_EXPORT_API
@@ -300,17 +273,13 @@ boolean LoadFrontend(FcitxInstance* instance)
     FcitxAddon *addon;
     int frontendindex = 0;
     utarray_clear(frontends);
-    for ( addon = (FcitxAddon *) utarray_front(addons);
+    for (addon = (FcitxAddon *) utarray_front(addons);
             addon != NULL;
-            addon = (FcitxAddon *) utarray_next(addons, addon))
-    {
-        if (addon->bEnabled && addon->category == AC_FRONTEND)
-        {
+            addon = (FcitxAddon *) utarray_next(addons, addon)) {
+        if (addon->bEnabled && addon->category == AC_FRONTEND) {
             char *modulePath;
-            switch (addon->type)
-            {
-            case AT_SHAREDLIBRARY:
-            {
+            switch (addon->type) {
+            case AT_SHAREDLIBRARY: {
                 FILE *fp = GetLibFile(addon->library, "r", &modulePath);
                 void *handle;
                 FcitxFrontend* frontend;
@@ -318,20 +287,24 @@ boolean LoadFrontend(FcitxInstance* instance)
                     break;
                 fclose(fp);
                 handle = dlopen(modulePath, RTLD_LAZY | RTLD_GLOBAL);
-                if (!handle)
-                {
-                    FcitxLog(ERROR, _("Frontend: open %s fail %s") ,modulePath ,dlerror());
+                if (!handle) {
+                    FcitxLog(ERROR, _("Frontend: open %s fail %s") , modulePath , dlerror());
                     break;
                 }
-                frontend=dlsym(handle,"frontend");
-                if (!frontend || !frontend->Create)
-                {
+
+                if (!CheckABIVersion(handle)) {
+                    FcitxLog(ERROR, "%s ABI Version Error", addon->name);
+                    dlclose(handle);
+                    break;
+                }
+
+                frontend = dlsym(handle, "frontend");
+                if (!frontend || !frontend->Create) {
                     FcitxLog(ERROR, _("Frontend: bad frontend"));
                     dlclose(handle);
                     break;
                 }
-                if ((addon->addonInstance = frontend->Create(instance, frontendindex)) == NULL)
-                {
+                if ((addon->addonInstance = frontend->Create(instance, frontendindex)) == NULL) {
                     dlclose(handle);
                     break;
                 }
@@ -347,8 +320,7 @@ boolean LoadFrontend(FcitxInstance* instance)
         }
     }
 
-    if (utarray_len(&instance->frontends) <= 0)
-    {
+    if (utarray_len(&instance->frontends) <= 0) {
         FcitxLog(ERROR, _("No available frontend"));
         return false;
     }
