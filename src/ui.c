@@ -78,7 +78,11 @@ GC              lightGC;
 Bool            bIsUtf8 = False;
 
 char            strFontName[100] = "*";
+#ifdef _USE_XFT
+char            strFontEnName[100] = "Courier New";
+#else
 char            strFontEnName[100] = "Courier";
+#endif
 
 extern Window   mainWindow;
 extern int      iMainWindowX;
@@ -92,7 +96,6 @@ extern int      iVKWindowY;
 extern WINDOW_COLOR mainWindowColor;
 extern WINDOW_COLOR inputWindowColor;
 extern WINDOW_COLOR VKWindowColor;
-extern Bool     bIsResizingInputWindow;
 extern HIDE_MAINWINDOW hideMainWindow;
 extern IC      *CurrentIC;
 extern int      MAINWND_WIDTH;
@@ -355,22 +358,14 @@ void MyXEventHandler (XEvent * event)
     case Expose:
 	if (event->xexpose.count > 0)
 	    break;
-	if (event->xexpose.window == mainWindow) {
+	if (event->xexpose.window == mainWindow)
 	    DisplayMainWindow ();
-	    break;
-	}
-	if (event->xexpose.window == VKWindow) {
+	else if (event->xexpose.window == VKWindow)
 	    DisplayVKWindow ();
-	    break;
-	}
-	if (event->xexpose.window == inputWindow) {
-	    if (!bIsResizingInputWindow) {
-		DisplayInputWindow ();
-		bIsResizingInputWindow = False;
-	    }
-	}
+	else if (event->xexpose.window == inputWindow)
+	    DisplayInputWindow ();
 	//added by yunfan
-	if (event->xexpose.window == aboutWindow)
+	else if (event->xexpose.window == aboutWindow)
 	    DisplayAboutWindow ();
 	//******************************
 	break;
@@ -383,6 +378,7 @@ void MyXEventHandler (XEvent * event)
 		iInputWindowX = event->xbutton.x;
 		iInputWindowY = event->xbutton.y;
 		MouseClick (&iInputWindowX, &iInputWindowY, inputWindow);
+		DisplayInputWindow ();
 	    }
 	    else if (event->xbutton.window == mainWindow) {
 		if (IsInBox (event->xbutton.x, event->xbutton.y, 1, 1, 16, 17)) {
@@ -401,6 +397,7 @@ void MyXEventHandler (XEvent * event)
 		    iVKWindowX = event->xbutton.x;
 		    iVKWindowY = event->xbutton.y;
 		    MouseClick (&iVKWindowX, &iVKWindowY, VKWindow);
+		    DisplayVKWindow ();
 		}
 	    }
 	    //added by yunfan
@@ -713,14 +710,7 @@ Bool MouseClick (int *x, int *y, Window window)
 	    LastTime = evtGrabbed.xmotion.time;
 	}
     }
-    
-    if (window == mainWindow)
-	DisplayMainWindow ();
-    else if (window == inputWindow)
-	DisplayInputWindow ();
-    else if (window == VKWindow)
-	DisplayVKWindow ();
-    
+
     *x = evtGrabbed.xmotion.x_root - *x;
     *y = evtGrabbed.xmotion.y_root - *y;
 

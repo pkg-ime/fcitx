@@ -100,6 +100,7 @@ HOTKEYS         hkPunc[HOT_KEY_COUNT] = { ALT_SPACE, 0 };	//中文标点
 HOTKEYS         hkNextPage[HOT_KEY_COUNT] = { '.', 0 };	//下一页
 HOTKEYS         hkPrevPage[HOT_KEY_COUNT] = { ',', 0 };	//上一页
 HOTKEYS         hkTrack[HOT_KEY_COUNT] = { CTRL_K, 0 };
+HOTKEYS         hkGBT[HOT_KEY_COUNT] = { CTRL_ALT_F, 0 };
 
 Bool            bUseLegend = False;
 Bool            bIsInLegend = False;
@@ -145,7 +146,8 @@ extern Bool     bShowPrev;
 extern Bool     bShowNext;
 extern Bool     bShowCursor;
 extern Bool     bTrackCursor;
-extern Bool     bSingleHZMode;
+
+//extern Bool     bSingleHZMode;
 extern Window   inputWindow;
 extern HIDE_MAINWINDOW hideMainWindow;
 extern XIMTriggerKey *Trigger_Keys;
@@ -203,13 +205,15 @@ void ResetInput (void)
 
     bShowPrev = False;
     bShowNext = False;
-   
+
     bIsInLegend = False;
     iInCap = 0;
 
-    if (IsIM (NAME_OF_PINYIN))
-	bSingleHZMode = False;
-    else
+    /*if (IsIM (NAME_OF_PINYIN))
+       bSingleHZMode = False;
+       else
+       bShowCursor = False; */
+    if (!IsIM (NAME_OF_PINYIN))
 	bShowCursor = False;
 
     if (im[iIMIndex].ResetIM)
@@ -665,6 +669,8 @@ void ProcessKey (IMForwardEventStruct * call_data)
 			retVal = ChangeLegend ();
 		    else if (IsHotKey (iKey, hkTrack))
 			retVal = ChangeTrack ();
+		    else if (IsHotKey (iKey, hkGBT))
+			retVal = ChangeGBKT ();
 		}
 	    }
 	    else
@@ -902,14 +908,15 @@ void SwitchIM (INT8 index)
 
     DisplayMainWindow ();
 
-    if (im[iIMIndex].Init)
-	im[iIMIndex].Init ();
-
     if (iIMCount == 1)
 	return;
 
-    if (im[iLastIM].Destroy != NULL)
-	im[iLastIM].Destroy ();
+    if (index != (INT8) - 2) {
+	if (im[iLastIM].Destroy)
+	    im[iLastIM].Destroy ();
+	if (im[iIMIndex].Init)
+	    im[iIMIndex].Init ();
+    }
 
     ResetInput ();
     XUnmapWindow (dpy, inputWindow);
