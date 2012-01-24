@@ -1,3 +1,67 @@
+2006-12-31: Yuking <yuking_net@sohu.com>
+	   * 版本 'GirlDog' 3.4.3 新年版
+
+2006-12-30: Yuking <yuking_net@sohu.com>
+	   * src/ime.c,tools.c: 第二三候选键可以设置成其它键了
+
+2006-12-29: Yuking <yuking_net@sohu.com>
+	   * src/table.c: 修正某些码表导致程序崩溃的问题
+	   * data/erbi.txt: 使用esixth修正过的二笔码表
+
+2006-12-16: Yuking <yuking_net@sohu.com>
+	   * 增加TAB/SHIFT支持
+	   * 加入GBK汉字“囍”和“䌷(chou)”
+	   
+2006-12-09: Yuking <yuking_net@sohu.com>
+	   * src/ui.c, tools.c: 给状态窗口增加一下开关，设计是否使用粗体
+
+2006-12-06: waq <waq@linux.sir>
+	   * 分号健行为设置为1与2都可以输入任意英文及符号，按回车键结束输入英文及符号。现在可以输入完整的英文句子了
+	   * 分号健行为设置为2时，提供了逐键提示功能。也就是说现在只要求匹配前面的编码就可以了
+	   * 由于分号可以输入符号，所以自定义输入时的翻页功能给取消了。个人觉得没人会变态到自定义时还有一大堆重码的吧。但是这里有个要求，就是自定义码表文件(QuickPhrase.mb)要求是按升序排好序的，否则空格键输入的就不是最匹配的那个了
+	   * 增加了两个分号输出一个分号的能力
+	   * 修正了分号键行为设置为2时，输入大写字母切换为英文输入的BUG，也许可以不算是BUG吧
+	   * 修正了分号键行为设置为2时，使用热键（L_SHIFT、R_SHIFT）选择第二或第三候选字时出现错误或者fcitx崩溃的BUG
+	   * 增加了使用热键选择第二或第三候选字时，可以连续联想的能力
+
+2006-12-03: Yuking <yuking_net@sohu.com>
+	   * 修正设置为全角时崩溃的问题
+	   
+2006-12-01: Yuking <yuking_net@sohu.com>
+	   * 用libxpm替换原有的xpm处理方法
+	   * 版本 'GirlDog' 3.4.2
+
+2006-11-29: Yuking <yuking_net@sohu.com>
+           * src/table.c: 修正手动调整词频失效的错误
+	   * src/InputWindow.c, tools.c, ime.c: 增加是否显示版本的开关	   
+
+2006-11-02: Yuking <yuking_net@sohu.com>
+           * src/table.c: 修正某些时候不保存用户词频信息的问题
+
+2006-11-01: Yuking <yuking_net@sohu.com>
+           * tools/txt2mb.c: 修正码表排序的一个问题
+	   * src/xim.c,tools.c: 给输入条的位置设置了X/Y的偏移量
+	   * 版本 'GirlDog' 3.4.1
+
+2006-10-23: Yuking <yuking_net@sohu.com>
+           * 恢复速度的显示
+
+2006-10-21: Yuking <yuking_net@sohu.com>
+           * 将拼音和区位的显示名称设为可定义
+
+2006-10-20: Yuking <yuking_net@sohu.com>
+           * src/ime.c: 将全角的输入方式恢复为原来的样子
+	   * src/table.c: 改进码表输入法中的自动组词
+	   
+2006-10-13: Yuking <yuking_net@sohu.com>
+           * data/pyphrase.org: 将“陷井”修正为“陷阱”
+
+2006-10-10: Yuking <yuking_net@sohu.com>
+           * src/table.c: 码表输入方式下，记录每次生成的自动词组
+
+2006-09-21: Yuking <yuking_net@sohu.com>
+	   * 版本 'GirlDog' 3.4
+
 2006-09-13: Yuking <yuking_net@sohu.com>
            * src/table.c,py.c: 码表输入方式下，临时拼音可以输入词组
            * src/table.c: 修正码表输入法的一个翻页错误

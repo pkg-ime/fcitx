@@ -30,6 +30,7 @@
 
 #include <limits.h>
 #include <ctype.h>
+#include <X11/xpm.h>
 
 #ifdef _USE_XFT
 #include <ft2build.h>
@@ -94,8 +95,8 @@ Bool CreateVKWindow (void)
     attrib.override_redirect = True;
     attribmask = CWOverrideRedirect;
 
-    sprintf (strVKWindowXPMBackColor, "@\tc #%2x%2x%2x", VKWindowColor.backColor.red >> 8, VKWindowColor.backColor.green >> 8, VKWindowColor.backColor.blue >> 8);
-    sprintf (strVKWindowAlphaXPMColor, "-\tc #%2x%2x%2x", VKWindowAlphaColor.color.red >> 8, VKWindowAlphaColor.color.green >> 8, VKWindowAlphaColor.color.blue >> 8);
+    sprintf (strVKWindowXPMBackColor, "@\tc #%02x%02x%02x", VKWindowColor.backColor.red >> 8, VKWindowColor.backColor.green >> 8, VKWindowColor.backColor.blue >> 8);
+    sprintf (strVKWindowAlphaXPMColor, "-\tc #%02x%02x%02x", VKWindowAlphaColor.color.red >> 8, VKWindowAlphaColor.color.green >> 8, VKWindowAlphaColor.color.blue >> 8);
 
     if (XAllocColor (dpy, DefaultColormap (dpy, DefaultScreen (dpy)), &(VKWindowColor.backColor)))
 	iBackPixel = VKWindowColor.backColor.pixel;
@@ -130,13 +131,22 @@ void InitVKWindowColor (void)
 
 void DisplayVKWindow (void)
 {
+    XMapRaised (dpy, VKWindow);
+}
+
+void DrawVKWindow(void)
+{
     int             i;
     int             iPos;
+    int             rv;
+    XImage         *mask;
+    XpmAttributes   attrib;
 
-    XMapRaised (dpy, VKWindow);
+    attrib.valuemask = 0;
     if (!pVKLogo) {
-	pVKLogo = XGetImage (dpy, VKWindow, 0, 0, VK_WINDOW_WIDTH, VK_WINDOW_HEIGHT, AllPlanes, XYPixmap);
-	FillImageByXPMData (pVKLogo, vk_xpm);
+	rv = XpmCreateImageFromData (dpy, vk_xpm, &pVKLogo, &mask, &attrib);
+	if (rv != XpmSuccess)
+	    fprintf (stderr, "Failed to read xpm file: VK::VKLogo\n");
     }
     XPutImage (dpy, VKWindow, VKWindowColor.backGC, pVKLogo, 0, 0, 0, 0, VK_WINDOW_WIDTH, VK_WINDOW_HEIGHT);
 
@@ -266,7 +276,7 @@ Bool VKMouseKey (int x, int y)
 		pstr = vks[iCurrentVK].strSymbol[iIndex][bShiftPressed ^ bVKCaps];
 		if (bShiftPressed) {
 		    bShiftPressed = False;
-		    DisplayVKWindow ();
+		    DrawVKWindow ();
 		}
 	    }
 	}
@@ -285,7 +295,7 @@ Bool VKMouseKey (int x, int y)
 		pstr = vks[iCurrentVK].strSymbol[iIndex][bShiftPressed ^ bVKCaps];
 		if (bShiftPressed) {
 		    bShiftPressed = False;
-		    DisplayVKWindow ();
+		    DrawVKWindow ();
 		}
 	    }
 	}
@@ -297,7 +307,7 @@ Bool VKMouseKey (int x, int y)
 		//改变大写键状态
 		bVKCaps = !bVKCaps;
 		pstr = (char *) NULL;
-		DisplayVKWindow ();
+		DrawVKWindow ();
 	    }
 	    else if (x > 308 && x <= 350)	//Return
 		strKey[0] = '\n';
@@ -306,7 +316,7 @@ Bool VKMouseKey (int x, int y)
 		pstr = vks[iCurrentVK].strSymbol[iIndex][bShiftPressed ^ bVKCaps];
 		if (bShiftPressed) {
 		    bShiftPressed = False;
-		    DisplayVKWindow ();
+		    DrawVKWindow ();
 		}
 	    }
 	}
@@ -318,14 +328,14 @@ Bool VKMouseKey (int x, int y)
 		//改变SHIFT键状态
 		bShiftPressed = !bShiftPressed;
 		pstr = (char *) NULL;
-		DisplayVKWindow ();
+		DrawVKWindow ();
 	    }
 	    else {
 		iIndex = 37 + (x - 62) / 24;
 		pstr = vks[iCurrentVK].strSymbol[iIndex][bShiftPressed ^ bVKCaps];
 		if (bShiftPressed) {
 		    bShiftPressed = False;
-		    DisplayVKWindow ();
+		    DrawVKWindow ();
 		}
 	    }
 	}
@@ -509,9 +519,9 @@ void ChangVK (void)
     bVKCaps = False;
     bShiftPressed = False;
 
-    DisplayVKWindow ();
+    DrawVKWindow ();
     SwitchIM (-2);
-    DisplayMainWindow ();
+    DrawMainWindow ();
 }
 
 INPUT_RETURN_VALUE DoVKInput (int iKey)
@@ -559,5 +569,5 @@ void SwitchVK (void)
 	XUnmapWindow (dpy, VKWindow);
 
     SwitchIM (-2);
-    DisplayMainWindow ();
+    DrawMainWindow ();
 }

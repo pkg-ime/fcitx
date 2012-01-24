@@ -28,13 +28,8 @@
 #define MAX_USER_INPUT	300
 
 #define HOT_KEY_COUNT	2
-#define MAX_HZ_SAVED    2048
 
 #define MAX_IM_NAME	12
-
-#define NAME_OF_PINYIN		"Æ´Òô"
-#define NAME_OF_SHUANGPIN	"Ë«Æ´"
-#define NAME_OF_QUWEI		"ÇøÎ»"
 
 #define TEMP_FILE		"FCITX_DICT_TEMP"
 
@@ -87,7 +82,9 @@ typedef enum _KEY_RELEASED {
     KR_OTHER = 0,
     KR_CTRL,
     KR_2ND_SELECTKEY,
-    KR_3RD_SELECTKEY
+    KR_2ND_SELECTKEY_OTHER,
+    KR_3RD_SELECTKEY,
+    KR_3RD_SELECTKEY_OTHER
 } KEY_RELEASED;
 
 typedef struct {
@@ -107,7 +104,7 @@ typedef int     HOTKEYS;
 void            ProcessKey (IMForwardEventStruct * call_data);
 void            ResetInput (void);
 void            CloseIM (IMForwardEventStruct * call_data);
-void            ChangeIMState ( CARD16 call_data);
+void            ChangeIMState (CARD16 call_data);
 Bool            IsHotKey (int iKey, HOTKEYS * hotkey);
 INPUT_RETURN_VALUE ChangeCorner (void);
 INPUT_RETURN_VALUE ChangePunc (void);

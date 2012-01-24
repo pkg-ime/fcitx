@@ -27,6 +27,7 @@
 #include <string.h>
 #include "version.h"
 #include <time.h>
+#include <X11/xpm.h>
 
 #ifdef _USE_XFT
 #include <ft2build.h>
@@ -107,12 +108,13 @@ extern GC       lightGC;
 
 extern Bool     bUseGBKT;
 
-/* 计算速度
+//计算速度
 extern Bool     bStartRecordType;
 extern Bool     bShowUserSpeed;
+extern Bool     bShowVersion;
 extern time_t   timeStart;
 extern uint     iHZInputed;
-*/
+
 Bool CreateInputWindow (void)
 {
     XSetWindowAttributes attrib;
@@ -120,9 +122,9 @@ Bool CreateInputWindow (void)
     int             iBackPixel;
 
     //根据窗口的背景色来设置XPM的色彩
-    sprintf (strXPMBackColor, ". c #%2x%2x%2x", inputWindowColor.backColor.red >> 8, inputWindowColor.backColor.green >> 8, inputWindowColor.backColor.blue >> 8);
+    sprintf (strXPMBackColor, ". c #%02x%02x%02x", inputWindowColor.backColor.red >> 8, inputWindowColor.backColor.green >> 8, inputWindowColor.backColor.blue >> 8);
     //设置箭头的颜色
-    sprintf (strXPMColor, "# c #%2x%2x%2x", colorArrow.red >> 8, colorArrow.green >> 8, colorArrow.blue >> 8);
+    sprintf (strXPMColor, "# c #%02x%02x%02x", colorArrow.red >> 8, colorArrow.green >> 8, colorArrow.blue >> 8);
 
     CalculateInputWindowHeight ();
 
@@ -164,44 +166,10 @@ void CalculateInputWindowHeight (void)
 
 void DisplayInputWindow (void)
 {
+#ifdef _DEBUG
+    fprintf (stderr, "DISPLAY InputWindow\n");
+#endif
     XMapRaised (dpy, inputWindow);
-    DisplayMessage ();
-    DrawInputWindow ();
-}
-
-void DrawInputWindow (void)
-{
-    if (_3DEffectInputWindow == _3D_UPPER)
-	Draw3DEffect (inputWindow, 1, 1, iInputWindowWidth - 2, iInputWindowHeight - 2, _3D_UPPER);
-    else if (_3DEffectInputWindow == _3D_LOWER)
-	Draw3DEffect (inputWindow, 0, 0, iInputWindowWidth, iInputWindowHeight, _3D_LOWER);
-
-    XDrawRectangle (dpy, inputWindow, inputWindowLineColor.gc, 0, 0, iInputWindowWidth - 1, iInputWindowHeight - 1);
-    //XDrawRectangle (dpy, inputWindow, inputWindowLineColor.gc, 1, 1, iInputWindowWidth - 3, iInputWindowHeight - 3);
-    if (_3DEffectInputWindow == _3D_LOWER)
-	XDrawLine (dpy, inputWindow, lightGC, 2 + 5, iInputWindowHeight / 2 - 1, iInputWindowWidth - 2 - 5, iInputWindowHeight / 2 - 1);
-    else if (_3DEffectInputWindow == _3D_UPPER)
-	XDrawLine (dpy, inputWindow, dimGC, 2 + 5, iInputWindowHeight / 2 - 1, iInputWindowWidth - 2 - 5, iInputWindowHeight / 2 - 1);
-    XDrawLine (dpy, inputWindow, inputWindowLineColor.gc, 2 + 5, iInputWindowHeight / 2, iInputWindowWidth - 2 - 5, iInputWindowHeight / 2);
-    if (_3DEffectInputWindow == _3D_LOWER)
-	XDrawLine (dpy, inputWindow, dimGC, 2 + 5, iInputWindowHeight / 2 + 1, iInputWindowWidth - 2 - 5, iInputWindowHeight / 2 + 1);
-    else if (_3DEffectInputWindow == _3D_UPPER)
-	XDrawLine (dpy, inputWindow, lightGC, 2 + 5, iInputWindowHeight / 2 + 1, iInputWindowWidth - 2 - 5, iInputWindowHeight / 2 + 1);
-
-    if (bShowPrev) {
-	if (!pPrev) {
-	    pPrev = XGetImage (dpy, inputWindow, 0, 0, 7, 13, AllPlanes, XYPixmap);
-	    FillImageByXPMData (pPrev, xpm_prev);
-	}
-	XPutImage (dpy, inputWindow, inputWindowColor.foreGC, pPrev, 0, 0, iInputWindowWidth - 20, (iInputWindowHeight / 2 - 12) / 2, 6, 12);
-    }
-    if (bShowNext) {
-	if (!pNext) {
-	    pNext = XGetImage (dpy, inputWindow, 0, 0, 7, 13, AllPlanes, XYPixmap);
-	    FillImageByXPMData (pNext, xpm_next);
-	}
-	XPutImage (dpy, inputWindow, inputWindowColor.foreGC, pNext, 0, 0, iInputWindowWidth - 10, (iInputWindowHeight / 2 - 12) / 2, 6, 12);
-    }
 }
 
 void InitInputWindowColor (void)
@@ -246,9 +214,11 @@ void ResetInputWindow (void)
     uMessageUp = 0;
 }
 
-void DisplayMessage (void)
+void DrawInputWindow (void)
 {
     int             i;
+    XImage         *mask;
+    XpmAttributes   attrib;
 
 #ifdef _USE_XFT
     char            strTemp[MESSAGE_MAX_LENGTH];
@@ -257,43 +227,51 @@ void DisplayMessage (void)
 #endif
     XWindowAttributes wa;
 
+#ifdef _DEBUG
+    fprintf (stderr, "DRAW InputWindow\n");
+#endif
+
     XClearArea (dpy, inputWindow, 2, 2, iInputWindowWidth - 2, iInputWindowHeight / 2 - 2, False);
     XClearArea (dpy, inputWindow, 2, iInputWindowHeight / 2 + 1, iInputWindowWidth - 2, iInputWindowHeight / 2 - 2, False);
 
     if (!uMessageUp && !uMessageDown) {
 	bShowCursor = False;
-	uMessageUp = 1;
-	strcpy (messageUp[0].strMsg, "FCITX ");
-	strcat (messageUp[0].strMsg, FCITX_VERSION);
-	messageUp[0].type = MSG_TIPS;
 
-	/* 显示打字速度
-	   if (bStartRecordType && bShowUserSpeed) {
-	   double          timePassed;
+	if (bShowVersion) {
+	    uMessageUp = 1;
+	    strcpy (messageUp[0].strMsg, "FCITX ");
+	    strcat (messageUp[0].strMsg, FCITX_VERSION);
+	    messageUp[0].type = MSG_TIPS;
+	}
+	//显示打字速度
+	if (bStartRecordType && bShowUserSpeed) {
+	    double          timePassed;
 
-	   timePassed = difftime (time (NULL), timeStart);
-	   if (((int) timePassed) == 0)
-	   timePassed = 1.0;
+	    timePassed = difftime (time (NULL), timeStart);
+	    if (((int) timePassed) == 0)
+		timePassed = 1.0;
 
-	   uMessageDown = 6;
-	   strcpy (messageDown[0].strMsg, "打字速度：");
-	   messageDown[0].type = MSG_OTHER;
-	   sprintf (messageDown[1].strMsg, "%d", (int) (iHZInputed * 60 / timePassed));
-	   messageDown[1].type = MSG_CODE;
-	   strcpy (messageDown[2].strMsg, "/分  用时：");
-	   messageDown[2].type = MSG_OTHER;
-	   sprintf (messageDown[3].strMsg, "%d", (int) timePassed);
-	   messageDown[3].type = MSG_CODE;
-	   strcpy (messageDown[4].strMsg, "秒  字数：");
-	   messageDown[4].type = MSG_OTHER;
-	   sprintf (messageDown[5].strMsg, "%u", iHZInputed);
-	   messageDown[5].type = MSG_CODE;
-	   }
-	   else { */
-	uMessageDown = 1;
-	strcpy (messageDown[0].strMsg, "http://www.fcitx.org");
-	messageDown[0].type = MSG_CODE;
-	//}
+	    uMessageDown = 6;
+	    strcpy (messageDown[0].strMsg, "打字速度：");
+	    messageDown[0].type = MSG_OTHER;
+	    sprintf (messageDown[1].strMsg, "%d", (int) (iHZInputed * 60 / timePassed));
+	    messageDown[1].type = MSG_CODE;
+	    strcpy (messageDown[2].strMsg, "/分  用时：");
+	    messageDown[2].type = MSG_OTHER;
+	    sprintf (messageDown[3].strMsg, "%d", (int) timePassed);
+	    messageDown[3].type = MSG_CODE;
+	    strcpy (messageDown[4].strMsg, "秒  字数：");
+	    messageDown[4].type = MSG_OTHER;
+	    sprintf (messageDown[5].strMsg, "%u", iHZInputed);
+	    messageDown[5].type = MSG_CODE;
+	}
+	else {
+	    if (bShowVersion) {
+		uMessageDown = 1;
+		strcpy (messageDown[0].strMsg, "http://www.fcitx.org");
+		messageDown[0].type = MSG_CODE;
+	    }
+	}
     }
 
     iInputWindowUpWidth = 2 * INPUTWND_START_POS_UP + 1;
@@ -407,6 +385,43 @@ void DisplayMessage (void)
 
     DisplayMessageUp ();
     DisplayMessageDown ();
+
+    //**************************
+    attrib.valuemask = 0;
+
+    if (_3DEffectInputWindow == _3D_UPPER)
+	Draw3DEffect (inputWindow, 1, 1, iInputWindowWidth - 2, iInputWindowHeight - 2, _3D_UPPER);
+    else if (_3DEffectInputWindow == _3D_LOWER)
+	Draw3DEffect (inputWindow, 0, 0, iInputWindowWidth, iInputWindowHeight, _3D_LOWER);
+
+    XDrawRectangle (dpy, inputWindow, inputWindowLineColor.gc, 0, 0, iInputWindowWidth - 1, iInputWindowHeight - 1);
+    //XDrawRectangle (dpy, inputWindow, inputWindowLineColor.gc, 1, 1, iInputWindowWidth - 3, iInputWindowHeight - 3);
+    if (_3DEffectInputWindow == _3D_LOWER)
+	XDrawLine (dpy, inputWindow, lightGC, 2 + 5, iInputWindowHeight / 2 - 1, iInputWindowWidth - 2 - 5, iInputWindowHeight / 2 - 1);
+    else if (_3DEffectInputWindow == _3D_UPPER)
+	XDrawLine (dpy, inputWindow, dimGC, 2 + 5, iInputWindowHeight / 2 - 1, iInputWindowWidth - 2 - 5, iInputWindowHeight / 2 - 1);
+    XDrawLine (dpy, inputWindow, inputWindowLineColor.gc, 2 + 5, iInputWindowHeight / 2, iInputWindowWidth - 2 - 5, iInputWindowHeight / 2);
+    if (_3DEffectInputWindow == _3D_LOWER)
+	XDrawLine (dpy, inputWindow, dimGC, 2 + 5, iInputWindowHeight / 2 + 1, iInputWindowWidth - 2 - 5, iInputWindowHeight / 2 + 1);
+    else if (_3DEffectInputWindow == _3D_UPPER)
+	XDrawLine (dpy, inputWindow, lightGC, 2 + 5, iInputWindowHeight / 2 + 1, iInputWindowWidth - 2 - 5, iInputWindowHeight / 2 + 1);
+
+    if (bShowPrev) {
+	if (!pPrev) {
+	    i = XpmCreateImageFromData (dpy, xpm_prev, &pPrev, &mask, &attrib);
+	    if (i != XpmSuccess)
+		fprintf (stderr, "Failed to read xpm file: Prev\n");
+	}
+	XPutImage (dpy, inputWindow, inputWindowColor.foreGC, pPrev, 0, 0, iInputWindowWidth - 20, (iInputWindowHeight / 2 - 12) / 2, 6, 12);
+    }
+    if (bShowNext) {
+	if (!pNext) {
+	    i = XpmCreateImageFromData (dpy, xpm_next, &pNext, &mask, &attrib);
+	    if (i != XpmSuccess)
+		fprintf (stderr, "Failed to read xpm file: Next\n");
+	}
+	XPutImage (dpy, inputWindow, inputWindowColor.foreGC, pNext, 0, 0, iInputWindowWidth - 10, (iInputWindowHeight / 2 - 12) / 2, 6, 12);
+    }
 }
 
 /*
