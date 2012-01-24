@@ -51,6 +51,8 @@
 #include "TrayWindow.h"
 #endif
 
+#include "DBus.h"
+
 #include "vk.h"
 #include "ime.h"
 #include "table.h"
@@ -64,13 +66,22 @@
 #ifndef CODESET
 #define CODESET 14
 #endif
+#include <pthread.h>
 
 extern Display *dpy;
 extern Window   inputWindow;
+extern Window   ximWindow;
 
 extern Bool     bIsUtf8;
+extern Bool	bUseDBus;
 
 extern HIDE_MAINWINDOW hideMainWindow;
+
+extern void* remoteThread(void*);
+
+#ifdef _ENABLE_TRAY
+extern tray_win_t tray;
+#endif
 
 int main (int argc, char *argv[])
 {
@@ -78,15 +89,32 @@ int main (int argc, char *argv[])
     int             c; 	//用于保存用户输入的参数
     Bool            bBackground = True;
     char	    *imname=(char *)NULL;
+    pthread_t	    pid;
 
-    while((c = getopt(argc, argv, "dDn:vh")) != -1) {
+    SetMyExceptionHandler();		//处理事件
+
+    /* 先初始化 X 再加载配置文件，因为设置快捷键从 keysym 转换到
+     * keycode 的时候需要 Display
+     */
+    if (!InitX ())
+	exit (1);
+
+    /*加载用户配置文件，如果该文件不存在就从安装目录中拷贝
+     * “/data/config”到“~/.fcitx/config”
+     */
+    LoadConfig (True);
+
+    while((c = getopt(argc, argv, "cdDn:vh")) != -1) {
         switch(c){
-            case 'd':
+	    case 'd':
                 /* nothing to do */
                 break;
             case 'D':
                 bBackground = False;
                 break;
+	    case 'c':
+		SaveConfig();
+		return 0;
 	    case 'n':
 	    	imname=optarg;
 		break;
@@ -106,16 +134,10 @@ int main (int argc, char *argv[])
     setlocale (LC_CTYPE, "");
     bIsUtf8 = (strcmp (nl_langinfo (CODESET), "UTF-8") == 0);
 
-    /* 先初始化 X 再加载配置文件，因为设置快捷键从 keysym 转换到
-     * keycode 的时候需要 Display
-     */
-    if (!InitX ())
-	exit (1);
-
-    /*加载用户配置文件，通常是“~/.fcitx/config”，如果该文件不存在就从安装目录中拷贝
-     * “/data/config”到“~/.fcitx/config”
-     */
-    LoadConfig (True);
+#ifdef _ENABLE_DBUS
+    if (bUseDBus && !InitDBus ())
+	exit (5);
+#endif
 
     /*创建字体。实际上，就是根据用户的设置，使用xft读取字体的相关信息。
      * xft是x11提供的处理字体的相关函数集
@@ -124,8 +146,7 @@ int main (int argc, char *argv[])
     //根据字体计算输入窗口的高度
     CalculateInputWindowHeight ();
     /*加载配置文件，这个配置文件不是用户配置的，而是用于记录fctix的运行状态的，
-     * 比如是全角还是半角等等。通常是“~/.fcitx/profile”，如果该文件不存在就从安装
-     * 目录中拷贝“/data/profile”到“~/.fcitx/profile”
+     * 比如是全角还是半角等等。
      */
     LoadProfile ();
 
@@ -133,7 +154,7 @@ int main (int argc, char *argv[])
     LoadPuncDict ();
     //加载成语
     LoadQuickPhrase ();
-    /*从 ~/.fcitx/AutoEng.dat （如果不存在，
+    /*从用户配置目录中读取AutoEng.dat （如果不存在，
      * 则从 /usr/local/share/fcitx/data/AutoEng.dat）
      * 读取需要自动转换到英文输入状态的情况的数据
      */
@@ -141,25 +162,35 @@ int main (int argc, char *argv[])
 
     //以下是界面的处理
 
-    CreateMainWindow ();	//创建主窗口，即输入法状态窗口
-    CreateVKWindow ();		//创建候选词窗口
-    CreateInputWindow ();	//创建输入窗口
-    CreateAboutWindow ();	//创建关于窗口
+    if (!bUseDBus)
+	CreateMainWindow ();	//创建主窗口，即输入法状态窗口
+#ifdef _ENABLE_DBUS
+    else
+	registerProperties();
+#endif
 
-    //处理颜色，即候选词窗口的颜色，也就是我们在“~/.fcitx/config”定义的那些颜色信息
+    CreateInputWindow ();	//创建输入窗口
+    CreateVKWindow ();		//创建虚拟键盘窗口
+
+    if (!bUseDBus)
+	CreateAboutWindow ();	//创建关于窗口
+
+    //处理颜色，即候选词窗口的颜色，也就是我们在配置文件中定义的那些颜色信息
     InitGC (inputWindow);
 
     //将本程序加入到输入法组，告诉系统，使用我输入字符
     SetIM ();
 
-    //处理主窗口的显示
-    if (hideMainWindow != HM_HIDE) {
-	DisplayMainWindow ();
-	DrawMainWindow ();	
+    if (!bUseDBus) {
+	//处理主窗口的显示
+	if (hideMainWindow != HM_HIDE) {
+	    DisplayMainWindow ();
+	    DrawMainWindow ();
+	}
     }
-    
+
     //初始化输入法
-    if (!InitXIM (inputWindow, imname))
+    if (!InitXIM (imname))
 	exit (4);
 
     //以后台方式运行
@@ -174,22 +205,35 @@ int main (int argc, char *argv[])
 	else if (id > 0)
 	    exit (0);
     }
-    
-    SetMyExceptionHandler();		//处理事件
+
+#ifdef _ENABLE_RECORDING
+    OpenRecording(True);
+#endif
+
+#ifdef _ENABLE_DBUS
+    dbus_threads_init_default();
+#endif
+    pthread_create(&pid, NULL, remoteThread, NULL);
+
+#ifdef _ENABLE_DBUS
+    if (bUseDBus)
+        pthread_create(&pid, NULL, (void *)DBusLoop, NULL);
+#endif
 
 #ifdef _ENABLE_TRAY
-    CreateTrayWindow ();		//创建系统托盘窗口
-    DrawTrayWindow (INACTIVE_ICON);	//显示托盘图标
+    tray.window = (Window) NULL;
+    if (!bUseDBus) {
+	CreateTrayWindow ();		//创建系统托盘窗口
+    	DrawTrayWindow (INACTIVE_ICON);	//显示托盘图标
+    }
 #endif
-    
+
     //主循环，即XWindow的消息循环
     for (;;) {
-	XNextEvent (dpy, &event);					//等待一个事件发生
-
-	if (XFilterEvent (&event, None) == True)	//如果是超时，等待下一个事件
-	    continue;
-
-	MyXEventHandler (&event);					//处理X事件
+	XNextEvent (dpy, &event);			//等待一个事件发生
+	    
+	if (XFilterEvent (&event, None) == False)
+	    MyXEventHandler (&event);		//处理X事件
     }
 
     return 0;
@@ -200,6 +244,7 @@ void Usage ()
     printf("Usage: fcitx [OPTION]\n"
            "\t-d\t\trun as daemon(default)\n"
            "\t-D\t\tdon't run as daemon\n"
+   	   "\t-c\t\t(re)create config file in home directory and then exit\n"
 	   "\t-n[im name]\trun as specified name\n"
            "\t-v\t\tdisplay the version information and exit\n"
            "\t-h\t\tdisplay this help and exit\n");

@@ -1,5 +1,7 @@
 #ifdef _ENABLE_TRAY
 
+#include <stdio.h>
+
 #include "TrayWindow.h"
 #include "inactive.xpm"
 #include "active.xpm"
@@ -79,6 +81,10 @@ void DrawTrayWindow(int f_state) {
 
 void tray_win_deinit(tray_win_t *f_tray) {
     ;
+}
+
+void tray_win_redraw(void) {
+    tray_find_dock(dpy, tray.window);
 }
 
 #endif

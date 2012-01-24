@@ -24,6 +24,7 @@
 #include <X11/Xlib.h>
 #include <iconv.h>
 #include <string.h>
+#include <limits.h>
 
 #include "xim.h"
 #include "IC.h"
@@ -36,9 +37,12 @@
 #include "vk.h"
 #include "ui.h"
 
+#include "DBus.h"
+
 CONNECT_ID     *connectIDsHead = (CONNECT_ID *) NULL;
 ICID	       *icidsHead = (ICID *) NULL;
 XIMS            ims;
+Window		ximWindow;
 
 //************************************************
 CARD16          connect_id = 0;
@@ -50,6 +54,13 @@ char            strLocale[201] = "zh_CN.GB18030,zh_CN.GB2312,zh_CN,zh_CN.GBK,zh_
 
 int		iClientCursorX = INPUTWND_STARTX;
 int		iClientCursorY = INPUTWND_STARTY;
+
+#ifdef _ENABLE_RECORDING
+FILE		*fpRecord = NULL;
+Bool		bRecording = True;
+Bool		bWrittenRecord = False;			//是否写入过记录
+char 		strRecordingPath[PATH_MAX]="";		//空字串表示使用默认的路径~/.fcitx/record.dat
+#endif
 
 extern IM      *im;
 extern INT8     iIMIndex;
@@ -84,9 +95,21 @@ extern uint     iHZInputed;
 extern Bool     bShowInputWindowTriggering;
 
 extern Bool     bUseGBKT;
+extern CARD16 g_last_connect_id;
+
+extern Bool	bUseDBus;
+
+#ifdef _ENABLE_DBUS
+extern Property logo_prop;
+extern Property state_prop;
+extern Property punc_prop;
+extern Property corner_prop;
+extern Property gbk_prop;
+extern Property gbkt_prop;
+extern Property legend_prop;
+#endif
 
 #ifdef _DEBUG
-
 char            strUserLocale[100];
 char            strXModifiers[100];
 #endif
@@ -127,7 +150,7 @@ void SetTrackPos(IMChangeICStruct * call_data)
     if (CurrentIC == NULL)
 	return;
     if (CurrentIC != (IC *) FindIC (call_data->icid))
-	return;
+        return;
 
     if (bTrackCursor) {
 	int             i;
@@ -139,10 +162,10 @@ void SetTrackPos(IMChangeICStruct * call_data)
 		if (CurrentIC->focus_win)
 		    XTranslateCoordinates (dpy, CurrentIC->focus_win, RootWindow (dpy, iScreen), (*(XPoint *) pre_attr->value).x, (*(XPoint *) pre_attr->value).y, &iClientCursorX, &iClientCursorY, &window);
 		else if (CurrentIC->client_win)
-		    XTranslateCoordinates (dpy, CurrentIC->client_win, RootWindow (dpy, iScreen), (*(XPoint *) pre_attr->value).x, (*(XPoint *) pre_attr->value).y, &iClientCursorX, &iClientCursorY, &window);		    
+		    XTranslateCoordinates (dpy, CurrentIC->client_win, RootWindow (dpy, iScreen), (*(XPoint *) pre_attr->value).x, (*(XPoint *) pre_attr->value).y, &iClientCursorX, &iClientCursorY, &window);
 		else
 		    return;
-		    
+
 		ConnectIDSetTrackCursor (call_data->connect_id, True);
 	    }
 	}
@@ -154,7 +177,7 @@ void SetTrackPos(IMChangeICStruct * call_data)
 Bool MyGetICValuesHandler (IMChangeICStruct * call_data)
 {
     GetIC (call_data);
-    
+
     return True;
 }
 
@@ -162,7 +185,7 @@ Bool MySetICValuesHandler (IMChangeICStruct * call_data)
 {
     SetIC (call_data);
     SetTrackPos(call_data);
-    
+
     return True;
 }
 
@@ -174,52 +197,72 @@ Bool MySetFocusHandler (IMChangeFocusStruct * call_data)
     if (ConnectIDGetState (connect_id) != IS_CLOSED) {
 	if (icidGetIMState(call_data->icid) == IS_CLOSED)
 	    IMPreeditStart (ims, (XPointer) call_data);
- 	    
+
 	EnterChineseMode (lastConnectID == connect_id);
-	DrawMainWindow ();
-	
+
+	if (!bUseDBus)
+	    DrawMainWindow ();
+
 	if (ConnectIDGetState (connect_id) == IS_CHN) {
 	    if (bVK)
 		DisplayVKWindow ();
 	}
 	else {
 	    XUnmapWindow (dpy, inputWindow);
-	    XUnmapWindow (dpy, VKWindow);
-	}	
+	    if (!bUseDBus)
+	    	XUnmapWindow (dpy, VKWindow);
+	}
     }
     else {
 	if (icidGetIMState(call_data->icid) != IS_CLOSED)
 	    IMPreeditEnd (ims, (XPointer) call_data);
-	    
-	XUnmapWindow (dpy, inputWindow);
-	XUnmapWindow (dpy, VKWindow);
-#ifdef _ENABLE_TRAY	
-	DrawTrayWindow (INACTIVE_ICON);
-#endif
-	if (hideMainWindow == HM_SHOW) {
-	    DisplayMainWindow ();
-	    DrawMainWindow ();
-	}
-	else 
-	    XUnmapWindow (dpy, mainWindow);
-    }
 
-    icidSetIMState(call_data->icid, ConnectIDGetState (connect_id));
-    lastConnectID = connect_id;
-    //When application gets the focus, re-record the time.
-    bStartRecordType = False;
-    iHZInputed = 0;
-   
-    if (ConnectIDGetTrackCursor (connect_id) && bTrackCursor) {
-	position * pos = ConnectIDGetPos(connect_id);
+	XUnmapWindow (dpy, inputWindow);
+	if (!bUseDBus) {
+	    XUnmapWindow (dpy, VKWindow);
+
+#ifdef _ENABLE_TRAY
+	    DrawTrayWindow (INACTIVE_ICON);
+#endif
+	    if (hideMainWindow == HM_SHOW) {
+		DisplayMainWindow ();
+		DrawMainWindow ();
+	    }
+	    else
+		XUnmapWindow (dpy, mainWindow);
+	}
+#ifdef _ENABLE_DBUS
+	else
+	    updatePropertyByConnectID(connect_id);
+#endif
+
+	icidSetIMState(call_data->icid, ConnectIDGetState (connect_id));
+	lastConnectID = connect_id;
+	//When application gets the focus, re-record the time.
+	bStartRecordType = False;
+	iHZInputed = 0;
 	
-	if (pos) {
-	    iClientCursorX = pos->x;
-	    iClientCursorY = pos->y;
-	    XMoveWindow (dpy, inputWindow, iClientCursorX, iClientCursorY); 
-        }
+	if (ConnectIDGetTrackCursor (connect_id) && bTrackCursor) {
+	    position * pos = ConnectIDGetPos(connect_id);
+	    
+	    if (pos) {
+		iClientCursorX = pos->x;
+		iClientCursorY = pos->y;
+		if (!bUseDBus)
+		    XMoveWindow (dpy, inputWindow, iClientCursorX, iClientCursorY);
+#ifdef _ENABLE_DBUS
+		else
+		    KIMUpdateSpotLocation(iClientCursorX, iClientCursorY);
+#endif
+	    }
+	}
+
+#ifdef _ENABLE_DBUS
+	if (bUseDBus)
+	    registerProperties();
+#endif
     }
-   
+    
     return True;
 }
 
@@ -227,7 +270,8 @@ Bool MyUnsetFocusHandler (IMChangeICStruct * call_data)
 {
     if (call_data->connect_id==connect_id) {
 	XUnmapWindow (dpy, inputWindow);
-	XUnmapWindow (dpy, VKWindow);
+	if (!bUseDBus)
+	    XUnmapWindow (dpy, VKWindow);
     }
 
     return True;
@@ -236,11 +280,20 @@ Bool MyUnsetFocusHandler (IMChangeICStruct * call_data)
 Bool MyCloseHandler (IMOpenStruct * call_data)
 {
     XUnmapWindow (dpy, inputWindow);
-    XUnmapWindow (dpy, VKWindow);    
     
+    if (!bUseDBus)
+    	XUnmapWindow (dpy, VKWindow);
+
     DestroyConnectID (call_data->connect_id);
-    connect_id = 0;
-    
+
+    SaveIM();
+
+#ifdef _ENABLE_RECORDING
+    CloseRecording();
+    if ( bRecording )
+        OpenRecording( True );
+#endif
+
     return True;
 }
 
@@ -253,8 +306,13 @@ Bool MyCreateICHandler (IMChangeICStruct * call_data)
 	connect_id = call_data->connect_id;
     }
 
+#ifdef _ENABLE_DBUS
+    if (bUseDBus)
+	updatePropertyByConnectID(connect_id);
+#endif
+
     CreateICID(call_data);
-    
+
     return True;
 }
 
@@ -262,12 +320,20 @@ Bool MyDestroyICHandler (IMChangeICStruct * call_data)
 {
     if (CurrentIC == (IC *) FindIC (call_data->icid)) {
 	XUnmapWindow (dpy, inputWindow);
-	XUnmapWindow (dpy, VKWindow);
+	if (!bUseDBus)
+	    XUnmapWindow (dpy, VKWindow);
     }
 
     DestroyIC (call_data);
     DestroyICID(call_data->icid);
-    
+
+#ifdef _ENABLE_DBUS
+    if (bUseDBus) {
+	logo_prop.label = "Fcitx";
+	updateProperty(&logo_prop);
+    }
+#endif
+
     return True;
 }
 
@@ -281,9 +347,16 @@ void EnterChineseMode (Bool bState)
 	    im[iIMIndex].ResetIM ();
     }
 
-    DisplayMainWindow ();
-#ifdef _ENABLE_TRAY	
-    DrawTrayWindow (ACTIVE_ICON);
+    if (!bUseDBus) {
+	DisplayMainWindow ();
+#ifdef _ENABLE_TRAY
+	DrawTrayWindow (ACTIVE_ICON);
+#endif
+    }
+
+#ifdef _ENABLE_DBUS
+    if (bUseDBus)
+	updatePropertyByConnectID(connect_id);
 #endif
 }
 
@@ -293,19 +366,23 @@ Bool MyTriggerNotifyHandler (IMTriggerNotifyStruct * call_data)
 	/* Mainwindow always shows wrong input status, so fix it here */
 	CurrentIC = (IC *) FindIC (call_data->icid);
         connect_id = call_data->connect_id;
-	    
+
 	SetConnectID (call_data->connect_id, IS_CHN);
 	icidSetIMState(call_data->icid, IS_CHN);
-	
+
 	EnterChineseMode (False);
-	DrawMainWindow ();
-	
-	SetTrackPos( (IMChangeICStruct *)call_data );
-	if (bShowInputWindowTriggering && !bCorner)
+	if (!bUseDBus)
+	    DrawMainWindow ();
+    }
+
+    SetTrackPos( (IMChangeICStruct *)call_data );
+    if (bShowInputWindowTriggering && !bCorner) {
+	if (!bUseDBus)
 	    DisplayInputWindow ();
-	    
-#ifdef _ENABLE_TRAY	
-	DrawTrayWindow (ACTIVE_ICON);
+
+#ifdef _ENABLE_TRAY
+	if (!bUseDBus)
+	    DrawTrayWindow (ACTIVE_ICON);
 #endif
     }
     else
@@ -339,7 +416,7 @@ Bool MyProtoHandler (XIMS _ims, IMProtocol * call_data)
 	return MyDestroyICHandler ((IMChangeICStruct *) call_data);
     case XIM_SET_IC_VALUES:
 #ifdef _DEBUG
-      printf ("XIM_SET_IC_VALUES:\t\ticid=%d\tconnect_id=%d\n", ((IMForwardEventStruct *) call_data)->icid, ((IMForwardEventStruct *) call_data)->connect_id);
+        printf ("XIM_SET_IC_VALUES:\t\ticid=%d\tconnect_id=%d\n", ((IMForwardEventStruct *) call_data)->icid, ((IMForwardEventStruct *) call_data)->connect_id);
 #endif
 	return MySetICValuesHandler ((IMChangeICStruct *) call_data);
     case XIM_GET_IC_VALUES:
@@ -351,12 +428,6 @@ Bool MyProtoHandler (XIMS _ims, IMProtocol * call_data)
 #ifdef _DEBUG
         printf ("XIM_FORWARD_EVENT:\ticid=%d\tconnect_id=%d\n", ((IMForwardEventStruct *) call_data)->icid, ((IMForwardEventStruct *) call_data)->connect_id);
 #endif
-	if (CurrentIC != FindIC (((IMChangeICStruct *)call_data)->icid)) {
-	    CurrentIC = FindIC (((IMChangeICStruct *)call_data)->icid);
-	    connect_id = ((IMChangeICStruct *)call_data)->connect_id;
-	    
-	    SetTrackPos((IMChangeICStruct *)call_data);
-        }
 	ProcessKey ((IMForwardEventStruct *) call_data);
 
 	return True;
@@ -420,6 +491,43 @@ void MyIMForwardEvent (CARD16 connectId, CARD16 icId, int keycode)
     IMForwardEvent (ims, (XPointer) (&forwardEvent));
 }
 
+#ifdef _ENABLE_RECORDING
+Bool OpenRecording(Bool bMode)
+{
+    if ( !fpRecord ) {
+        if ( strRecordingPath[0]=='\0' ) {
+	    char    *pbuf;
+
+	    UserConfigFile("record.dat", NULL, &pbuf);
+	    strcpy(strRecordingPath, pbuf);
+	}
+	else if (strRecordingPath[0]!='/') {	//应该是个绝对路径
+#ifdef _DEBUG
+	    fprintf (stderr, "Recording file must be an absolute path.\n");
+#endif
+	    strRecordingPath[0]='\0';
+	}
+
+	if ( strRecordingPath[0]!='\0' )
+	    fpRecord = fopen(strRecordingPath, (bMode)? "a+" : "wt");
+    }
+
+    return (fpRecord? True:False);
+}
+
+void CloseRecording(void)
+{
+    if (fpRecord) {
+	if (bWrittenRecord ) {
+	    fprintf(fpRecord, "\n\n");
+	    bWrittenRecord = False;
+        }
+        fclose( fpRecord );
+        fpRecord = NULL;
+    }
+}
+#endif
+
 void SendHZtoClient (IMForwardEventStruct * call_data, char *strHZ)
 {
     XTextProperty   tp;
@@ -430,6 +538,30 @@ void SendHZtoClient (IMForwardEventStruct * call_data, char *strHZ)
 
 #ifdef _DEBUG
     fprintf (stderr, "Sending %s  icid=%d connectid=%d\n", strHZ, CurrentIC->id, connect_id);
+#endif
+
+    /* avoid Seg fault */
+    if (!call_data && !CurrentIC)
+        return;
+
+#ifdef _ENABLE_RECORDING
+    if (bRecording) {
+        if (OpenRecording(True)) {
+	    if ( !bWrittenRecord ) {
+		char    buf[20];
+		struct tm  *ts;
+		time_t now;
+
+		now=time(NULL);
+		ts = localtime(&now);
+		strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", ts);
+
+		fprintf(fpRecord, "%s\n", buf);
+	    }
+	    fprintf(fpRecord, "%s", strHZ);
+	    bWrittenRecord = True;
+	}
+    }
 #endif
 
     if (bUseGBKT)
@@ -452,8 +584,14 @@ void SendHZtoClient (IMForwardEventStruct * call_data, char *strHZ)
 
     memset (&cms, 0, sizeof (cms));
     cms.major_code = XIM_COMMIT;
-    cms.icid = call_data->icid;
-    cms.connect_id = call_data->connect_id;
+    if (call_data) {
+        cms.icid = call_data->icid;
+        cms.connect_id = call_data->connect_id;
+    }
+    else {
+        cms.icid = CurrentIC->id;
+        cms.connect_id = connect_id;
+    }
     cms.flag = XimLookupChars;
     cms.commit_string = (char *) tp.value;
     IMCommitString (ims, (XPointer) & cms);
@@ -463,13 +601,19 @@ void SendHZtoClient (IMForwardEventStruct * call_data, char *strHZ)
 	free (pS2T);
 }
 
-Bool InitXIM (Window im_window, char *imname)
+Bool InitXIM (char *imname)
 {
     XIMStyles      *input_styles;
     XIMTriggerKeys *on_keys;
     XIMEncodings   *encodings;
     char           *p;
-
+    
+    ximWindow = XCreateSimpleWindow(dpy, DefaultRootWindow(dpy), 0, 0, 1, 1, 1, 0, 0);
+    if (ximWindow == (Window)NULL) {
+	fprintf(stderr, "Can't Create imWindow\n");
+	exit(1);
+    }
+    
     if ( !imname ) {
     	imname = getenv ("XMODIFIERS");
     	if (imname) {
@@ -485,7 +629,7 @@ Bool InitXIM (Window im_window, char *imname)
             imname = DEFAULT_IMNAME;
         }
     }
-    
+
 #ifdef _DEBUG
     strcpy (strXModifiers, imname);
 #endif
@@ -518,7 +662,7 @@ Bool InitXIM (Window im_window, char *imname)
 	}
     }
 
-    ims = IMOpenIM (dpy, IMModifiers, "Xi18n", IMServerWindow, im_window, IMServerName, imname, IMLocale, strLocale, IMServerTransport, "X/", IMInputStyles, input_styles, NULL);
+    ims = IMOpenIM (dpy, IMModifiers, "Xi18n", IMServerWindow, ximWindow, IMServerName, imname, IMLocale, strLocale, IMServerTransport, "X/", IMInputStyles, input_styles, NULL);
 
     if (ims == (XIMS) NULL) {
 	fprintf (stderr, "Start FCITX error. Another XIM daemon named %s is running?\n", imname);
@@ -592,7 +736,7 @@ void DestroyConnectID (CARD16 connect_id)
 	connectIDsHead = temp->next;
     else
 	last->next = temp->next;
-	
+
     free (temp);
 }
 
@@ -616,6 +760,7 @@ IME_STATE ConnectIDGetState (CARD16 connect_id)
     CONNECT_ID     *temp;
 
     temp = connectIDsHead;
+    g_last_connect_id = connect_id;
 
     while (temp) {
 	if (temp->connect_id == connect_id)
@@ -749,7 +894,7 @@ char *ConnectIDGetLocale(CARD16 connect_id)
 	    	return temp->strLocale;
 	    return strDefault;
 	}
-	
+
 	temp=temp->next;
     }
 
@@ -766,7 +911,7 @@ void CreateICID (IMChangeICStruct * call_data)
     icidNew->icid = call_data->icid;
     icidNew->connect_id = call_data->connect_id;
     icidNew->imState = IS_CLOSED;
-    
+
     icidsHead = icidNew;
 }
 
@@ -790,7 +935,7 @@ void DestroyICID (CARD16 icid)
 	icidsHead = temp->next;
     else
 	last->next = temp->next;
-	
+
     free (temp);
 }
 
@@ -805,7 +950,7 @@ void icidSetIMState (CARD16 icid, IME_STATE imState)
 	    temp->imState = imState;
 #if _DEBUG
 	    fprintf(stderr,"Set icid=%d(connect_id=%d) to %d\n",icid,temp->connect_id, imState);
-#endif	    
+#endif
 	    return;
 	}
 
@@ -828,20 +973,21 @@ IME_STATE icidGetIMState (CARD16 icid)
 
     return IS_CLOSED;
 }
-/*
-CARD16 icidGetConnectID (CARD16 icid)
+
+CARD16 ConnectIDGetICID (CARD16 connect_id)
 {
     ICID     *temp;
 
     temp = icidsHead;
 
     while (temp) {
-	if (temp->icid == icid)
-	    return temp->connect_id;
+	if (temp->connect_id == connect_id)
+	    return temp->icid;
 
 	temp = temp->next;
     }
 
     return 0;
 }
-*/
+
+// vim: sw=4 sts=4 et tw=100

@@ -29,6 +29,7 @@
 #include "version.h"
 #include <time.h>
 #include <X11/xpm.h>
+#include <X11/Xatom.h>
 
 #ifdef _USE_XFT
 #include <ft2build.h>
@@ -40,6 +41,8 @@
 #include "ime.h"
 
 #include "tools.h"
+
+#include "DBus.h"
 
 //下面的顺序不能颠倒
 #include "next.xpm"
@@ -121,6 +124,7 @@ extern Bool     bShowUserSpeed;
 extern Bool     bShowVersion;
 extern time_t   timeStart;
 extern uint     iHZInputed;
+extern Bool	bUseDBus;
 
 extern CARD16	connect_id;
 
@@ -132,11 +136,18 @@ extern char     strUserLocale[];
 extern char     strXModifiers[];
 #endif
 
+#ifdef _ENABLE_RECORDING
+extern FILE	*fpRecord;
+extern Bool	bRecording;
+#endif
+
 Bool CreateInputWindow (void)
 {
-    XSetWindowAttributes attrib;
-    unsigned long   attribmask;
-    int             iBackPixel;
+    XSetWindowAttributes	attrib;
+    unsigned long	attribmask;
+    int			iBackPixel;
+    XTextProperty	tp;
+    char		strWindowName[]="Fcitx Input Window";
 
     //根据窗口的背景色来设置XPM的色彩
     sprintf (strXPMBackColor, ". c #%02x%02x%02x", inputWindowColor.backColor.red >> 8, inputWindowColor.backColor.green >> 8, inputWindowColor.backColor.blue >> 8);
@@ -159,7 +170,14 @@ Bool CreateInputWindow (void)
 
     XChangeWindowAttributes (dpy, inputWindow, attribmask, &attrib);
     XSelectInput (dpy, inputWindow, ButtonPressMask | ButtonReleaseMask  | PointerMotionMask | ExposureMask);
-    
+
+    //Set the name of the window
+    tp.value = (void *)strWindowName;
+    tp.encoding = XA_STRING;
+    tp.format = 16;
+    tp.nitems = strlen(strWindowName);
+    XSetWMName (dpy, inputWindow, &tp);
+
     InitInputWindowColor ();
 
     return True;
@@ -296,6 +314,18 @@ void CalInputWindow (void)
 #endif
     }
 
+#ifdef _ENABLE_RECORDING
+    if ( bRecording && fpRecord ) {
+	if ( uMessageUp > 0 ) {
+	    if ( messageUp[uMessageUp-1].type==MSG_RECORDING )
+	        uMessageUp --;
+	}
+	strcpy(messageUp[uMessageUp].strMsg,"  [记录模式]");
+	messageUp[uMessageUp].type = MSG_RECORDING;
+	uMessageUp ++;
+    }
+#endif
+
     iInputWindowUpWidth = 2 * INPUTWND_START_POS_UP + 1;
     for (i = 0; i < uMessageUp; i++) {
 #ifdef _USE_XFT
@@ -389,7 +419,7 @@ void DrawInputWindow(void)
     XImage         *mask;
     XpmAttributes   attrib;
     int	i;
-    
+
     XClearArea (dpy, inputWindow, 2, 2, iInputWindowWidth - 2, iInputWindowHeight / 2 - 2, False);
     XClearArea (dpy, inputWindow, 2, iInputWindowHeight / 2 + 1, iInputWindowWidth - 2, iInputWindowHeight / 2 - 2, False);
 
@@ -485,7 +515,11 @@ void DisplayMessageUp (void)
 
 	    strGBKT = bUseGBKT ? ConvertGBKSimple2Tradition (strTemp) : strTemp;
 
+#ifdef _ENABLE_RECORDING
+	    OutputString (inputWindow, (bEn) ? xftFontEn : xftFont, strGBKT, iInputWindowUpWidth + iPos, (2 * iInputWindowHeight - 1) / 5, messageColor[(messageUp[i].type==MSG_RECORDING)? MSG_TIPS:messageUp[i].type].color);
+#else
 	    OutputString (inputWindow, (bEn) ? xftFontEn : xftFont, strGBKT, iInputWindowUpWidth + iPos, (2 * iInputWindowHeight - 1) / 5, messageColor[messageUp[i].type].color);
+#endif
 	    iPos += StringWidth (strGBKT, (bEn) ? xftFontEn : xftFont);
 
 	    if (bUseGBKT)
@@ -494,7 +528,11 @@ void DisplayMessageUp (void)
 #else
 	strGBKT = bUseGBKT ? ConvertGBKSimple2Tradition (messageUp[i].strMsg) : messageUp[i].strMsg;
 
+#ifdef _ENABLE_RECORDING
+	OutputString (inputWindow, fontSet, strGBKT, iInputWindowUpWidth, (2 * iInputWindowHeight - 1) / 5, messageColor[(messageUp[i].type==MSG_RECORDING)? MSG_TIPS:messageUp[i].type].gc);
+#else
 	OutputString (inputWindow, fontSet, strGBKT, iInputWindowUpWidth, (2 * iInputWindowHeight - 1) / 5, messageColor[messageUp[i].type].gc);
+#endif
 	iPos = StringWidth (strGBKT, fontSet);
 
 	if (bUseGBKT)
@@ -632,13 +670,13 @@ void MoveInputWindow(CARD16 connect_id)
 
 	if (iClientCursorX < 0)
 	    iTempInputWindowX = 0;
-	else 
+	else
 	    iTempInputWindowX = iClientCursorX + iOffsetX;
-	    
+
 	if (iClientCursorY < 0)
 	    iTempInputWindowY = 0;
 	else
-	    iTempInputWindowY = iClientCursorY + iOffsetY;	
+	    iTempInputWindowY = iClientCursorY + iOffsetY;
 
 	if ((iTempInputWindowX + iInputWindowWidth) > DisplayWidth (dpy, iScreen))
 	    iTempInputWindowX = DisplayWidth (dpy, iScreen) - iInputWindowWidth;
@@ -650,8 +688,13 @@ void MoveInputWindow(CARD16 connect_id)
 	        iTempInputWindowY = iTempInputWindowY - 2 * iInputWindowHeight;
 	}
 
-	XMoveResizeWindow (dpy, inputWindow, iTempInputWindowX, iTempInputWindowY, iInputWindowWidth, iInputWindowHeight);  
-	ConnectIDSetPos (connect_id, iTempInputWindowX - iOffsetX, iTempInputWindowY - iOffsetX);
+	if (!bUseDBus)
+	    XMoveResizeWindow (dpy, inputWindow, iTempInputWindowX, iTempInputWindowY, iInputWindowWidth, iInputWindowHeight);
+#ifdef _ENABLE_DBUS
+	else
+	    KIMUpdateSpotLocation(iTempInputWindowX, iTempInputWindowY);
+#endif
+	ConnectIDSetPos (connect_id, iTempInputWindowX - iOffsetX, iTempInputWindowY - iOffsetY);
     }
     else {
 	position * pos = ConnectIDGetPos(connect_id);
@@ -663,6 +706,12 @@ void MoveInputWindow(CARD16 connect_id)
 	else
 	    iInputWindowX = pos ? pos->x : iInputWindowX;
 
-	XMoveResizeWindow (dpy, inputWindow, iInputWindowX, pos ? pos->y : iInputWindowY, iInputWindowWidth, iInputWindowHeight);  
+	if (!bUseDBus)
+	    XMoveResizeWindow (dpy, inputWindow, iInputWindowX, pos ? pos->y : iInputWindowY, iInputWindowWidth, iInputWindowHeight);
+#ifdef _ENABLE_DBUS
+	else
+	    KIMUpdateSpotLocation(iInputWindowX, pos ? pos->y : iInputWindowY);
+#endif
     }
+    
 }

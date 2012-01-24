@@ -3,7 +3,6 @@
 
 #include <X11/Xlib.h>
 #include <X11/xpm.h>
-#include <X11/Xft/Xft.h>
 #include <X11/extensions/shape.h>
 #include <string.h>
 #include "tray.h"
@@ -23,5 +22,6 @@ typedef struct tray_win {
 Bool CreateTrayWindow();
 void DrawTrayWindow(int f_state);
 void tray_win_deinit(tray_win_t *f_tray);
+void tray_win_redraw(void);
 
 #endif
