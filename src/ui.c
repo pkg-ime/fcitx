@@ -109,6 +109,7 @@ extern INT8     iIMIndex;
 extern CARD16   connect_id;
 extern Bool     bShowVK;
 extern Bool     bVK;
+extern Bool     bCorner;
 extern Bool 	bIsDisplaying;
 
 #ifdef _ENABLE_TRAY
@@ -489,7 +490,7 @@ void MyXEventHandler (XEvent * event)
 			iPos += 20;
 		    }
 
-		    if (IsInBox (event->xbutton.x, event->xbutton.y, iPos + 11, 1, MAINWND_WIDTH, 19))
+		    if (!bCorner && IsInBox (event->xbutton.x, event->xbutton.y, iPos + 11, 1, MAINWND_WIDTH, 19))
 			SwitchIM (-1);
 		}
 		break;
@@ -499,8 +500,10 @@ void MyXEventHandler (XEvent * event)
 		break;
 		//********************
 	    case Button3:
-		if (IsInBox (event->xbutton.x, event->xbutton.y, 1, 1, 16, 17))
+		if (IsInBox (event->xbutton.x, event->xbutton.y, 1, 1, 16, 17)) {
+		    bMainWindow_Hiden = True;
 		    XUnmapWindow (dpy, mainWindow);
+	        }
 		else if (!bVK) {
 		    bCompactMainWindow = !bCompactMainWindow;
 		    SwitchIM (iIMIndex);
@@ -534,7 +537,6 @@ void MyXEventHandler (XEvent * event)
 		    bMainWindow_Hiden = True;
 		    XUnmapWindow(dpy,mainWindow);
 		}
-		SaveProfile();
 		break;
 	    }
 	}

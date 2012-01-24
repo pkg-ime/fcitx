@@ -119,6 +119,8 @@ HOTKEYS         hkPrevPage[HOT_KEY_COUNT] = { ',', 0 };	//上一页
 HOTKEYS         hkTrack[HOT_KEY_COUNT] = { CTRL_K, 0 };
 HOTKEYS         hkGBT[HOT_KEY_COUNT] = { CTRL_ALT_F, 0 };
 HOTKEYS         hkHideMainWindow[HOT_KEY_COUNT] = { CTRL_ALT_H, 0 };
+HOTKEYS         hkSaveAll[HOT_KEY_COUNT] = { CTRL_ALT_S, 0 };
+HOTKEYS         hkVK[HOT_KEY_COUNT] = { CTRL_ALT_K, 0 };
 
 Bool            bUseLegend = False;
 Bool            bIsInLegend = False;
@@ -192,6 +194,7 @@ extern int      iInputWindowY;
 
 extern Bool     bShowInputWindowTriggering;
 extern Bool	bMainWindow_Hiden;
+extern char    *strFullCorner;
 
 #ifdef _USE_XFT
 extern XftFont *xftMainWindowFont;
@@ -344,17 +347,25 @@ void ProcessKey (IMForwardEventStruct * call_data)
     if (call_data->event.type == KeyRelease) {
 	if (ConnectIDGetState (call_data->connect_id) != IS_CLOSED) {
 	    if ((kev->time - lastKeyPressedTime) < 500 && (!bIsDoInputOnly)) {
-		if (!bLocked && iKeyState == KEY_CTRL_SHIFT_COMP && (iKey == 225 || iKey == 227)) {
-		    if (ConnectIDGetState (call_data->connect_id) == IS_CHN)
-			SwitchIM (-1);
-		    else if (IsHotKey (iKey, hkTrigger))
-			CloseIM (call_data);
+		if (iKeyState == KEY_CTRL_SHIFT_COMP && (iKey == 225 || iKey == 227)) {
+		    if ( !bLocked ) {
+		        if (ConnectIDGetState (call_data->connect_id) == IS_CHN)
+			    SwitchIM (-1);
+		        else if (IsHotKey (iKey, hkTrigger))
+			    CloseIM (call_data);
+		    }
+		    else if ( bVK )
+		        ChangVK();
 		}
-		else if (!bLocked && iKey == CTRL_LSHIFT) {
-		    if (ConnectIDGetState (call_data->connect_id) == IS_CHN)
-			SwitchIM (-1);
-		    else if (IsHotKey (iKey, hkTrigger))
-			CloseIM (call_data);
+		else if (iKey == CTRL_LSHIFT) {
+		    if ( !bLocked ) {
+		        if (ConnectIDGetState (call_data->connect_id) == IS_CHN)
+			    SwitchIM (-1);
+		        else if (IsHotKey (iKey, hkTrigger))
+			    CloseIM (call_data);
+		    }
+		    else if ( bVK )
+		        ChangVK();
 		}
 		else if (kev->keycode == switchKey && keyReleased == KR_CTRL && !bDoubleSwitchKey) {
 		    /* 按下临时英文键会把已经输入的英文送到客户程序中，但实际使用发现，这种方式不具人性化
@@ -809,8 +820,17 @@ void ProcessKey (IMForwardEventStruct * call_data)
 			    bMainWindow_Hiden = True;
 			    XUnmapWindow(dpy,mainWindow);
 			}
-			retVal = IRV_DO_NOTHING;			
+			retVal = IRV_DO_NOTHING;
 		    }
+		    else if (IsHotKey (iKey, hkSaveAll)) {
+			SaveIM();
+			uMessageDown = 1;
+			strcpy(messageDown[0].strMsg,"词库已保存");
+			messageDown[0].type = MSG_TIPS;
+			retVal = IRV_DISPLAY_MESSAGE;
+		    }
+		    else if (IsHotKey (iKey, hkVK) )
+		        SwitchVK ();
 		}
 	    }
 	    else
@@ -954,6 +974,8 @@ INPUT_RETURN_VALUE ChangeCorner (void)
     ResetInputWindow ();
 
     bCorner = !bCorner;
+    
+    SwitchIM(iIMIndex);
     DrawMainWindow ();
     XUnmapWindow (dpy, inputWindow);
     
@@ -1031,7 +1053,8 @@ void ChangeLock (void)
 
 void SwitchIM (INT8 index)
 {
-    INT8            iLastIM;
+    INT8        iLastIM;
+    char	*str;
 
     if (index != (INT8) - 2 && bVK)
 	return;
@@ -1048,10 +1071,17 @@ void SwitchIM (INT8 index)
 	    iIMIndex = iIMCount - 1;
     }
 
+    if (bVK)
+        str = vks[iCurrentVK].strName;
+    else if (bCorner)
+	str = strFullCorner;
+    else
+	str = im[iIMIndex].strName;
+	
 #ifdef _USE_XFT
-    MAINWND_WIDTH = ((bCompactMainWindow) ? _MAINWND_WIDTH_COMPACT : _MAINWND_WIDTH) + StringWidth ((bVK) ? vks[iCurrentVK].strName : im[iIMIndex].strName, xftMainWindowFont) + 4;
+    MAINWND_WIDTH = ((bCompactMainWindow) ? _MAINWND_WIDTH_COMPACT : _MAINWND_WIDTH) + StringWidth (str, xftMainWindowFont) + 4;
 #else
-    MAINWND_WIDTH = ((bCompactMainWindow) ? _MAINWND_WIDTH_COMPACT : _MAINWND_WIDTH) + StringWidth ((bVK) ? vks[iCurrentVK].strName : im[iIMIndex].strName, fontSetMainWindow) + 4;
+    MAINWND_WIDTH = ((bCompactMainWindow) ? _MAINWND_WIDTH_COMPACT : _MAINWND_WIDTH) + StringWidth (str, fontSetMainWindow) + 4;
 #endif
     if (!bShowVK && bCompactMainWindow)
 	MAINWND_WIDTH -= 24;
