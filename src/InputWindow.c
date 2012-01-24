@@ -25,6 +25,7 @@
 #include "InputWindow.h"
 
 #include <string.h>
+#include <ctype.h>
 #include "version.h"
 #include <time.h>
 #include <X11/xpm.h>
@@ -50,10 +51,12 @@ int             iInputWindowY = INPUTWND_STARTY;
 int             iTempInputWindowX, iTempInputWindowY;	//记录输入条的临时位置，用于光标跟随模式
 
 uint            iInputWindowHeight = INPUTWND_HEIGHT;
-uint            iFixedInputWindowWidth = 0;
+int		iFixedInputWindowWidth = 0;
 uint            iInputWindowWidth = INPUTWND_WIDTH;
 uint            iInputWindowUpWidth = INPUTWND_WIDTH;
 uint            iInputWindowDownWidth = INPUTWND_WIDTH;
+
+uint            INPUTWND_START_POS_UP = 8;
 
 MESSAGE_COLOR   messageColor[MESSAGE_TYPE_COUNT] = {
     {NULL, {0, 255 << 8, 0, 0}},
@@ -115,6 +118,11 @@ extern Bool     bShowVersion;
 extern time_t   timeStart;
 extern uint     iHZInputed;
 
+#ifdef _DEBUG
+extern char     strUserLocale[];
+extern char     strXModifiers[];
+#endif
+
 Bool CreateInputWindow (void)
 {
     XSetWindowAttributes attrib;
@@ -169,7 +177,8 @@ void DisplayInputWindow (void)
 #ifdef _DEBUG
     fprintf (stderr, "DISPLAY InputWindow\n");
 #endif
-    XMapRaised (dpy, inputWindow);
+    if (!IsWindowVisible (inputWindow) && (uMessageUp || uMessageDown))
+	XMapRaised (dpy, inputWindow);
 }
 
 void InitInputWindowColor (void)
@@ -179,6 +188,8 @@ void InitInputWindowColor (void)
     int             i;
 
     for (i = 0; i < MESSAGE_TYPE_COUNT; i++) {
+	if (messageColor[i].gc)
+	    XFreeGC (dpy, messageColor[i].gc);
 	messageColor[i].gc = XCreateGC (dpy, inputWindow, 0, &values);
 	if (XAllocColor (dpy, DefaultColormap (dpy, DefaultScreen (dpy)), &(messageColor[i].color)))
 	    iPixel = messageColor[i].color.pixel;
@@ -187,6 +198,8 @@ void InitInputWindowColor (void)
 	XSetForeground (dpy, messageColor[i].gc, iPixel);
     }
 
+    if (inputWindowLineColor.gc)
+	XFreeGC (dpy, inputWindowLineColor.gc);
     inputWindowLineColor.gc = XCreateGC (dpy, inputWindow, 0, &values);
     if (XAllocColor (dpy, DefaultColormap (dpy, DefaultScreen (dpy)), &(inputWindowLineColor.color)))
 	iPixel = inputWindowLineColor.color.pixel;
@@ -197,6 +210,9 @@ void InitInputWindowColor (void)
     cursorColor.color.red = cursorColor.color.red ^ inputWindowColor.backColor.red;
     cursorColor.color.green = cursorColor.color.green ^ inputWindowColor.backColor.green;
     cursorColor.color.blue = cursorColor.color.blue ^ inputWindowColor.backColor.blue;
+
+    if (cursorColor.gc)
+	XFreeGC (dpy, cursorColor.gc);
     cursorColor.gc = XCreateGC (dpy, inputWindow, 0, &values);
     //为了画绿色光标
     if (XAllocColor (dpy, DefaultColormap (dpy, DefaultScreen (dpy)), &cursorColor.color))
@@ -243,6 +259,14 @@ void DrawInputWindow (void)
 	    strcat (messageUp[0].strMsg, FCITX_VERSION);
 	    messageUp[0].type = MSG_TIPS;
 	}
+
+#ifdef _DEBUG
+	uMessageDown = 1;
+	strcpy (messageDown[0].strMsg, strUserLocale);
+	strcat (messageDown[0].strMsg, " - ");
+	strcat (messageDown[0].strMsg, strXModifiers);
+	messageDown[0].type = MSG_CODE;
+#else
 	//显示打字速度
 	if (bStartRecordType && bShowUserSpeed) {
 	    double          timePassed;
@@ -272,6 +296,7 @@ void DrawInputWindow (void)
 		messageDown[0].type = MSG_CODE;
 	    }
 	}
+#endif
     }
 
     iInputWindowUpWidth = 2 * INPUTWND_START_POS_UP + 1;
@@ -430,7 +455,7 @@ void DrawInputWindow (void)
 void DisplayMessageUp (void)
 {
     int             i = 0;
-    int             iPos;
+    int             iPos = 0;
     int             iCursorPixPos = 0;
     int             iChar;
     char            strText[MESSAGE_MAX_LENGTH];
@@ -443,12 +468,13 @@ void DisplayMessageUp (void)
 
     char           *strGBKT;
 
-    iPos = INPUTWND_START_POS_UP;
+    iInputWindowUpWidth = INPUTWND_START_POS_UP;
     iChar = iCursorPos;
 
     for (i = 0; i < uMessageUp; i++) {
 #ifdef _USE_XFT
 	p1 = messageUp[i].strMsg;
+	iPos = 0;
 	while (*p1) {
 	    p2 = strTemp;
 	    if (isprint (*p1))	//使用中文字体
@@ -475,9 +501,8 @@ void DisplayMessageUp (void)
 
 	    strGBKT = bUseGBKT ? ConvertGBKSimple2Tradition (strTemp) : strTemp;
 
-	    iInputWindowUpWidth = StringWidth (strGBKT, (bEn) ? xftFontEn : xftFont);
-	    OutputString (inputWindow, (bEn) ? xftFontEn : xftFont, strGBKT, iPos, (2 * iInputWindowHeight - 1) / 5, messageColor[messageUp[i].type].color);
-	    iPos += iInputWindowUpWidth;
+	    OutputString (inputWindow, (bEn) ? xftFontEn : xftFont, strGBKT, iInputWindowUpWidth + iPos, (2 * iInputWindowHeight - 1) / 5, messageColor[messageUp[i].type].color);
+	    iPos += StringWidth (strGBKT, (bEn) ? xftFontEn : xftFont);
 
 	    if (bUseGBKT)
 		free (strGBKT);
@@ -485,14 +510,13 @@ void DisplayMessageUp (void)
 #else
 	strGBKT = bUseGBKT ? ConvertGBKSimple2Tradition (messageUp[i].strMsg) : messageUp[i].strMsg;
 
-	iInputWindowUpWidth = StringWidth (strGBKT, fontSet);
-	OutputString (inputWindow, fontSet, strGBKT, iPos, (2 * iInputWindowHeight - 1) / 5, messageColor[messageUp[i].type].gc);
-	iPos += iInputWindowUpWidth;
+	OutputString (inputWindow, fontSet, strGBKT, iInputWindowUpWidth, (2 * iInputWindowHeight - 1) / 5, messageColor[messageUp[i].type].gc);
+	iPos = StringWidth (strGBKT, fontSet);
 
 	if (bUseGBKT)
 	    free (strGBKT);
-
 #endif
+	iInputWindowUpWidth += iPos;
 
 	if (bShowCursor && iChar) {
 	    if (strlen (messageUp[i].strMsg) > iChar) {
@@ -532,7 +556,7 @@ void DisplayMessageUp (void)
 		iChar = 0;
 	    }
 	    else {
-		iCursorPixPos += iInputWindowUpWidth;
+		iCursorPixPos += iPos;
 		iChar -= strlen (messageUp[i].strMsg);
 	    }
 	}

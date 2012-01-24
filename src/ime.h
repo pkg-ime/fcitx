@@ -17,6 +17,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+/**
+ * @file   ime.h
+ * @author Yuking yuking_net@sohu.com
+ * @date   2008-1-16
+ * 
+ * @brief  按键和输入法通用功能处理
+ * 
+ * 
+ */
+
 #ifndef _IME_H
 #define _IME_H
 
@@ -29,7 +39,7 @@
 
 #define HOT_KEY_COUNT	2
 
-#define MAX_IM_NAME	12
+#define MAX_IM_NAME	15
 
 #define TEMP_FILE		"FCITX_DICT_TEMP"
 
@@ -121,5 +131,7 @@ Bool            IsIM (char *strName);
 void            SaveIM (void);
 void            SetIM (void);
 void            ConvertPunc (void);
+
+Bool            IsKeyIgnored (int iKeyCode);
 
 #endif

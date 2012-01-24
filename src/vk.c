@@ -27,6 +27,7 @@
 #include "MainWindow.h"
 #include "InputWindow.h"
 #include "IC.h"
+#include "xim.h"
 
 #include <limits.h>
 #include <ctype.h>
@@ -82,9 +83,7 @@ extern CARD16   connect_id;
 extern CARD16   icid;
 extern XIMS     ims;
 
-/*
 extern uint     iHZInputed;
-*/
 
 Bool CreateVKWindow (void)
 {
@@ -121,6 +120,8 @@ void InitVKWindowColor (void)
     XGCValues       values;
     int             iPixel;
 
+    if (VKWindowFontColor.gc)
+	XFreeGC (dpy, VKWindowFontColor.gc);
     VKWindowFontColor.gc = XCreateGC (dpy, VKWindow, 0, &values);
     if (XAllocColor (dpy, DefaultColormap (dpy, DefaultScreen (dpy)), &(VKWindowFontColor.color)))
 	iPixel = VKWindowFontColor.color.pixel;
@@ -131,10 +132,11 @@ void InitVKWindowColor (void)
 
 void DisplayVKWindow (void)
 {
-    XMapRaised (dpy, VKWindow);
+    if (!IsWindowVisible (VKWindow))
+	XMapRaised (dpy, VKWindow);
 }
 
-void DrawVKWindow(void)
+void DrawVKWindow (void)
 {
     int             i;
     int             iPos;
@@ -226,7 +228,6 @@ Bool VKMouseKey (int x, int y)
     IMForwardEventStruct forwardEvent;
     char            strKey[3];
     char           *pstr;
-    XEvent          xEvent;
 
     if (IsInBox (x, y, 1, 1, VK_WINDOW_WIDTH, 16))
 	ChangVK ();
@@ -235,28 +236,6 @@ Bool VKMouseKey (int x, int y)
 	    return False;
 
 	strKey[1] = '\0';
-	memset (&forwardEvent, 0, sizeof (IMForwardEventStruct));
-	forwardEvent.connect_id = connect_id;
-	forwardEvent.icid = icid;
-	forwardEvent.major_code = XIM_FORWARD_EVENT;
-	forwardEvent.sync_bit = 0;
-	forwardEvent.serial_number = 0L;
-
-	xEvent.xkey.type = KeyPress;
-	xEvent.xkey.display = dpy;
-	xEvent.xkey.serial = 0L;
-	xEvent.xkey.send_event = False;
-	xEvent.xkey.x = xEvent.xkey.y = xEvent.xkey.x_root = xEvent.xkey.y_root = 0;
-	xEvent.xkey.same_screen = False;
-	xEvent.xkey.subwindow = None;
-	xEvent.xkey.window = None;
-	xEvent.xkey.root = DefaultRootWindow (dpy);
-	xEvent.xkey.state = 0;
-	if (CurrentIC->focus_win)
-	    xEvent.xkey.window = CurrentIC->focus_win;
-	else if (CurrentIC->client_win)
-	    xEvent.xkey.window = CurrentIC->client_win;
-
 	pstr = strKey;
 	if (y >= 28 && y <= 55) {	//第一行
 	    if (x < 4 || x > 348)
@@ -264,9 +243,7 @@ Bool VKMouseKey (int x, int y)
 
 	    x -= 4;
 	    if (x >= 313 && x <= 344) {	//backspace
-		xEvent.xkey.keycode = 22;
-		memcpy (&(forwardEvent.event), &xEvent, sizeof (forwardEvent.event));
-		IMForwardEvent (ims, (XPointer) (&forwardEvent));
+		MyIMForwardEvent (connect_id, icid, 22);
 		return True;
 	    }
 	    else {
@@ -285,9 +262,7 @@ Bool VKMouseKey (int x, int y)
 		return False;
 
 	    if (x >= 4 && x < 38) {	//Tab
-		xEvent.xkey.keycode = 23;
-		memcpy (&(forwardEvent.event), &xEvent, sizeof (forwardEvent.event));
-		IMForwardEvent (ims, (XPointer) (&forwardEvent));
+		MyIMForwardEvent (connect_id, icid, 23);
 		return True;
 	    }
 	    else {
@@ -342,15 +317,11 @@ Bool VKMouseKey (int x, int y)
 	else if (y >= 140 && y <= 162) {	//第五行         
 	    if (x >= 4 && x < 38) {	//Ins
 		//改变INS键状态
-		xEvent.xkey.keycode = 106;
-		memcpy (&(forwardEvent.event), &xEvent, sizeof (forwardEvent.event));
-		IMForwardEvent (ims, (XPointer) (&forwardEvent));
+		MyIMForwardEvent (connect_id, icid, 106);
 		return True;
 	    }
 	    else if (x >= 61 && x < 98) {	//DEL
-		xEvent.xkey.keycode = 107;
-		memcpy (&(forwardEvent.event), &xEvent, sizeof (forwardEvent.event));
-		IMForwardEvent (ims, (XPointer) (&forwardEvent));
+		MyIMForwardEvent (connect_id, icid, 107);
 		return True;
 	    }
 	    else if (x >= 99 && x < 270)	//空格
@@ -364,8 +335,11 @@ Bool VKMouseKey (int x, int y)
 	}
 
 	if (pstr) {
+	    memset (&forwardEvent, 0, sizeof (IMForwardEventStruct));
+	    forwardEvent.connect_id = connect_id;
+	    forwardEvent.icid = icid;
 	    SendHZtoClient (&forwardEvent, pstr);
-	    // iHZInputed += (int) (strlen (pstr) / 2);  //粗略统计字数
+	    iHZInputed += (int) (strlen (pstr) / 2);	//粗略统计字数
 	}
     }
 
@@ -560,12 +534,13 @@ void SwitchVK (void)
 
 	XMoveWindow (dpy, VKWindow, x, y);
 	DisplayVKWindow ();
-	XUnmapWindow (dpy, inputWindow);
+	if (IsWindowVisible (inputWindow))
+	    XUnmapWindow (dpy, inputWindow);
 
 	if (ConnectIDGetState (connect_id) == IS_CLOSED)
 	    SetIMState (True);
     }
-    else
+    else if (IsWindowVisible (VKWindow))
 	XUnmapWindow (dpy, VKWindow);
 
     SwitchIM (-2);
