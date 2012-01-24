@@ -35,8 +35,8 @@
 #include "ui/ui.h"
 #include "ui/skin.h"
 #include "MainWindow.h"
-#include "fcitx-config/profile.h"
-#include "fcitx-config/configfile.h"
+#include "tools/profile.h"
+#include "tools/configfile.h"
 #include "fcitx-config/cutils.h"
 
 MainWindow          mainWindow;
@@ -66,6 +66,9 @@ Bool CreateMainWindow (void)
     unsigned long   attribmask;
     GC gc;
     char        strWindowName[] = "Fcitx Main Window";
+    int swidth, sheight;
+    
+    GetScreenSize(&swidth, &sheight);
 
     InitMainWindow();
 
@@ -74,6 +77,12 @@ Bool CreateMainWindow (void)
     LoadMainBarImage();
 
     vs = FindARGBVisual(dpy, iScreen);
+
+    if (fcitxProfile.iMainWindowOffsetX + sc.skinMainBar.backImg.width > swidth )
+        fcitxProfile.iMainWindowOffsetX = swidth - sc.skinMainBar.backImg.width;
+    
+    if (fcitxProfile.iMainWindowOffsetY + sc.skinMainBar.backImg.height > sheight )
+        fcitxProfile.iMainWindowOffsetY = sheight - sc.skinMainBar.backImg.height;
 
     InitWindowAttribute(&vs, &cmap, &attrib, &attribmask, &depth);
     mainWindow.window=XCreateWindow (dpy,
@@ -107,6 +116,7 @@ Bool CreateMainWindow (void)
     mainWindow.main_win_gc = XCreateGC( dpy, mainWindow.window, 0, NULL );
     XChangeWindowAttributes (dpy, mainWindow.window, attribmask, &attrib);
     XSelectInput (dpy, mainWindow.window, ExposureMask | ButtonPressMask | ButtonReleaseMask  | PointerMotionMask | LeaveWindowMask);
+    
 
     XTextProperty   tp;
     /* Set the name of the window */

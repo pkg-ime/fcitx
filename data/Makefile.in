@@ -66,8 +66,15 @@ am__nobase_list = $(am__nobase_strip_setup); \
 am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(generaldir)"
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(desktopdir)" \
+	"$(DESTDIR)$(generaldir)"
 SCRIPTS = $(bin_SCRIPTS)
+AM_V_GEN = $(am__v_GEN_$(V))
+am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
+am__v_GEN_0 = @echo "  GEN   " $@;
+AM_V_at = $(am__v_at_$(V))
+am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
+am__v_at_0 = @
 SOURCES =
 DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
@@ -77,7 +84,7 @@ RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	install-pdf-recursive install-ps-recursive install-recursive \
 	installcheck-recursive installdirs-recursive pdf-recursive \
 	ps-recursive uninstall-recursive
-DATA = $(general_DATA)
+DATA = $(desktop_DATA) $(general_DATA)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
 AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
@@ -85,7 +92,7 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = $(SUBDIRS)
+DIST_SUBDIRS = table
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -115,6 +122,7 @@ am__relativize = \
 ACLOCAL = @ACLOCAL@
 ALL_LINGUAS = @ALL_LINGUAS@
 AMTAR = @AMTAR@
+AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
@@ -270,7 +278,11 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = table
+@ENABLE_TABLE_DATA_TRUE@TABLE = table
+SUBDIRS = \
+		 $(TABLE) \
+		 $(NULL)
+
 generaldir = $(pkgdatadir)/data
 configdescfile = config.desc profile.desc table.desc skin.desc addon.desc
 general_DATA = pybase.mb pyphrase.mb pySym.mb sp.dat punc.mb \
@@ -282,10 +294,13 @@ gbkorg_data = @srcdir@/gbkpy.org
 py_data = @srcdir@/pybase.mb @srcdir@/pyphrase.mb
 py_tar = @srcdir@/pinyin.tar.gz
 py_url = http://fcitx.googlecode.com/files/pinyin.tar.gz
-EXTRA_DIST = pySym.mb sp.dat punc.mb vk.conf gbks2t.tab AutoEng.dat gbkpy.org getdescpo fcitx-config $(configdescfile)
-CLEANFILES = $(py_data)
-DISTCLEANFILES = $(pyorg_data) $(py_tar)
 bin_SCRIPTS = fcitx-config
+desktopdir = $(datadir)/applications
+desktop_in_files = fcitx.desktop.in fcitx-configtool.desktop.in
+desktop_DATA = $(desktop_in_files:.desktop.in=.desktop)
+EXTRA_DIST = pySym.mb sp.dat punc.mb vk.conf gbks2t.tab AutoEng.dat gbkpy.org getdescpo fcitx-config $(configdescfile) $(desktop_in_files)
+CLEANFILES = $(py_data)
+DISTCLEANFILES = $(pyorg_data) $(desktop_DATA) 
 all: all-recursive
 
 .SUFFIXES:
@@ -359,6 +374,26 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
+install-desktopDATA: $(desktop_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(desktopdir)" || $(MKDIR_P) "$(DESTDIR)$(desktopdir)"
+	@list='$(desktop_DATA)'; test -n "$(desktopdir)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(desktopdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(desktopdir)" || exit $$?; \
+	done
+
+uninstall-desktopDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(desktop_DATA)'; test -n "$(desktopdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	test -n "$$files" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(desktopdir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(desktopdir)" && rm -f $$files
 install-generalDATA: $(general_DATA)
 	@$(NORMAL_INSTALL)
 	test -z "$(generaldir)" || $(MKDIR_P) "$(DESTDIR)$(generaldir)"
@@ -578,7 +613,7 @@ check: check-recursive
 all-am: Makefile $(SCRIPTS) $(DATA) all-local
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(generaldir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(desktopdir)" "$(DESTDIR)$(generaldir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-recursive
@@ -628,7 +663,7 @@ info: info-recursive
 
 info-am:
 
-install-data-am: install-generalDATA
+install-data-am: install-desktopDATA install-generalDATA
 
 install-dvi: install-dvi-recursive
 
@@ -672,7 +707,8 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-binSCRIPTS uninstall-generalDATA
+uninstall-am: uninstall-binSCRIPTS uninstall-desktopDATA \
+	uninstall-generalDATA
 
 .MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) ctags-recursive \
 	install-am install-strip tags-recursive
@@ -682,42 +718,43 @@ uninstall-am: uninstall-binSCRIPTS uninstall-generalDATA
 	clean-libtool ctags ctags-recursive distclean \
 	distclean-generic distclean-libtool distclean-tags distdir dvi \
 	dvi-am html html-am info info-am install install-am \
-	install-binSCRIPTS install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am \
-	install-generalDATA install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs installdirs-am maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-recursive \
-	uninstall uninstall-am uninstall-binSCRIPTS \
+	install-binSCRIPTS install-data install-data-am \
+	install-desktopDATA install-dvi install-dvi-am install-exec \
+	install-exec-am install-generalDATA install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	installdirs-am maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-generic mostlyclean-libtool pdf pdf-am \
+	ps ps-am tags tags-recursive uninstall uninstall-am \
+	uninstall-binSCRIPTS uninstall-desktopDATA \
 	uninstall-generalDATA
 
+
+@INTLTOOL_DESKTOP_RULE@
 
 @srcdir@/pybase.mb: @srcdir@/pyphrase.mb ;
 
 @srcdir@/pyphrase.mb: $(pyorg_data) $(gbkorg_data)
-	cd $(srcdir) && $(abs_top_builddir)/tools/createPYMB $(gbkorg_data) $(pyorg_data)
+	cd $(srcdir) && @abs_top_builddir@/tools/createPYMB $(gbkorg_data) $(pyorg_data)
 
 tools: 
 	$(MAKE) -C ../tools
 
-$(pyorg_data): $(py_tar) md5check
-	cd $(srcdir) && $(TAR) xzvf $(py_tar)
+$(pyorg_data): $(py_tar)
+	cd $(srcdir) && $(MD5SUM) -c $(py_tar).md5 || ( $(RM) $(py_tar); exit 1 )
+	cd $(srcdir) && $(TAR) xzmvf $(py_tar)
 
 $(py_tar):
 	$(WGET) -O $(py_tar) $(py_url)
 	$(WGET) -O $(py_tar).md5 $(py_url).md5
 
-md5check: $(py_tar)
-	cd $(srcdir) && $(MD5SUM) -c $(py_tar).md5 || ( $(RM) $(py_tar); exit 1 )
-
-all-local: tools  $(py_data)
+all-local: tools  $(py_data) @srcdir@/desc.po
 	rm -f pyERROR
 	rm -f pyPhrase.ok
 
-desc.po: *.desc
-	./getdescpo
+@srcdir@/desc.po: @srcdir@/*.desc
+	@srcdir@/getdescpo @abs_srcdir@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -1,5 +1,7 @@
 # List of source files which contain translatable strings.
 ./data/desc.po
+data/fcitx.desktop.in
+data/fcitx-configtool.desktop.in
 src/interface/ImeRemote.c
 src/interface/DBus.h
 src/interface/DBus.c
@@ -25,12 +27,12 @@ src/ui/TrayWindow.c
 src/ui/skinconfig.c
 src/ui/InputWindow.h
 src/fcitx-config/uthash.h
-src/fcitx-config/profile.h
+src/tools/profile.h
 src/fcitx-config/hotkey.h
 src/fcitx-config/fcitx-config.c
 src/fcitx-config/fcitx-config.h
 src/fcitx-config/sprintf.c
-src/fcitx-config/configfile.h
+src/tools/configfile.h
 src/fcitx-config/sprintf.h
 src/fcitx-config/hotkey.c
 src/im/special/punc.h

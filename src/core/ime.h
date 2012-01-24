@@ -58,9 +58,7 @@ typedef enum _KEY_RELEASED {
     KR_OTHER = 0,
     KR_CTRL,
     KR_2ND_SELECTKEY,
-    KR_2ND_SELECTKEY_OTHER,
     KR_3RD_SELECTKEY,
-    KR_3RD_SELECTKEY_OTHER
 } KEY_RELEASED;
 
 typedef struct IM{
@@ -74,6 +72,7 @@ typedef struct IM{
     Bool               (*PhraseTips) (void);
     void               (*Init) (void);
     void               (*Save) (void);
+    void               (*Destroy) (INT8 im);
     FcitxImage         image;
     cairo_surface_t   *icon;
     FcitxAddon        *addonInfo;
@@ -81,7 +80,7 @@ typedef struct IM{
 
 typedef struct FcitxState {
     char *font;
-    char *fontEn;
+    char *menuFont;
     INT8 iIMIndex;
     Bool bMutexInited;
 } FcitxState;
@@ -90,7 +89,7 @@ void            ProcessKey (IMForwardEventStruct * call_data);
 void            ResetInput (void);
 void            CloseIM (IMForwardEventStruct * call_data);
 void            ChangeIMState ();
-Bool            IsHotKey (int iKey, HOTKEYS * hotkey);
+Bool            IsHotKey(KeySym sym, int state, HOTKEYS * hotkey);
 INPUT_RETURN_VALUE ChangeCorner (void);
 INPUT_RETURN_VALUE ChangePunc (void);
 INPUT_RETURN_VALUE ChangeLegend (void);
@@ -113,7 +112,8 @@ void            RegisterNewIM (char *strName,
                                Bool (*PhraseTips) (void),
                                void (*Init) (void),
                                void (*Save) (void),
-                               FcitxAddon *addon);
+                               void (*Destroy) (INT8),
+                               FcitxAddon* addon);
 void            SwitchIM (INT8 index);
 void            DoPhraseTips ();
 Bool            IsIM (char *strName);
@@ -126,7 +126,5 @@ void            SelectIM(int imidx);
 void            SelectVK(int vkidx);
 
 extern FcitxState gs;
-
-// Bool            IsKeyIgnored (int iKeyCode);
 
 #endif

@@ -51,8 +51,8 @@
 #include "ui/TrayWindow.h"
 #include "ui/skin.h"
 #include "core/ime.h"
-#include "fcitx-config/profile.h"
-#include "fcitx-config/configfile.h"
+#include "tools/profile.h"
+#include "tools/configfile.h"
 #include "ui/AboutWindow.h"
 #include "fcitx-config/cutils.h"
 
@@ -69,6 +69,11 @@ extern Bool     bIsDisplaying;
 
 Atom protocolAtom;
 Atom killAtom;
+Atom windowTypeAtom;
+Atom typeMenuAtom;
+Atom typeDialogAtom;
+Atom compManagerAtom;
+Window compManager;
 
 // added by yunfan
 // **********************************
@@ -86,6 +91,9 @@ InitX(void)
     
     protocolAtom = XInternAtom (dpy, "WM_PROTOCOLS", False);
     killAtom = XInternAtom (dpy, "WM_DELETE_WINDOW", False);
+    windowTypeAtom = XInternAtom (dpy, "_NET_WM_WINDOW_TYPE", False);
+    typeMenuAtom = XInternAtom (dpy, "_NET_WM_WINDOW_TYPE_MENU", False);
+    typeDialogAtom = XInternAtom (dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
     return True;
 }
 
@@ -96,6 +104,8 @@ InitX(void)
 void
 MyXEventHandler(XEvent * event)
 {
+    int dwidth, dheight;
+    GetScreenSize(&dwidth, &dheight);
     switch (event->type) {
     case ConfigureNotify:
 #ifdef _ENABLE_TRAY
@@ -113,13 +123,16 @@ MyXEventHandler(XEvent * event)
             XUnmapWindow(dpy, event->xclient.window);
             DrawMainWindow();
         }
+        else if (event->xclient.data.l[1] == compManagerAtom)
+            DisplaySkin(fc.skinType);
 #ifdef _ENABLE_TRAY
-        TrayEventHandler(event);
+        else
+            TrayEventHandler(event);
 #endif
         break;
     case Expose:
 #ifdef _DEBUG
-    FcitxLog(DEBUG, _("XEvent--Expose"));
+        FcitxLog(DEBUG, _("XEvent--Expose"));
 #endif
         if (event->xexpose.count > 0)
             break;
@@ -167,8 +180,11 @@ MyXEventHandler(XEvent * event)
             DrawMessageWindow(NULL, NULL, 0);
         break;
     case DestroyNotify:
+        if (event->xany.window == compManager)
+            DisplaySkin(fc.skinType);
 #ifdef _ENABLE_TRAY
-        TrayEventHandler(event);
+        else
+            TrayEventHandler(event);
 #endif
         break;
     case ButtonPress:
@@ -408,10 +424,9 @@ MyXEventHandler(XEvent * event)
                 LoadSkinDirectory();
 
                 if (event->xbutton.x_root - event->xbutton.x +
-                    mainMenu.width >= DisplayWidth(dpy, iScreen))
+                    mainMenu.width >= dwidth)
                     mainMenu.iPosX =
-                        DisplayWidth(dpy,
-                                     iScreen) - mainMenu.width -
+                        dwidth - mainMenu.width -
                         event->xbutton.x;
                 else
                     mainMenu.iPosX =
@@ -419,10 +434,9 @@ MyXEventHandler(XEvent * event)
 
                 // 面板的高度是可以变动的，需要取得准确的面板高度，才能准确确定右键菜单位置。
                 if (event->xbutton.y_root + mainMenu.height -
-                    event->xbutton.y >= DisplayHeight(dpy, iScreen))
+                    event->xbutton.y >= dheight)
                     mainMenu.iPosY =
-                        DisplayHeight(dpy,
-                                      iScreen) - mainMenu.height -
+                        dheight - mainMenu.height -
                         event->xbutton.y - 15;
                 else
                     mainMenu.iPosY = event->xbutton.y_root - event->xbutton.y + 25;     // +sc.skin_tray_icon.active_img.height;
@@ -439,7 +453,7 @@ MyXEventHandler(XEvent * event)
                     fcitxProfile.iMainWindowOffsetY +
                     sc.skinMainBar.backImg.height + 5;
                 if ((mainMenu.iPosY + mainMenu.height) >
-                    DisplayHeight(dpy, iScreen))
+                    dheight)
                     mainMenu.iPosY = fcitxProfile.iMainWindowOffsetY - 5 - mainMenu.height;
 
                 DrawXlibMenu(dpy, &mainMenu);
@@ -762,7 +776,7 @@ FontHeightWithContextReal(cairo_t* c, PangoFontDescription* fontDesc)
     }
     else
         height = 0;
-    
+
     return height;
 }
 #else
@@ -809,12 +823,10 @@ OutputStringWithContextReal(cairo_t * c, PangoFontDescription* desc, const char 
     cairo_save(c);
 
     PangoLayout *layout;
-    int height;
 
     layout = pango_cairo_create_layout (c);
     pango_layout_set_text (layout, str, -1);
     pango_layout_set_font_description (layout, desc);
-    pango_layout_get_pixel_size (layout, NULL, &height);
     cairo_move_to(c, x, y);
     pango_cairo_show_layout (c, layout);
 
@@ -891,6 +903,9 @@ InitWindowAttribute(Visual ** vs, Colormap * cmap,
                     XSetWindowAttributes * attrib,
                     unsigned long *attribmask, int *depth)
 {
+    attrib->bit_gravity = NorthWestGravity;
+    attrib->backing_store = WhenMapped;
+    attrib->save_under = True;
     if (*vs) {
         *cmap =
             XCreateColormap(dpy, RootWindow(dpy, iScreen), *vs, AllocNone);
@@ -900,16 +915,17 @@ InitWindowAttribute(Visual ** vs, Colormap * cmap,
         attrib->border_pixel = 0;
         attrib->colormap = *cmap;
         *attribmask =
-            (CWBackPixel | CWBorderPixel | CWOverrideRedirect |
-             CWColormap);
+            (CWBackPixel | CWBorderPixel | CWOverrideRedirect | CWSaveUnder |
+             CWColormap | CWBitGravity | CWBackingStore);
         *depth = 32;
     } else {
         *cmap = DefaultColormap(dpy, iScreen);
         *vs = DefaultVisual(dpy, iScreen);
         attrib->override_redirect = True;       // False;
-        attrib->background_pixel = WhitePixel(dpy, iScreen);
-        attrib->border_pixel = BlackPixel(dpy, iScreen);
-        *attribmask = (CWBackPixel | CWBorderPixel | CWOverrideRedirect);
+        attrib->background_pixel = 0;
+        attrib->border_pixel = 0;
+        *attribmask = (CWBackPixel | CWBorderPixel | CWOverrideRedirect | CWSaveUnder
+                | CWBitGravity | CWBackingStore);
         *depth = DefaultDepth(dpy, iScreen);
     }
 }
@@ -934,6 +950,32 @@ void ActiveWindow(Display *dpy, Window window)
     XSync(dpy, False);
 }
 
+void GetScreenSize(int *width, int *height)
+{
+	XWindowAttributes attrs;
+    if (XGetWindowAttributes(dpy, RootWindow(dpy, iScreen), &attrs) < 0) {
+        printf("ERROR\n");
+    }
+    if (width != NULL)
+        (*width) = attrs.width;
+    if (height != NULL)
+        (*height) = attrs.height;
+}
+
+void InitComposite()
+{
+    compManagerAtom = XInternAtom (dpy, "_NET_WM_CM_S0", False);
+
+    compManager = XGetSelectionOwner(dpy, compManagerAtom);
+
+    if (compManager)
+    {
+        XSetWindowAttributes attrs;
+        attrs.event_mask = StructureNotifyMask;
+        XChangeWindowAttributes (dpy, compManager, CWEventMask, &attrs);
+    }
+}
+
 #ifdef _ENABLE_PANGO
 PangoFontDescription* GetPangoFontDescription(const char* font, int size)
 {
@@ -943,4 +985,39 @@ PangoFontDescription* GetPangoFontDescription(const char* font, int size)
     pango_font_description_set_family(desc, font);
     return desc;
 }
+
+Visual * FindARGBVisual (Display *dpy, int scr)
+{
+    XVisualInfo *xvi;
+    XVisualInfo template;
+    int         nvi;
+    int         i;
+    XRenderPictFormat   *format;
+    Visual      *visual;
+
+    if (compManager == None)
+        return NULL;
+
+    template.screen = scr;
+    template.depth = 32;
+    template.class = TrueColor;
+    xvi = XGetVisualInfo (dpy,  VisualScreenMask |VisualDepthMask |VisualClassMask,&template,&nvi);
+    if (!xvi)
+        return 0;
+    visual = 0;
+    for (i = 0; i < nvi; i++)
+    {
+        format = XRenderFindVisualFormat (dpy, xvi[i].visual);
+        if (format->type == PictTypeDirect && format->direct.alphaMask)
+        {
+            visual = xvi[i].visual;
+            break;
+        }
+    }
+
+    XFree (xvi);
+    return visual;
+}
+
+
 #endif

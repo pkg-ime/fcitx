@@ -29,7 +29,7 @@
 #include "tools/utarray.h"
 #include "fcitx-config/cutils.h"
 #include "fcitx-config/xdg.h"
-#include "fcitx-config/configfile.h"
+#include "tools/configfile.h"
 
 uint uQuickPhraseCount;
 UT_array *quickPhrases = NULL;
@@ -92,14 +92,14 @@ void LoadQuickPhrase(void)
     // 这儿的处理比较简单。因为是单索引对单值。
     // 应该注意的是，它在内存中是以单链表保存的。
     utarray_new(quickPhrases, &qp_icd);
-    while(getline(&buf, &len, fp) != -1)
+    while (getline(&buf, &len, fp) != -1)
     {
         if (buf1)
             free(buf1);
         buf1 = trim(buf);
         char *p = buf1;
 
-        while(*p && !isspace(*p))
+        while (*p && !isspace(*p))
             p ++;
 
         if (p == '\0')
@@ -119,7 +119,7 @@ void LoadQuickPhrase(void)
 
         strcpy(tempQuickPhrase.strCode,buf1);
         strcpy(tempQuickPhrase.strPhrase, p);
-        
+
         utarray_push_back(quickPhrases, &tempQuickPhrase);
     }
 
@@ -139,42 +139,45 @@ void LoadQuickPhrase(void)
 void FreeQuickPhrase(void)
 {
     if ( !quickPhrases )
-    return;
+        return;
 
     utarray_free(quickPhrases);
 }
 
-INPUT_RETURN_VALUE QuickPhraseDoInput (int iKey)
+INPUT_RETURN_VALUE QuickPhraseDoInput (KeySym sym, int state, int iCount)
 {
     int retVal;
+    int iKey;
+
+    iKey = sym;
 
     if (iKey >= '0' && iKey <= '9') {
-    if (!iCandWordCount)
-        return IRV_TO_PROCESS;
+        if (!iCandWordCount)
+            return IRV_TO_PROCESS;
 
-    iKey -= '0';
-    if (iKey == 0)
-        iKey = 10;
+        iKey -= '0';
+        if (iKey == 0)
+            iKey = 10;
 
-    if (iKey > iCandWordCount)
-        retVal = IRV_DO_NOTHING;
-    else {
-        strcpy (strStringGet, quickPhraseCandWords[iKey-1]->strPhrase);
-        retVal = IRV_GET_CANDWORDS;
-        SetMessageCount(&messageDown, 0);
-    }
+        if (iKey > iCandWordCount)
+            retVal = IRV_DO_NOTHING;
+        else {
+            strcpy (strStringGet, quickPhraseCandWords[iKey-1]->strPhrase);
+            retVal = IRV_GET_CANDWORDS;
+            SetMessageCount(&messageDown, 0);
+        }
     }
     else if (iKey==' ') {
-    if (!iCandWordCount)
-        retVal = IRV_TO_PROCESS;
-    else {
-        strcpy (strStringGet, quickPhraseCandWords[0]->strPhrase);
-        retVal = IRV_GET_CANDWORDS;
-        SetMessageCount(&messageDown, 0);
-    }
+        if (!iCandWordCount)
+            retVal = IRV_TO_PROCESS;
+        else {
+            strcpy (strStringGet, quickPhraseCandWords[0]->strPhrase);
+            retVal = IRV_GET_CANDWORDS;
+            SetMessageCount(&messageDown, 0);
+        }
     }
     else
-    retVal = IRV_TO_PROCESS;
+        retVal = IRV_TO_PROCESS;
 
     return retVal;
 }
@@ -224,9 +227,9 @@ INPUT_RETURN_VALUE QuickPhraseGetCandWords (SEARCH_MODE mode)
         iCurrentCandPage--;
     }
 
-    for( currentQuickPhrase = (QUICK_PHRASE*) utarray_eltptr(quickPhrases, iFirstQuickPhrase + iCurrentCandPage * fc.iMaxCandWord);
-         currentQuickPhrase != NULL;
-         currentQuickPhrase = (QUICK_PHRASE*) utarray_next(quickPhrases, currentQuickPhrase))
+    for ( currentQuickPhrase = (QUICK_PHRASE*) utarray_eltptr(quickPhrases, iFirstQuickPhrase + iCurrentCandPage * fc.iMaxCandWord);
+            currentQuickPhrase != NULL;
+            currentQuickPhrase = (QUICK_PHRASE*) utarray_next(quickPhrases, currentQuickPhrase))
     {
         if (!strncmp(strCodeInput,currentQuickPhrase->strCode,iInputLen)) {
             quickPhraseCandWords[iCandWordCount++]=currentQuickPhrase;
@@ -246,11 +249,11 @@ INPUT_RETURN_VALUE QuickPhraseGetCandWords (SEARCH_MODE mode)
         strTemp[0] = i + 1 + '0';
         if (i == 9)
             strTemp[0] = '0';
-        AddMessageAtLast(&messageDown, MSG_INDEX, strTemp);
-        AddMessageAtLast(&messageDown, ((i == 0) ? MSG_FIRSTCAND : MSG_OTHER), quickPhraseCandWords[i]->strPhrase);
+        AddMessageAtLast(&messageDown, MSG_INDEX, "%s", strTemp);
+        AddMessageAtLast(&messageDown, ((i == 0) ? MSG_FIRSTCAND : MSG_OTHER), "%s", quickPhraseCandWords[i]->strPhrase);
 
         //编码提示
-        AddMessageAtLast(&messageDown, MSG_CODE, quickPhraseCandWords[i]->strCode + iInputLen);
+        AddMessageAtLast(&messageDown, MSG_CODE, "%s", quickPhraseCandWords[i]->strCode + iInputLen);
         if (i != (iCandWordCount - 1))
             MessageConcatLast(&messageDown, " ");
     }

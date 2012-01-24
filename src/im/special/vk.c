@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <cairo.h>
 #include <cairo-xlib.h>
+#include <X11/Xatom.h>
 
 #include "core/fcitx.h"
 #include "im/special/vk.h"
@@ -31,8 +32,8 @@
 #include "core/xim.h"
 #include "fcitx-config/xdg.h"
 #include "interface/DBus.h"
-#include "fcitx-config/profile.h"
-#include "fcitx-config/configfile.h"
+#include "tools/profile.h"
+#include "tools/configfile.h"
 
 VKWindow vkWindow;
 
@@ -69,21 +70,38 @@ Bool CreateVKWindow (void)
 {
     XSetWindowAttributes attrib;
     unsigned long   attribmask;
+    char        strWindowName[] = "Fcitx VK Window";
+    Colormap cmap;
+    Visual * vs;
+    int depth;
 
-    attrib.override_redirect = True;
-    attribmask = CWOverrideRedirect;
+    LoadVKImage();
+
+    vs = FindARGBVisual(dpy, iScreen);
+    InitWindowAttribute(&vs, &cmap, &attrib, &attribmask, &depth);
 
     vkWindow.fontSize = 12;
-    vkWindow.fontColor.r = vkWindow.fontColor.g = vkWindow.fontColor.b = 0;
+    vkWindow.fontColor = sc.skinKeyboard.keyColor;
 
-    vkWindow.window = XCreateSimpleWindow (dpy, DefaultRootWindow (dpy), 0, 0, VK_WINDOW_WIDTH, VK_WINDOW_HEIGHT, 0, WhitePixel (dpy, DefaultScreen (dpy)), WhitePixel (dpy, DefaultScreen (dpy)));
+    vkWindow.window = XCreateWindow (dpy,
+            DefaultRootWindow (dpy),
+            0, 0,
+            VK_WINDOW_WIDTH, VK_WINDOW_HEIGHT,
+            0, depth, InputOutput, vs, attribmask, &attrib);
     if (vkWindow.window == (Window) NULL)
         return False;
 
-    vkWindow.surface=cairo_xlib_surface_create(dpy, vkWindow.window, DefaultVisual(dpy, iScreen), VK_WINDOW_WIDTH, VK_WINDOW_HEIGHT);
+    vkWindow.surface=cairo_xlib_surface_create(dpy, vkWindow.window, vs, VK_WINDOW_WIDTH, VK_WINDOW_HEIGHT);
 
-    XChangeWindowAttributes (dpy, vkWindow.window, attribmask, &attrib);
     XSelectInput (dpy, vkWindow.window, ExposureMask | ButtonPressMask | ButtonReleaseMask  | PointerMotionMask );
+
+    XTextProperty   tp;
+    /* Set the name of the window */
+    tp.value = (void *)strWindowName;
+    tp.encoding = XA_STRING;
+    tp.format = 16;
+    tp.nitems = strlen(strWindowName);
+    XSetWMName (dpy, vkWindow.window, &tp);
 
     LoadVKMapFile ();
 
@@ -95,20 +113,20 @@ void DisplayVKWindow (void)
     XMapRaised (dpy, vkWindow.window);
 }
 
+void DestroyVKWindow (void)
+{
+    cairo_surface_destroy(vkWindow.surface);
+    XDestroyWindow(dpy, vkWindow.window);
+}
+
 void DrawVKWindow (void)
 {
     int             i;
     int             iPos;
-    char buf[PATH_MAX]={0};
     cairo_t *cr;
-    cairo_surface_t *png_surface ;
-
-    snprintf(buf, PATH_MAX, "%s/skin/default/keyboard.png",PKGDATADIR);
-    buf[sizeof(buf) - 1] = '\0';
 
     cr=cairo_create(vkWindow.surface);
-    png_surface = cairo_image_surface_create_from_png(buf);
-    cairo_set_source_surface(cr, png_surface, 0, 0);
+    cairo_set_source_surface(cr, keyBoard, 0, 0);
     cairo_paint(cr);
     /* 显示字符 */
     /* 名称 */
@@ -420,11 +438,12 @@ void ChangVK (void)
         DrawMainWindow ();
 }
 
-INPUT_RETURN_VALUE DoVKInput (int iKey)
+INPUT_RETURN_VALUE DoVKInput (KeySym sym, int state, int iCount)
 {
-    char           *pstr;
+    char           *pstr = NULL;
 
-    pstr = VKGetSymbol (iKey);
+    if (IsHotKeySimple(sym, state))
+        pstr = VKGetSymbol (sym);
     if (!pstr)
         return IRV_TO_PROCESS;
     else {
@@ -441,13 +460,15 @@ void SwitchVK (void)
     bVK = !bVK;
     if (bVK) {
         int             x, y;
+        int dwidth, dheight;
+        GetScreenSize(&dwidth, &dheight);
 
         if (fc.bUseDBus)
-            x = DisplayWidth (dpy, iScreen) / 2 - VK_WINDOW_WIDTH / 2;
+            x = dwidth / 2 - VK_WINDOW_WIDTH / 2;
         else
             x = fcitxProfile.iMainWindowOffsetX;
-        if ((x + VK_WINDOW_WIDTH) >= DisplayWidth (dpy, iScreen))
-            x = DisplayWidth (dpy, iScreen) - VK_WINDOW_WIDTH - 1;
+        if ((x + VK_WINDOW_WIDTH) >= dwidth)
+            x = dwidth - VK_WINDOW_WIDTH - 1;
         if (x < 0)
             x = 0;
 
@@ -455,7 +476,7 @@ void SwitchVK (void)
             y = 0;
         else
             y = fcitxProfile.iMainWindowOffsetY + sc.skinMainBar.backImg.height + 2;
-        if ((y + VK_WINDOW_HEIGHT) >= DisplayHeight (dpy, iScreen))
+        if ((y + VK_WINDOW_HEIGHT) >= dheight)
             y = fcitxProfile.iMainWindowOffsetY - VK_WINDOW_HEIGHT - 2;
         if (y < 0)
             y = 0;

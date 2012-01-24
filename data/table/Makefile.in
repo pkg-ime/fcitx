@@ -44,6 +44,12 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
+AM_V_GEN = $(am__v_GEN_$(V))
+am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
+am__v_GEN_0 = @echo "  GEN   " $@;
+AM_V_at = $(am__v_at_$(V))
+am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
+am__v_at_0 = @
 SOURCES =
 DIST_SOURCES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
@@ -73,6 +79,7 @@ DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 ALL_LINGUAS = @ALL_LINGUAS@
 AMTAR = @AMTAR@
+AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
@@ -267,7 +274,7 @@ table_tar = @srcdir@/table.tar.gz
 table_DATA = $(mb_data) $(mb_conf)
 EXTRA_DIST = $(mb_conf)
 CLEANFILES = $(mb_data)
-DISTCLEANFILES = $(txt_data) $(table_tar)
+DISTCLEANFILES = $(txt_data)
 all: all-am
 
 .SUFFIXES:
@@ -485,17 +492,15 @@ uninstall-am: uninstall-tableDATA
 tools: ../../tools/txt2mb
 	$(MAKE) -C ../../tools
 
-$(txt_m_data): cj.txt ;
+$(txt_m_data): @srcdir@/cj.txt ;
 
-cj.txt: $(table_tar) md5check
-	$(TAR) xzvf $(table_tar)
+@srcdir@/cj.txt: $(table_tar)
+	cd $(srcdir) && $(MD5SUM) -c $(table_tar).md5 || ( $(RM) $(table_tar); exit 1)
+	cd $(srcdir) && $(TAR) xzmvf $(table_tar)
 
 $(table_tar):
 	$(WGET) -O $(table_tar) $(table_url)
 	$(WGET) -O $(table_tar).md5 $(table_url).md5
-
-md5check: $(table_tar)
-	cd $(srcdir) && $(MD5SUM) -c $(table_tar).md5 || ( $(RM) $(table_tar); exit 1)
 
 all-local: tools $(txt_data) $(mb_data)
 

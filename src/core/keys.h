@@ -18,40 +18,29 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef FCITX_PROFILE_H
-#define FCITX_PROFILE_H
+/*
+ * Define const keys that will be used in code
+ */
+#include <X11/keysym.h>
 
-#include <fcitx-config/fcitx-config.h>
+#include "fcitx-config/hotkey.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+Bool IsHotKeyModifierCombine(KeySym sym, int state);
 
-typedef struct FcitxProfile
-{
-    GenericConfig gconfig;
-    int iMainWindowOffsetX;
-    int iMainWindowOffsetY;
-    int iInputWindowOffsetX;
-    int iInputWindowOffsetY;
-    Bool bCorner;
-    Bool bChnPunc;
-    Bool bTrackCursor;
-    Bool bUseLegend;
-    int iIMIndex;
-    Bool bLocked;
-    Bool bCompactMainWindow;
-    Bool bUseGBKT;
-    Bool bRecording;
-} FcitxProfile;
-
-extern FcitxProfile fcitxProfile;
-
-void LoadProfile();
-void SaveProfile();
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+extern HOTKEYS FCITX_DELETE[2];
+extern HOTKEYS FCITX_CTRL_DELETE[2];
+extern HOTKEYS FCITX_BACKSPACE[2];
+extern HOTKEYS FCITX_CTRL_H[2];
+extern HOTKEYS FCITX_HOME[2];
+extern HOTKEYS FCITX_END[2];
+extern HOTKEYS FCITX_RIGHT[2];
+extern HOTKEYS FCITX_LEFT[2];
+extern HOTKEYS FCITX_ESCAPE[2];
+extern HOTKEYS FCITX_ENTER[2];
+extern HOTKEYS FCITX_LCTRL_LSHIFT[2];
+extern HOTKEYS FCITX_SEMICOLON[2];
+extern HOTKEYS FCITX_SPACE[2];
+extern HOTKEYS FCITX_COMMA[2];
+extern HOTKEYS FCITX_PERIOD[2];
+extern HOTKEYS FCITX_CTRL_5[2];
+extern HOTKEYS FCITX_SEPARATOR[2];

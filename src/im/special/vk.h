@@ -50,10 +50,11 @@ void            DrawVKWindow (void);
 char           *VKGetSymbol (char cChar);
 void            LoadVKMapFile (void);
 void            ChangVK (void);
-INPUT_RETURN_VALUE DoVKInput (int iKey);
+INPUT_RETURN_VALUE DoVKInput (KeySym sym, int state, int iCount);
 int             MyToLower (int iChar);
 int             MyToUpper (int iChar);
 void            SwitchVK (void);
+void            DestroyVKWindow (void);
 Bool            VKMouseKey (int x, int y);
 
 #endif

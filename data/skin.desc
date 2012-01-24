@@ -18,6 +18,11 @@ Description=Description of Skin
 Type=Integer
 Description=Input Font Size
 
+[SkinFont/MenuFontSize]
+Type=Integer
+Description=Menu Font Size
+DefaultValue=15
+
 [SkinFont/TipColor]
 Type=Color
 Description=Tip Message Color
@@ -217,3 +222,13 @@ Description=Active Menu Color
 [SkinMenu/LineColor]
 Type=Color
 Description=Space Line Color
+
+[SkinKeyboard/BackImg]
+Type=Image
+Description=Virtual Keyboard Image
+DefaultValue=keyboard.png
+
+[SkinKeyboard/KeyColor]
+Type=Color
+Description=Key Color On Virutal Keyboard
+DefaultValue=0 0 0

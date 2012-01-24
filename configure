@@ -656,14 +656,22 @@ INTLTOOL_UPDATE
 USE_NLS
 GETTEXT_PACKAGE
 LIBOBJS
+ENABLE_TABLE_DATA_FALSE
+ENABLE_TABLE_DATA_TRUE
 HAVE_DBUS_FALSE
 HAVE_DBUS_TRUE
 DBUS_LIBS
+DBUS_CFLAGS
+ENABLE_RECORDING_FALSE
+ENABLE_RECORDING_TRUE
+ENABLE_TRAY_FALSE
+ENABLE_TRAY_TRUE
+ENABLE_DEBUG_FALSE
+ENABLE_DEBUG_TRUE
 FONTCONFIG_LIBS
 FONTCONFIG_CFLAGS
 HAVE_PANGOCAIRO_FALSE
 HAVE_PANGOCAIRO_TRUE
-DBUS_CFLAGS
 PANGOCAIRO_LIBS
 PANGOCAIRO_CFLAGS
 CAIRO_XLIB_LIBS
@@ -720,6 +728,8 @@ CPPFLAGS
 LDFLAGS
 CFLAGS
 CC
+AM_BACKSLASH
+AM_DEFAULT_VERBOSITY
 host_os
 host_vendor
 host_cpu
@@ -792,6 +802,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+enable_silent_rules
 enable_dependency_tracking
 enable_shared
 enable_static
@@ -808,6 +819,7 @@ enable_debug
 enable_tray
 enable_recording
 enable_dbus
+enable_table_data
 enable_nls
 with_libintl_prefix
 '
@@ -1456,6 +1468,8 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-silent-rules          less verbose build output (undo: `make V=1')
+  --disable-silent-rules         verbose build output (undo: `make V=0')
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
   --enable-shared[=PKGS]  build shared libraries [default=yes]
@@ -1464,11 +1478,12 @@ Optional Features:
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --disable-rpath         do not hardcode runtime library paths
-  --enable-pango           Enable Pango For Better font support
+  --enable-pango          Enable Pango For Better font support
   --enable-debug          Enable DEBUG
-  --enable-tray           Enable tray icon
+  --disable-tray          Disable tray icon
   --enable-recording      Enable recording of user input
   --enable-dbus           Enable Dbus for kimpanel support
+  --disable-table-data    Disable Table Data Install
   --disable-nls           do not use Native Language Support
 
 Optional Packages:
@@ -2822,7 +2837,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=fcitx
- VERSION="4.0.0"
+ VERSION="4.0.1"
 
 
 cat >>confdefs.h <<_ACEOF
@@ -2935,6 +2950,19 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 ac_config_headers="$ac_config_headers config.h"
+
+
+# Check whether --enable-silent-rules was given.
+if test "${enable_silent_rules+set}" = set; then :
+  enableval=$enable_silent_rules;
+fi
+
+case $enable_silent_rules in
+yes) AM_DEFAULT_VERBOSITY=0;;
+no)  AM_DEFAULT_VERBOSITY=1;;
+*)   AM_DEFAULT_VERBOSITY=0;;
+esac
+AM_BACKSLASH='\'
 
 
 # Checks for programs.
@@ -12689,11 +12717,12 @@ fi
 
   test -n "$WGET" && break
 done
-test -n "$WGET" || WGET="no"
+test -n "$WGET" || WGET="false"
 
-if test "x$WGET" = "xno";
+if test "x$WGET" = "xfalse"
 then
-    as_fn_error $? "You need to install wget" "$LINENO" 5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: without wget you cannot download data automatically" >&5
+$as_echo "$as_me: WARNING: without wget you cannot download data automatically" >&2;}
 fi
 
 for ac_prog in tar
@@ -13279,11 +13308,14 @@ fi
 # Check whether --enable-pango was given.
 if test "${enable_pango+set}" = set; then :
   enableval=$enable_pango; case "${enableval}" in
-  yes)  enable_pango=yes ;;
-  no)   enable_pango=no ;;
-  auto) enable_pango=auto ;;
-  *) as_fn_error $? "bad value \"${enableval}\" for --enable-dbus, use \"yes\" or \"no\" or \"auto\"(default)." "$LINENO" 5 ;;
-esac
+               yes)  enable_pango=yes ;;
+               no)   enable_pango=no ;;
+               auto) enable_pango=auto ;;
+               *) as_fn_error $? "bad value \"${enableval}\" for --enable-dbus, use \"yes\" or \"no\" or \"auto\"(default)." "$LINENO" 5 ;;
+               esac
+else
+  enable_pango=auto
+
 fi
 
 
@@ -13365,25 +13397,16 @@ fi
 
         :
     else
-        as_fn_error $? "No PANGOCAIRO found!" "$LINENO" 5
-        :
-    fi
-
-    if test "x$have_pangocairo" = "xtrue"; then
-
-
-        :
-    else
         if test "x$enable_pango" = "xyes"; then
-            # Must use dbus, raise a error.
+            # Must use pango, raise a error.
             as_fn_error $? "No PANGOCAIRO found, configure for pango failed!" "$LINENO" 5
         else
-            { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: No PANGOCAIR found, skipping configure for pango" >&5
-$as_echo "$as_me: WARNING: No PANGOCAIR found, skipping configure for pango" >&2;}
+            { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: No PANGOCAIRO found, skipping configure for pango" >&5
+$as_echo "$as_me: WARNING: No PANGOCAIRO found, skipping configure for pango" >&2;}
         fi
-  fi
+    fi
 fi
- if $have_pangocairo; then
+ if  test "x$have_pangocairo" = "xtrue"; then
   HAVE_PANGOCAIRO_TRUE=
   HAVE_PANGOCAIRO_FALSE='#'
 else
@@ -13480,10 +13503,13 @@ fi
 # Check whether --enable-debug was given.
 if test "${enable_debug+set}" = set; then :
   enableval=$enable_debug; case "${enableval}" in
-  yes)  enable_debug=yes ;;
-  no)   enable_debug=no ;;
-  *) as_fn_error $? "bad value \"${enableval}\" for --enable-debug, use \"yes\" or \"no\" (default)." "$LINENO" 5 ;;
-esac
+               yes)  enable_debug=yes ;;
+               no)   enable_debug=no ;;
+               *) as_fn_error $? "bad value \"${enableval}\" for --enable-debug, use \"yes\" or \"no\" (default)." "$LINENO" 5 ;;
+               esac
+else
+  enable_debug=no
+
 fi
 
 
@@ -13493,15 +13519,26 @@ $as_echo "#define _DEBUG /**/" >>confdefs.h
 
   CFLAGS="$CFLAGS -g"
 fi
+ if test "x$enable_debug" = "xyes"; then
+  ENABLE_DEBUG_TRUE=
+  ENABLE_DEBUG_FALSE='#'
+else
+  ENABLE_DEBUG_TRUE='#'
+  ENABLE_DEBUG_FALSE=
+fi
+
 
 # Option to enable the TRAY
 # Check whether --enable-tray was given.
 if test "${enable_tray+set}" = set; then :
   enableval=$enable_tray; case "${enableval}" in
-  yes)  enable_tray=yes ;;
-  no)   enable_tray=no ;;
-  *) as_fn_error $? "bad value \"${enableval}\" for --enable-tray, use \"yes\" (default) or \"no\"." "$LINENO" 5 ;;
-esac
+               yes)  enable_tray=yes ;;
+               no)   enable_tray=no ;;
+               *) as_fn_error $? "bad value \"${enableval}\" for --enable-tray, use \"yes\" (default) or \"no\"." "$LINENO" 5 ;;
+               esac
+else
+  enable_tray=yes
+
 fi
 
 
@@ -13510,15 +13547,26 @@ if test "x$enable_tray" != "xno"; then
 $as_echo "#define _ENABLE_TRAY /**/" >>confdefs.h
 
 fi
+ if test "x$enable_tray" != "xno"; then
+  ENABLE_TRAY_TRUE=
+  ENABLE_TRAY_FALSE='#'
+else
+  ENABLE_TRAY_TRUE='#'
+  ENABLE_TRAY_FALSE=
+fi
+
 
 # Option to enable the recording
 # Check whether --enable-recording was given.
 if test "${enable_recording+set}" = set; then :
   enableval=$enable_recording; case "${enableval}" in
-  yes)  enable_recording=yes ;;
-  no)   enable_recording=no ;;
-  *) as_fn_error $? "bad value \"${enableval}\" for --enable-recording, use \"yes\" or \"no\" (default)." "$LINENO" 5 ;;
-esac
+               yes)  enable_recording=yes ;;
+               no)   enable_recording=no ;;
+               *) as_fn_error $? "bad value \"${enableval}\" for --enable-recording, use \"yes\" or \"no\" (default)." "$LINENO" 5 ;;
+               esac
+else
+  enable_recording=no
+
 fi
 
 
@@ -13527,16 +13575,27 @@ if test "x$enable_recording" = "xyes"; then
 $as_echo "#define _ENABLE_RECORDING /**/" >>confdefs.h
 
 fi
+ if test "x$enable_recording" = "xyes"; then
+  ENABLE_RECORDING_TRUE=
+  ENABLE_RECORDING_FALSE='#'
+else
+  ENABLE_RECORDING_TRUE='#'
+  ENABLE_RECORDING_FALSE=
+fi
+
 
 # Option to enable the DBus interface for kimpanel support.
 # Check whether --enable-dbus was given.
 if test "${enable_dbus+set}" = set; then :
   enableval=$enable_dbus; case "${enableval}" in
-  yes)  enable_dbus=yes ;;
-  no)   enable_dbus=no ;;
-  auto) enable_dbus=auto ;;
-  *) as_fn_error $? "bad value \"${enableval}\" for --enable-dbus, use \"yes\" or \"no\" or \"auto\"(default)." "$LINENO" 5 ;;
-esac
+               yes)  enable_dbus=yes ;;
+               no)   enable_dbus=no ;;
+               auto) enable_dbus=auto ;;
+               *) as_fn_error $? "bad value \"${enableval}\" for --enable-dbus, use \"yes\" or \"no\" or \"auto\"(default)." "$LINENO" 5 ;;
+               esac
+else
+  enable_dbus=auto
+
 fi
 
 
@@ -13629,7 +13688,7 @@ $as_echo "$as_me: WARNING: No dbus found, skipping configure for Dbus" >&2;}
     fi
   fi
 fi
- if $have_dbus; then
+ if test "x$have_dbus" = "xtrue"; then
   HAVE_DBUS_TRUE=
   HAVE_DBUS_FALSE='#'
 else
@@ -13643,6 +13702,28 @@ if test "x$have_dbus" = "xtrue"; then
 $as_echo "#define _ENABLE_DBUS /**/" >>confdefs.h
 
 fi
+
+# Check whether --enable-table_data was given.
+if test "${enable_table_data+set}" = set; then :
+  enableval=$enable_table_data; case "${enableval}" in
+               yes)  enable_table_data=yes ;;
+               no)   enable_table_data=no ;;
+               *) as_fn_error $? "bad value \"${enableval}\" for --enable-table-data, use \"yes\"(defaule) or \"no\"." "$LINENO" 5 ;;
+               esac
+else
+  enable_table_data=yes
+
+fi
+
+ if test "x$enable_table_data" = "xyes"; then
+  ENABLE_TABLE_DATA_TRUE=
+  ENABLE_TABLE_DATA_FALSE='#'
+else
+  ENABLE_TABLE_DATA_TRUE='#'
+  ENABLE_TABLE_DATA_FALSE=
+fi
+
+
 
 CFLAGS="$CFLAGS -Wall"
 
@@ -15885,7 +15966,7 @@ if test "x$DATADIRNAME" = "x"; then
 
 fi
 
-ac_config_files="$ac_config_files Makefile fcitx.spec doc/Makefile data/Makefile data/table/Makefile skin/Makefile skin/default/Makefile skin/dark/Makefile skin/classic/Makefile png/Makefile lib/Makefile src/Makefile src/core/Makefile src/im/Makefile src/im/pinyin/Makefile src/im/qw/Makefile src/im/special/Makefile src/im/extra/Makefile src/im/table/Makefile src/interface/Makefile src/ui/Makefile src/tools/Makefile src/fcitx-config/Makefile src/fcitx-config/fcitx-config.pc src/core/fcitx.pc tools/Makefile test/Makefile po/Makefile.in"
+ac_config_files="$ac_config_files Makefile fcitx.spec doc/Makefile doc/man/Makefile data/Makefile data/table/Makefile skin/Makefile skin/default/Makefile skin/dark/Makefile skin/classic/Makefile png/Makefile lib/Makefile src/Makefile src/core/Makefile src/im/Makefile src/im/pinyin/Makefile src/im/qw/Makefile src/im/special/Makefile src/im/extra/Makefile src/im/table/Makefile src/interface/Makefile src/ui/Makefile src/tools/Makefile src/fcitx-config/Makefile src/fcitx-config/fcitx-config.pc src/core/fcitx.pc tools/Makefile test/Makefile po/Makefile.in"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -16016,8 +16097,24 @@ if test -z "${HAVE_PANGOCAIRO_TRUE}" && test -z "${HAVE_PANGOCAIRO_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_PANGOCAIRO\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${ENABLE_DEBUG_TRUE}" && test -z "${ENABLE_DEBUG_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_DEBUG\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_TRAY_TRUE}" && test -z "${ENABLE_TRAY_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_TRAY\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_RECORDING_TRUE}" && test -z "${ENABLE_RECORDING_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_RECORDING\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${HAVE_DBUS_TRUE}" && test -z "${HAVE_DBUS_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_DBUS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_TABLE_DATA_TRUE}" && test -z "${ENABLE_TABLE_DATA_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_TABLE_DATA\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -16919,6 +17016,7 @@ do
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "fcitx.spec") CONFIG_FILES="$CONFIG_FILES fcitx.spec" ;;
     "doc/Makefile") CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
+    "doc/man/Makefile") CONFIG_FILES="$CONFIG_FILES doc/man/Makefile" ;;
     "data/Makefile") CONFIG_FILES="$CONFIG_FILES data/Makefile" ;;
     "data/table/Makefile") CONFIG_FILES="$CONFIG_FILES data/table/Makefile" ;;
     "skin/Makefile") CONFIG_FILES="$CONFIG_FILES skin/Makefile" ;;
@@ -18437,3 +18535,30 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result:
+Build options:
+  Version                       $VERSION
+  Install prefix                $prefix
+  Build shared libs             $enable_shared
+  Build static libs             $enable_static
+  Build with tray support       $enable_tray
+  Build with pango support      $enable_pango
+  Build with dbus support       $enable_dbus
+  Build with recording support  $enable_recording
+  Build with debug support      $enable_debug
+  Install default table data    $enable_table_data
+" >&5
+$as_echo "
+Build options:
+  Version                       $VERSION
+  Install prefix                $prefix
+  Build shared libs             $enable_shared
+  Build static libs             $enable_static
+  Build with tray support       $enable_tray
+  Build with pango support      $enable_pango
+  Build with dbus support       $enable_dbus
+  Build with recording support  $enable_recording
+  Build with debug support      $enable_debug
+  Install default table data    $enable_table_data
+" >&6; }
