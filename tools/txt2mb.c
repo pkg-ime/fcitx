@@ -22,6 +22,7 @@
 #endif
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
@@ -272,6 +273,10 @@ int main (int argc, char *argv[])
 		    temp = temp->next;
 	    }
 	    else {
+		if ( !strcmp (temp->strCode, strCode)  ) {
+		    while (temp != head && !strcmp (temp->strCode, strCode) )
+			temp = temp->prev;
+		}
 		while (temp != head && strcmp (temp->strCode, strCode) <= 0) {
 		    if (!strcmp (temp->strHZ, strHZ) && !strcmp (temp->strCode, strCode)) {
 			printf ("Delete:  %s %s\n", strCode, strHZ);

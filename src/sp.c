@@ -104,6 +104,8 @@ SP_S            SPMap_S[] = {
 Bool            bSP_UseSemicolon = False;
 Bool            bSP = False;
 char            cNonS = 'o';
+char	    	strDefaultSP[100]="自然码";
+SP_FROM	        iSPFrom=SP_FROM_USER;	//从何处读取的双拼方案，0：用户目录，1：系统设置，2：系统双拼设置文件
 
 extern Bool     bSingleHZMode;
 
@@ -119,23 +121,39 @@ void LoadSPData (void)
 {
     FILE           *fp;
     char            strPath[PATH_MAX];
-    char            str[20], strS[5], *pstr;
+    char            str[100], strS[5], *pstr;
     int             i;
+    Bool	    bIsDefault=False;
+    Bool	    bIsFromSystemSPConfig=False;
 
     strcpy (strPath, (char *) getenv ("HOME"));
     strcat (strPath, "/.fcitx/");
 
     if (access (strPath, 0))
 	mkdir (strPath, S_IRWXU);
-
+    
+    strcpy (strPath, (char *) getenv ("HOME"));
+    strcat (strPath, "/.fcitx/");
     strcat (strPath, "sp.dat");
+
+    if (access (strPath, 0)) {
+	strcpy (strPath, PKGDATADIR "/data/");
+	strcat (strPath, "sp.dat");
+	bIsFromSystemSPConfig = True;
+	if (iSPFrom != SP_FROM_SYSTEM_CONFIG )
+	    iSPFrom = SP_FROM_SYSTEM_SP_CONFIG;
+    }
+
     fp = fopen (strPath, "rt");
 
     if (!fp)
 	return;
 
+    if ( !bIsFromSystemSPConfig )
+	iSPFrom = SP_FROM_USER;
+    
     while (1) {
-	if (!fgets (str, 20, fp))
+	if (!fgets (str, 100, fp))
 	    break;
 
 	i = strlen (str) - 1;
@@ -146,7 +164,28 @@ void LoadSPData (void)
 	    pstr++;
 	if (!strlen (pstr) || pstr[0] == '#')
 	    continue;
-
+	
+	if (!strncmp(pstr,"默认方案=",9)) {
+		if (iSPFrom!=SP_FROM_SYSTEM_CONFIG) {
+		    pstr+=9;
+		    if (*pstr == ' ' || *pstr == '\t')
+			pstr++;
+		    strcpy(strDefaultSP,pstr);
+		}
+		continue;
+	}
+	
+	if (!strncmp(pstr,"方案名称=",9)) {
+		pstr+=9;
+		if (*pstr == ' ' || *pstr == '\t')
+			pstr++;
+		bIsDefault = !(strcmp(strDefaultSP,pstr));
+		continue;
+	}
+	
+	if ( !bIsDefault )
+		continue;
+	
 	if (pstr[0] == '=')	//是零声母设置
 	    cNonS = tolower (pstr[1]);
 	else {

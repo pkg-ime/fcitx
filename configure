@@ -1636,7 +1636,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=fcitx
- VERSION=3.2.1
+ VERSION=3.3.1£¨06ÆßÏ¦°æ£©
 
 
 cat >>confdefs.h <<_ACEOF
@@ -6130,7 +6130,7 @@ fi
 done
 
 
-                                                                                                    ac_config_files="$ac_config_files Makefile fcitx.spec doc/Makefile data/Makefile debian/Makefile xpm/Makefile lib/Makefile src/version.h src/Makefile tools/Makefile"
+                                                                                          ac_config_files="$ac_config_files Makefile fcitx.spec doc/Makefile data/Makefile xpm/Makefile lib/Makefile src/version.h src/Makefile tools/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6692,7 +6692,6 @@ do
   "fcitx.spec" ) CONFIG_FILES="$CONFIG_FILES fcitx.spec" ;;
   "doc/Makefile" ) CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
   "data/Makefile" ) CONFIG_FILES="$CONFIG_FILES data/Makefile" ;;
-  "debian/Makefile" ) CONFIG_FILES="$CONFIG_FILES debian/Makefile" ;;
   "xpm/Makefile" ) CONFIG_FILES="$CONFIG_FILES xpm/Makefile" ;;
   "lib/Makefile" ) CONFIG_FILES="$CONFIG_FILES lib/Makefile" ;;
   "src/version.h" ) CONFIG_FILES="$CONFIG_FILES src/version.h" ;;
