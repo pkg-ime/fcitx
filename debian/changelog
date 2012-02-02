@@ -1,10 +1,22 @@
+fcitx (1:4.1.2-6) unstable; urgency=low
+
+  * debian/rules:
+    - Enable hardening build flags.
+  * debian/control:
+    - Rename fcitx-libs-dbg to fcitx-dbg.
+  * debian/patches:
+    - [UPSTREAM] Cherry-pick bug fixes from upstream master
+      (0010 0011 0012).
+
+ -- Aron Xu <aron@debian.org>  Fri, 03 Feb 2012 04:12:43 +0800
+
 fcitx (1:4.1.2-5) unstable; urgency=low
 
-  [ 02_dont_show_dialog_first_run.patch ]
-  * Don't show dialog about immodules, which will confuse users,
-    while we use im-config.
-  [ 02_dbus_max_retry_times.patch ]
-  * MAX_RETRY_TIMES to 20 from 5.
+  * debian/patches/02_dont_show_dialog_first_run.patch:
+    - Don't show dialog about immodules, which will confuse users,
+      while we use im-config.
+  * debian/patches/02_dbus_max_retry_times.patch:
+    -  MAX_RETRY_TIMES to 20 from 5
 
  -- YunQiang Su <wzssyqa@gmail.com>  Wed, 21 Dec 2011 22:01:57 +0800
 
