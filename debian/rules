@@ -36,7 +36,7 @@ override_dh_auto_configure:
 override_dh_makeshlibs:
 	dh_makeshlibs -pfcitx-libs
 override_dh_strip:
-	dh_strip --dbg-package=fcitx-libs-dbg
+	dh_strip --dbg-package=fcitx-dbg
 
 override_dh_install:
 	sed "s/GTK2_LIBDIR/$(GTK2_LIBDIR)/g" debian/fcitx-frontend-gtk2.install.in >debian/fcitx-frontend-gtk2.install

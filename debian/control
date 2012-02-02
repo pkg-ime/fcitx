@@ -122,13 +122,14 @@ Description: Flexible Input Method Framework - library development files
  .
  This package provides the library development files.
 
-Package: fcitx-libs-dbg
+Package: fcitx-dbg
 Architecture: any
 Section: debug
 Priority: extra
 Depends: ${misc:Depends}, fcitx-libs (= ${binary:Version})
-Replaces: fcitx (<< 1:4.1.2)
-Breaks: fcitx (<< 1:4.1.2)
+Provides: fcitx-libs-dbg
+Replaces: fcitx (<< 1:4.1.2), fcitx-libs-dbg
+Breaks: fcitx (<< 1:4.1.2), fcitx-libs-dbg
 Description: Flexible Input Method Framework - debugging symbols
  Fcitx is a input method framework with extension support, which provides
  an interface for entering characters of different scripts in applications
