@@ -1,8 +1,17 @@
-Index: fcitx/src/module/x11/x11stuff.c
+From: IME Packaging Team <pkg-ime-devel@lists.alioth.debian.org>
+Date: Fri, 3 Feb 2012 02:40:46 +0800
+Subject: [PATCH] 01-fix_wm_class_setting
+
 ===================================================================
---- fcitx.orig/src/module/x11/x11stuff.c	2011-10-02 18:43:11.000000000 +0800
-+++ fcitx/src/module/x11/x11stuff.c	2011-10-05 19:22:29.512721306 +0800
-@@ -293,7 +293,13 @@
+---
+ src/module/x11/x11stuff.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/src/module/x11/x11stuff.c b/src/module/x11/x11stuff.c
+index 43ea391..b8f7ce9 100644
+--- a/src/module/x11/x11stuff.c
++++ b/src/module/x11/x11stuff.c
+@@ -293,7 +293,13 @@ void* X11SetWindowProperty(void* arg, FcitxModuleFunctionArg args)
      pid_t pid = getpid();
      XChangeProperty(x11priv->dpy, window, x11priv->pidAtom, XA_CARDINAL, 32,
                      PropModeReplace, (unsigned char *)&pid, 1);
@@ -17,3 +26,4 @@ Index: fcitx/src/module/x11/x11stuff.c
  
      if (windowTitle) {
          XTextProperty   tp;
+-- 

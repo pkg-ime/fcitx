@@ -1,0 +1,25 @@
+From: Weng Xuetian <wengxt@gmail.com>
+Date: Wed, 4 Jan 2012 11:21:50 +0800
+Subject: [PATCH] fix a possible crash
+
+---
+ src/lib/fcitx-utils/utils.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/src/lib/fcitx-utils/utils.c b/src/lib/fcitx-utils/utils.c
+index 684067e..005d7fc 100644
+--- a/src/lib/fcitx-utils/utils.c
++++ b/src/lib/fcitx-utils/utils.c
+@@ -199,8 +199,9 @@ int FcitxGetDisplayNumber()
+         if (*p == '.') {
+             *p = '\0';
+         }
+-
+-        sscanf(strDisplayNumber, "%d", &displayNumber);
++        
++        if (strDisplayNumber)
++            sscanf(strDisplayNumber, "%d", &displayNumber);
+ 
+         free(display);
+     }
+-- 

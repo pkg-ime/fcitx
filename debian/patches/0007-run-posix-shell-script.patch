@@ -1,0 +1,19 @@
+From: IME Packaging Team <pkg-ime-devel@lists.alioth.debian.org>
+Date: Fri, 3 Feb 2012 02:40:47 +0800
+Subject: [PATCH] 01-run_posix_shell_script
+
+---
+ data/script/fcitx-configtool |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/data/script/fcitx-configtool b/data/script/fcitx-configtool
+index b51ce67..d09d70d 100755
+--- a/data/script/fcitx-configtool
++++ b/data/script/fcitx-configtool
+@@ -1,4 +1,4 @@
+-#!/bin/bash
++#!/bin/sh
+ #--------------------------------------
+ # fcitx-config
+ #
+-- 

@@ -1,0 +1,21 @@
+From: IME Packaging Team <pkg-ime-devel@lists.alioth.debian.org>
+Date: Fri, 3 Feb 2012 02:40:47 +0800
+Subject: [PATCH] 02-desktop_nodisplay
+
+---
+ data/fcitx.desktop.in |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/data/fcitx.desktop.in b/data/fcitx.desktop.in
+index 84274d1..c734171 100644
+--- a/data/fcitx.desktop.in
++++ b/data/fcitx.desktop.in
+@@ -7,6 +7,7 @@ Terminal=false
+ Type=Application
+ Categories=System;Utility;
+ StartupNotify=false
++NoDisplay=true
+ X-GNOME-Autostart-Phase=Applications
+ X-GNOME-AutoRestart=false
+ X-GNOME-Autostart-Notify=false
+-- 

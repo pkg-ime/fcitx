@@ -1,3 +1,11 @@
+From: IME Packaging Team <pkg-ime-devel@lists.alioth.debian.org>
+Date: Fri, 3 Feb 2012 02:40:47 +0800
+Subject: [PATCH] 01-fix_a_little_about_client_preedit_string
+
+---
+ src/im/pinyin/py.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
+
 diff --git a/src/im/pinyin/py.c b/src/im/pinyin/py.c
 index 3e033f2..37d5d12 100644
 --- a/src/im/pinyin/py.c
@@ -26,3 +34,4 @@ index 3e033f2..37d5d12 100644
          CleanInputWindowDown(pystate->owner);
          return IRV_DISPLAY_MESSAGE;
      }
+-- 

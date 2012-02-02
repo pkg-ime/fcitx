@@ -1,0 +1,30 @@
+From: Weng Xuetian <wengxt@gmail.com>
+Date: Wed, 1 Feb 2012 23:22:02 +0800
+Subject: [PATCH] fix a historical bug.
+
+---
+ src/lib/fcitx/configfile.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/lib/fcitx/configfile.c b/src/lib/fcitx/configfile.c
+index d6e9615..41cc2c0 100644
+--- a/src/lib/fcitx/configfile.c
++++ b/src/lib/fcitx/configfile.c
+@@ -91,14 +91,14 @@ void Filter2nd3rdKey(GenericConfig* config, ConfigGroup *group, ConfigOption *op
+             fc->i3rdSelectKey[0].state = KEY_CTRL_COMP ;        //左SHIFT的扫描码
+             fc->i3rdSelectKey[1].state = KEY_NONE;
+         } else {
+-            if (pstr[0] && pstr[0] != '0') {
++            if (strlen(pstr) >= 1 && pstr[0] && pstr[0] != '\0') {
+                 fc->i2ndSelectKey[0].sym = pstr[0] & 0xFF;
+                 fc->i2ndSelectKey[0].state = KEY_NONE;
+             } else {
+                 fc->i2ndSelectKey[0].sym = 0;
+                 fc->i2ndSelectKey[0].state = KEY_NONE;
+             }
+-            if (pstr[1] && pstr[1] != '0') {
++            if (strlen(pstr) >= 2 && pstr[1] && pstr[1] != '\0') {
+                 fc->i3rdSelectKey[0].sym = pstr[1] & 0xFF;
+                 fc->i3rdSelectKey[0].state = KEY_NONE;
+             } else {
+-- 

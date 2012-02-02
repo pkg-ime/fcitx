@@ -1,0 +1,22 @@
+From: Weng Xuetian <wengxt@gmail.com>
+Date: Sat, 3 Dec 2011 01:19:57 +0800
+Subject: [PATCH] fix quick phrase problem.
+
+---
+ src/module/quickphrase/QuickPhrase.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/src/module/quickphrase/QuickPhrase.c b/src/module/quickphrase/QuickPhrase.c
+index 1700b9a..8060da1 100644
+--- a/src/module/quickphrase/QuickPhrase.c
++++ b/src/module/quickphrase/QuickPhrase.c
+@@ -382,6 +382,8 @@ INPUT_RETURN_VALUE QuickPhraseGetCandWords(QuickPhraseState* qpstate)
+             candWord.priv = qpcand;
+             candWord.strExtra = strdup(currentQuickPhrase->strCode + iInputLen);
+             candWord.strWord = strdup(currentQuickPhrase->strPhrase);
++            candWord.wordType = MSG_OTHER;
++            candWord.extraType = MSG_CODE;
+             CandidateWordAppend(FcitxInputStateGetCandidateList(input), &candWord);
+         }
+     }
+-- 

@@ -1,8 +1,17 @@
-Index: fcitx/src/lib/fcitx/instance.c
+From: IME Packaging Team <pkg-ime-devel@lists.alioth.debian.org>
+Date: Fri, 3 Feb 2012 02:40:46 +0800
+Subject: [PATCH] 02_dont_show_dialog_first_run
+
 ===================================================================
---- fcitx.orig/src/lib/fcitx/instance.c	2011-12-21 19:35:48.296142191 +0800
-+++ fcitx/src/lib/fcitx/instance.c	2011-12-21 19:56:06.358182227 +0800
-@@ -156,25 +156,25 @@
+---
+ src/lib/fcitx/instance.c |   38 +++++++++++++++++++-------------------
+ 1 files changed, 19 insertions(+), 19 deletions(-)
+
+diff --git a/src/lib/fcitx/instance.c b/src/lib/fcitx/instance.c
+index 6c1e753..439de17 100644
+--- a/src/lib/fcitx/instance.c
++++ b/src/lib/fcitx/instance.c
+@@ -156,25 +156,25 @@ FcitxInstance* CreateFcitxInstance(sem_t *sem, int argc, char* argv[])
          snprintf(strTemp, PATH_MAX, "@im=%s", imname);
          strTemp[PATH_MAX - 1] = '\0';
  
@@ -22,6 +31,9 @@ Index: fcitx/src/lib/fcitx/instance.c
 -            msg[9] = "export GTK_IM_MODULE=fcitx";
 -            msg[10] = _("If you use login manager like gdm or kdm, put those lines in your ~/.xprofile.");
 -            msg[11] = _("If you use ~/.xinitrc and startx, put those lines in ~/.xinitrc.");
+-
+-            DisplayMessage(instance, _("Setting Hint"), msg, 12);
+-        }
 +/*        if ((getenv("XMODIFIERS") != NULL && CHECK_ENV("XMODIFIERS", strTemp, true)) ||*/
 +/*                (CHECK_ENV("GTK_IM_MODULE", "xim", false) && CHECK_ENV("GTK_IM_MODULE", "fcitx", false))*/
 +/*                || (CHECK_ENV("QT_IM_MODULE", "xim", false) && CHECK_ENV("QT_IM_MODULE", "fcitx", false))) {*/
@@ -38,11 +50,10 @@ Index: fcitx/src/lib/fcitx/instance.c
 +/*            msg[9] = "export GTK_IM_MODULE=fcitx";*/
 +/*            msg[10] = _("If you use login manager like gdm or kdm, put those lines in your ~/.xprofile.");*/
 +/*            msg[11] = _("If you use ~/.xinitrc and startx, put those lines in ~/.xinitrc.");*/
- 
--            DisplayMessage(instance, _("Setting Hint"), msg, 12);
--        }
++
 +/*            DisplayMessage(instance, _("Setting Hint"), msg, 12);*/
 +/*        }*/
      }
      /* make in order to use block X, query is not good here */
      pthread_create(&instance->pid, NULL, RunInstance, instance);
+-- 
