@@ -1,12 +1,2 @@
 0001-dont-show-dialog-first-run.patch
 0002-dbus-max-retry-times.patch
-0003-fix-wm-class-setting.patch
-0004-dont-fileter-all-release-events.patch
-0005-fix-duplicate-entry.patch
-0006-fix-a-little-about-client-preedit-string.patch
-0007-run-posix-shell-script.patch
-0008-fix-input-percent-sign.patch
-0009-desktop-nodisplay.patch
-0010-fix-a-historical-bug.patch
-0011-fix-a-possible-crash.patch
-0012-test-DISPLAY.patch
