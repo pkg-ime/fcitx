@@ -149,6 +149,7 @@ Description: Flexible Input Method Framework - debugging symbols
 Package: fcitx-ui-kimpanel
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-module-dbus
+Recommends: kdebase-bin
 Replaces: fcitx (<< 1:4.1.2)
 Breaks: fcitx (<< 1:4.1.2)
 Suggests: plasma-widgets-addons
@@ -171,7 +172,7 @@ Description: Flexible Input Method Framework - KIMPanel user interface
 Package: fcitx-ui-classic
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-module-x11
-Recommends: fcitx (>= 1:4.1.2)
+Recommends: fcitx (>= 1:4.1.2), zenity
 Replaces: fcitx (<< 1:4.1.2)
 Breaks: fcitx (<< 1:4.1.2)
 Description: Flexible Input Method Framework - Classic user interface
