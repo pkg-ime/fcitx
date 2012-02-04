@@ -1,8 +1,9 @@
 usr/share/icons/*
 usr/share/locale/*
+usr/share/applications/*
+usr/share/mime/packages/*
 usr/share/fcitx/configdesc/addon.desc
+usr/share/fcitx/configdesc/inputmethod.desc
 usr/share/fcitx/configdesc/config.desc
 usr/share/fcitx/configdesc/profile.desc
 usr/share/fcitx/configdesc/skin.desc
-usr/share/applications/fcitx.desktop
-usr/share/applications/fcitx-configtool.desktop

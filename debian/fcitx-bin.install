@@ -1,5 +1,6 @@
 usr/bin/fcitx
 usr/bin/fcitx-configtool
 usr/bin/fcitx-remote
+usr/bin/fcitx-skin-installer
 usr/share/man/man1/fcitx.1
 usr/share/man/man1/fcitx-remote.1

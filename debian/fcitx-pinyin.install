@@ -1,5 +1,7 @@
 usr/lib/fcitx/fcitx-pinyin.so
 usr/share/fcitx/addon/fcitx-pinyin.conf
 usr/share/fcitx/configdesc/fcitx-pinyin.desc
+usr/share/fcitx/inputmethod/pinyin.conf
+usr/share/fcitx/inputmethod/shuangpin.conf
 usr/share/fcitx/pinyin/*
 usr/share/doc/fcitx/pinyin.txt
