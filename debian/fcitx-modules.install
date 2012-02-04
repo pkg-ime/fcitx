@@ -13,4 +13,4 @@ usr/share/fcitx/addon/fcitx-quickphrase.conf
 usr/share/fcitx/addon/fcitx-remote-module.conf
 usr/share/fcitx/data/AutoEng.dat
 usr/share/fcitx/data/gbks2t.tab
-usr/share/fcitx/data/punc.mb
+usr/share/fcitx/data/punc.mb.*
