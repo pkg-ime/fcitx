@@ -1,20 +1,19 @@
-From: IME Packaging Team <pkg-ime-devel@lists.alioth.debian.org>
-Date: Fri, 3 Feb 2012 02:40:46 +0800
-Subject: [PATCH] 02_dbus_max_retry_times
+From: Aron Xu <aron@debian.org>
+Date: Sat, 4 Feb 2012 12:23:59 +0800
+Subject: [PATCH] increase dbus max retry times
 
-===================================================================
 ---
  src/module/dbus/dbusstuff.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/src/module/dbus/dbusstuff.c b/src/module/dbus/dbusstuff.c
-index f61276f..ea5fc9f 100644
+index 165c77e..3cd05fe 100644
 --- a/src/module/dbus/dbusstuff.c
 +++ b/src/module/dbus/dbusstuff.c
-@@ -42,7 +42,7 @@ typedef struct _FcitxDBus {
+@@ -45,7 +45,7 @@ typedef struct _FcitxDBus {
  } FcitxDBus;
  
- #define RETRY_INTERVAL 1
+ #define RETRY_INTERVAL 2
 -#define MAX_RETRY_TIMES 5
 +#define MAX_RETRY_TIMES 20
  
