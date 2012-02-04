@@ -7,7 +7,7 @@ Subject: [PATCH] increase dbus max retry times
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/src/module/dbus/dbusstuff.c b/src/module/dbus/dbusstuff.c
-index 165c77e..3cd05fe 100644
+index 165c77e..e5c3297 100644
 --- a/src/module/dbus/dbusstuff.c
 +++ b/src/module/dbus/dbusstuff.c
 @@ -45,7 +45,7 @@ typedef struct _FcitxDBus {
