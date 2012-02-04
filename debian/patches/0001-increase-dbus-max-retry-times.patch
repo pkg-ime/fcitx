@@ -15,7 +15,7 @@ index 165c77e..3cd05fe 100644
  
  #define RETRY_INTERVAL 2
 -#define MAX_RETRY_TIMES 5
-+#define MAX_RETRY_TIMES 20
++#define MAX_RETRY_TIMES 15
  
  static void* DBusCreate(FcitxInstance* instance);
  static void DBusSetFD(void* arg);
