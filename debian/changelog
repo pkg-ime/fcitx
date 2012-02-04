@@ -1,3 +1,9 @@
+fcitx (1:4.2.0-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+
+ -- Aron Xu <aron@debian.org>  Sat, 04 Feb 2012 11:45:53 +0800
+
 fcitx (1:4.1.2-6) unstable; urgency=low
 
   * debian/rules:
