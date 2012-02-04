@@ -1,3 +1,4 @@
 0001-increase-dbus-max-retry-times.patch
 0002-dont-show-dialog-at-first-run.patch
 0003-Fix-bashisms-in-scripts.patch
+0004-Try-to-avoid-rpath.patch
