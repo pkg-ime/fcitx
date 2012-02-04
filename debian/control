@@ -5,7 +5,7 @@ Maintainer: IME Packaging Team <pkg-ime-devel@lists.alioth.debian.org>
 Uploaders: Aron Xu <aron@debian.org>, LI Daobing <lidaobing@debian.org>,
   YunQiang Su <wzssyqa@gmail.com>
 DM-Upload-Allowed: yes
-Build-Depends: debhelper (>= 8), cmake, intltool (>= 0.35.0),
+Build-Depends: debhelper (>= 9), cmake, intltool (>= 0.35.0),
     libdbus-1-dev (>= 1.1.0), libpango1.0-dev (>= 1.0), libcairo2-dev (>= 1.0),
     libdbus-glib-1-dev, libopencc-dev (>= 0.1.1~), libicu-dev,
     libgtk2.0-dev, libqt4-dev, libgtk-3-dev, libkvm-dev [kfreebsd-any]
@@ -66,6 +66,7 @@ Recommends: fcitx-bin
 Suggests: fcitx (>= 1:4.1.2)
 Replaces: fcitx (<< 1:4.1.2)
 Breaks: fcitx (<< 1:4.1.2)
+Multi-arch: foreign
 Description: Flexible Input Method Framework - essential data files
  Fcitx is a input method framework with extension support, which provides
  an interface for entering characters of different scripts in applications
@@ -83,6 +84,8 @@ Description: Flexible Input Method Framework - essential data files
 Package: fcitx-libs
 Architecture: any
 Section: libs
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Suggests: fcitx (>= 1:4.1.2)
 Replaces: fcitx (<< 1:4.1.2)
@@ -211,6 +214,8 @@ Description: Flexible Input Method Framework - frontends metapackage
 
 Package: fcitx-frontend-gtk2
 Architecture: any
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-module-dbus
 Recommends: fcitx-frontend-gtk3
 Description: Flexible Input Method Framework - GTK+ 2 IM Module frontend
@@ -229,6 +234,8 @@ Description: Flexible Input Method Framework - GTK+ 2 IM Module frontend
 
 Package: fcitx-frontend-gtk3
 Architecture: any
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-module-dbus
 Recommends: fcitx-frontend-gtk2
 Description: Flexible Input Method Framework - GTK+ 3 IM Module frontend

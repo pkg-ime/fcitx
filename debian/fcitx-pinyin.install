@@ -1,4 +1,4 @@
-usr/lib/fcitx/fcitx-pinyin.so
+usr/lib/*/fcitx/fcitx-pinyin.so
 usr/share/fcitx/addon/fcitx-pinyin.conf
 usr/share/fcitx/configdesc/fcitx-pinyin.desc
 usr/share/fcitx/inputmethod/pinyin.conf

@@ -1,9 +1,9 @@
-usr/lib/fcitx/fcitx-autoeng.so
-usr/lib/fcitx/fcitx-chttrans.so
-usr/lib/fcitx/fcitx-fullwidth-char.so
-usr/lib/fcitx/fcitx-punc.so
-usr/lib/fcitx/fcitx-quickphrase.so
-usr/lib/fcitx/fcitx-remote-module.so
+usr/lib/*/fcitx/fcitx-autoeng.so
+usr/lib/*/fcitx/fcitx-chttrans.so
+usr/lib/*/fcitx/fcitx-fullwidth-char.so
+usr/lib/*/fcitx/fcitx-punc.so
+usr/lib/*/fcitx/fcitx-quickphrase.so
+usr/lib/*/fcitx/fcitx-remote-module.so
 usr/share/fcitx/addon/fcitx-autoeng.conf
 usr/share/fcitx/addon/fcitx-chttrans.conf
 usr/share/fcitx/configdesc/fcitx-chttrans.desc
