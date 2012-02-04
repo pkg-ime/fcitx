@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 #include <string.h>
@@ -109,7 +109,7 @@ InputWindow* CreateInputWindow(FcitxClassicUI *classicui)
     InputWindow* inputWindow;
 
 
-    inputWindow = fcitx_malloc0(sizeof(InputWindow));
+    inputWindow = fcitx_utils_malloc0(sizeof(InputWindow));
     inputWindow->owner = classicui;
     InitInputWindow(inputWindow);
 
@@ -122,8 +122,8 @@ InputWindow* CreateInputWindow(FcitxClassicUI *classicui)
     arg.args[1] = inputWindow;
     InvokeFunction(classicui->owner, FCITX_X11, ADDCOMPOSITEHANDLER, arg);
 
-    inputWindow->msgUp = InitMessages();
-    inputWindow->msgDown = InitMessages();
+    inputWindow->msgUp = FcitxMessagesNew();
+    inputWindow->msgDown = FcitxMessagesNew();
     return inputWindow;
 }
 
@@ -145,10 +145,10 @@ boolean InputWindowEventHandler(void *arg, XEvent* event)
                 y = event->xbutton.y;
                 ClassicUIMouseClick(inputWindow->owner, inputWindow->window, &x, &y);
 
-                FcitxInputContext* ic = GetCurrentIC(inputWindow->owner->owner);
+                FcitxInputContext* ic = FcitxInstanceGetCurrentIC(inputWindow->owner->owner);
 
                 if (ic)
-                    SetWindowOffset(inputWindow->owner->owner, ic, x, y);
+                    FcitxInstanceSetWindowOffset(inputWindow->owner->owner, ic, x, y);
 
                 DrawInputWindow(inputWindow);
             }
@@ -170,7 +170,7 @@ void DisplayInputWindow(InputWindow* inputWindow)
 void DrawInputWindow(InputWindow* inputWindow)
 {
     int lastW = inputWindow->iInputWindowWidth, lastH = inputWindow->iInputWindowHeight;
-    int cursorPos = NewMessageToOldStyleMessage(inputWindow->owner->owner, inputWindow->msgUp, inputWindow->msgDown);
+    int cursorPos = FcitxUINewMessageToOldStyleMessage(inputWindow->owner->owner, inputWindow->msgUp, inputWindow->msgDown);
     DrawInputBar(inputWindow->skin, inputWindow, cursorPos, inputWindow->msgUp, inputWindow->msgDown, &inputWindow->iInputWindowHeight , &inputWindow->iInputWindowWidth);
 
     /* Resize Window will produce Expose Event, so there is no need to draw right now */
@@ -199,31 +199,30 @@ void DrawInputWindow(InputWindow* inputWindow)
 
 void MoveInputWindowInternal(InputWindow* inputWindow)
 {
-    int dwidth, dheight;
     int x = 0, y = 0;
-    GetScreenSize(inputWindow->owner, &dwidth, &dheight);
 
-    FcitxInputContext* ic = GetCurrentIC(inputWindow->owner->owner);
-    GetWindowPosition(inputWindow->owner->owner, ic, &x, &y);
+    FcitxInputContext* ic = FcitxInstanceGetCurrentIC(inputWindow->owner->owner);
+    FcitxInstanceGetWindowPosition(inputWindow->owner->owner, ic, &x, &y);
+    FcitxRect rect = GetScreenGeometry(inputWindow->owner, x, y);
 
     int iTempInputWindowX, iTempInputWindowY;
 
-    if (x < 0)
-        iTempInputWindowX = 0;
+    if (x < rect.x1)
+        iTempInputWindowX = rect.x1;
     else
         iTempInputWindowX = x + inputWindow->iOffsetX;
 
-    if (y < 0)
-        iTempInputWindowY = 0;
+    if (y < rect.y1)
+        iTempInputWindowY = rect.y1;
     else
         iTempInputWindowY = y + inputWindow->iOffsetY;
 
-    if ((iTempInputWindowX + inputWindow->iInputWindowWidth) > dwidth)
-        iTempInputWindowX = dwidth - inputWindow->iInputWindowWidth;
+    if ((iTempInputWindowX + inputWindow->iInputWindowWidth) > rect.x2)
+        iTempInputWindowX =  rect.x2 - inputWindow->iInputWindowWidth;
 
-    if ((iTempInputWindowY + inputWindow->iInputWindowHeight) > dheight) {
-        if (iTempInputWindowY > dheight)
-            iTempInputWindowY = dheight - inputWindow->iInputWindowHeight - 40;
+    if ((iTempInputWindowY + inputWindow->iInputWindowHeight) >  rect.y2) {
+        if (iTempInputWindowY >  rect.y2)
+            iTempInputWindowY =  rect.y2 - inputWindow->iInputWindowHeight - 40;
         else
             iTempInputWindowY = iTempInputWindowY - inputWindow->iInputWindowHeight - 40;
     }

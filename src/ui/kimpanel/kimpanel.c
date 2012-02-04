@@ -15,9 +15,8 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
-#include <iconv.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -37,6 +36,7 @@
 #include "fcitx/hook.h"
 #include "fcitx-utils/utils.h"
 #include "fcitx/candidate.h"
+#include <sys/socket.h>
 
 #define FCITX_KIMPANEL_INTERFACE "org.kde.kimpanel.inputmethod"
 #define FCITX_KIMPANEL_PATH "/kimpanel"
@@ -108,8 +108,8 @@ typedef struct _FcitxKimpanelUI {
     DBusConnection* conn;
     int iOffsetY;
     int iOffsetX;
-    Messages* messageUp;
-    Messages* messageDown;
+    FcitxMessages* messageUp;
+    FcitxMessages* messageDown;
     int iCursorPos;
 } FcitxKimpanelUI;
 
@@ -124,6 +124,7 @@ static void KimpanelOnInputFocus(void *arg);
 static void KimpanelOnInputUnFocus(void *arg);
 static void KimpanelOnTriggerOn(void *arg);
 static void KimpanelOnTriggerOff(void *arg);
+static void KimpanelDestroy(void* arg);
 
 static void KimShowAux(FcitxKimpanelUI* kimpanel, boolean toShow);
 static void KimShowPreedit(FcitxKimpanelUI* kimpanel, boolean toShow);
@@ -144,6 +145,9 @@ static char* Status2String(FcitxUIStatus* status);
 static void KimpanelRegisterAllStatus(FcitxKimpanelUI* kimpanel);
 static void KimpanelSetIMStatus(FcitxKimpanelUI* kimpanel);
 static void KimExecMenu(FcitxKimpanelUI* kimpanel, char *props[], int n);
+static void KimpanelServiceExistCallback(DBusPendingCall *call, void *data);
+
+#define KIMPANEL_BUFFER_SIZE 4096
 
 FCITX_EXPORT_API
 FcitxUI ui = {
@@ -160,6 +164,12 @@ FcitxUI ui = {
     KimpanelOnTriggerOff,
     NULL,
     NULL,
+    NULL,
+    NULL,
+    NULL,
+    KimpanelDestroy,
+    NULL,
+    NULL,
     NULL
 };
 
@@ -168,64 +178,116 @@ int ABI_VERSION = FCITX_ABI_VERSION;
 
 void* KimpanelCreate(FcitxInstance* instance)
 {
-    FcitxKimpanelUI *kimpanel = fcitx_malloc0(sizeof(FcitxKimpanelUI));
+    FcitxKimpanelUI *kimpanel = fcitx_utils_malloc0(sizeof(FcitxKimpanelUI));
     FcitxModuleFunctionArg arg;
 
     kimpanel->iCursorPos = 0;
     kimpanel->owner = instance;
     kimpanel->conn = InvokeFunction(instance, FCITX_DBUS, GETCONNECTION, arg);
 
-    if (kimpanel->conn == NULL) {
-        FcitxLog(ERROR, "DBus Not initialized");
-        free(kimpanel);
-        return NULL;
-    }
-
-    // add a rule to receive signals from kimpanel
     DBusError err;
     dbus_error_init(&err);
-    dbus_bus_add_match(kimpanel->conn,
-                       "type='signal',interface='org.kde.impanel'",
-                       &err);
-    dbus_connection_flush(kimpanel->conn);
-    if (dbus_error_is_set(&err)) {
-        FcitxLog(ERROR, "Match Error (%s)", err.message);
+    do {
+        if (kimpanel->conn == NULL) {
+            FcitxLog(ERROR, "DBus Not initialized");
+            break;
+        }
+
+        // add a rule to receive signals from kimpanel
+        dbus_bus_add_match(kimpanel->conn,
+                           "type='signal',interface='org.kde.impanel'",
+                           &err);
+        dbus_connection_flush(kimpanel->conn);
+        if (dbus_error_is_set(&err)) {
+            FcitxLog(ERROR, "Match Error (%s)", err.message);
+            break;
+        }
+
+        dbus_bus_add_match(kimpanel->conn,
+                           "type='signal',"
+                           "interface='" DBUS_INTERFACE_DBUS "',"
+                           "path='" DBUS_PATH_DBUS "',"
+                           "member='NameOwnerChanged'",
+                           &err);
+
+        dbus_connection_flush(kimpanel->conn);
+        if (dbus_error_is_set(&err)) {
+            FcitxLog(ERROR, "Match Error (%s)", err.message);
+            break;
+        }
+
+        if (!dbus_connection_add_filter(kimpanel->conn, KimpanelDBusFilter, kimpanel, NULL)) {
+            FcitxLog(ERROR, "No memory");
+            break;
+        }
+
+        DBusObjectPathVTable vtable = {NULL, &KimpanelDBusEventHandler, NULL, NULL, NULL, NULL };
+
+        dbus_connection_register_object_path(kimpanel->conn, FCITX_KIMPANEL_PATH, &vtable, kimpanel);
+
+        kimpanel->messageUp = FcitxMessagesNew();
+        kimpanel->messageDown = FcitxMessagesNew();
+
+        FcitxIMEventHook resethk;
+        resethk.arg = kimpanel;
+        resethk.func = KimpanelInputReset;
+        FcitxInstanceRegisterResetInputHook(instance, resethk);
+
+        const char* kimpanelServiceName = "org.kde.impanel";
+        DBusMessage* message = dbus_message_new_method_call(DBUS_SERVICE_DBUS, DBUS_PATH_DBUS, DBUS_INTERFACE_DBUS, "NameHasOwner");
+        dbus_message_append_args(message, DBUS_TYPE_STRING, &kimpanelServiceName, DBUS_TYPE_INVALID);
+        dbus_connection_send(kimpanel->conn, message, NULL);
+
+        DBusPendingCall* call = NULL;
+        dbus_bool_t reply = dbus_connection_send_with_reply(kimpanel->conn, message,
+                            &call,
+                            0);
+        if (reply == TRUE) {
+            dbus_pending_call_set_notify(call,
+                                         KimpanelServiceExistCallback,
+                                         kimpanel,
+                                         NULL);
+        }
+        dbus_connection_flush(kimpanel->conn);
+
+        KimpanelRegisterAllStatus(kimpanel);
         dbus_error_free(&err);
-        free(kimpanel);
-        return NULL;
-    }
+        return kimpanel;
+    } while (0);
 
-    if (!dbus_connection_add_filter(kimpanel->conn, KimpanelDBusFilter, kimpanel, NULL)) {
-        FcitxLog(ERROR, "No memory");
-        dbus_error_free(&err);
-        free(kimpanel);
-        return NULL;
-    }
-
-    DBusObjectPathVTable vtable = {NULL, &KimpanelDBusEventHandler, NULL, NULL, NULL, NULL };
-
-    dbus_connection_register_object_path(kimpanel->conn, FCITX_KIMPANEL_PATH, &vtable, kimpanel);
-
-    kimpanel->messageUp = InitMessages();
-    kimpanel->messageDown = InitMessages();
-
-    FcitxIMEventHook resethk;
-    resethk.arg = kimpanel;
-    resethk.func = KimpanelInputReset;
-    RegisterResetInputHook(instance, resethk);
-
-    KimpanelRegisterAllStatus(kimpanel);
     dbus_error_free(&err);
-    return kimpanel;
+    free(kimpanel);
+    return NULL;
 }
 
 void KimpanelRegisterAllStatus(FcitxKimpanelUI* kimpanel)
 {
     FcitxInstance* instance = kimpanel->owner;
     UT_array* uistats = FcitxInstanceGetUIStats(instance);
-    char **prop = fcitx_malloc0(sizeof(char*) * (2 + utarray_len(uistats)));
+    char **prop = fcitx_utils_malloc0(sizeof(char*) * (2 + utarray_len(uistats)));
     asprintf(&prop[0], "/Fcitx/logo:%s:%s:%s", _("Fcitx"), "fcitx", _("Fcitx"));
-    asprintf(&prop[1], "/Fcitx/im:%s:%s:%s", _("Disabled"), "fcitx-eng", _("Input Method Disabled"));
+    
+    char* icon;
+    char* imname;
+    char* description;
+    if (FcitxInstanceGetCurrentStatev2(instance) == IS_ACTIVE) {
+        FcitxIM* im = FcitxInstanceGetCurrentIM(instance);
+        if (im) {
+            icon = im->strIconName;
+            imname = _(im->strName);
+            description = _(im->strName);
+        } else {
+            icon = "kbd";
+            imname = _("Disabled");
+            description = _("Input Method Disabled");
+        }
+    } else {
+        icon = "kbd";
+        imname = _("Disabled");
+        description = _("Input Method Disabled");
+    }
+    /* add fcitx- prefix */
+    asprintf(&prop[1], "/Fcitx/im:%s:fcitx-%s:%s", imname, icon, description);
 
     int count = 2;
 
@@ -233,6 +295,8 @@ void KimpanelRegisterAllStatus(FcitxKimpanelUI* kimpanel)
     for (status = (FcitxUIStatus *) utarray_front(uistats);
             status != NULL;
             status = (FcitxUIStatus *) utarray_next(uistats, status)) {
+        if (!status->visible)
+            continue;
         prop[count] = Status2String(status);
         count ++;
     }
@@ -252,21 +316,21 @@ void KimpanelSetIMStatus(FcitxKimpanelUI* kimpanel)
     char* icon;
     char* imname;
     char* description;
-    if (GetCurrentState(instance) != IS_ACTIVE) {
-        icon = "eng";
-        imname = _("Disabled");
-        description = _("Input Method Disabled");
-    } else {
-        FcitxIM* im = GetCurrentIM(instance);
+    if (FcitxInstanceGetCurrentStatev2(instance) == IS_ACTIVE) {
+        FcitxIM* im = FcitxInstanceGetCurrentIM(instance);
         if (im) {
             icon = im->strIconName;
             imname = _(im->strName);
             description = _(im->strName);
         } else {
-            icon = "eng";
+            icon = "kbd";
             imname = _("Disabled");
             description = _("Input Method Disabled");
         }
+    } else {
+        icon = "kbd";
+        imname = _("Disabled");
+        description = _("Input Method Disabled");
     }
     /* add fcitx- prefix */
     asprintf(&status, "/Fcitx/im:%s:fcitx-%s:%s", imname, icon, description);
@@ -284,14 +348,14 @@ void KimpanelInputReset(void* arg)
 void KimpanelOnInputFocus(void* arg)
 {
     FcitxKimpanelUI* kimpanel = (FcitxKimpanelUI*) arg;
-    KimEnable(kimpanel, (GetCurrentState(kimpanel->owner) == IS_ACTIVE));
+    KimEnable(kimpanel, (FcitxInstanceGetCurrentStatev2(kimpanel->owner) == IS_ACTIVE));
     KimpanelSetIMStatus(kimpanel);
 }
 
 void KimpanelOnInputUnFocus(void* arg)
 {
     FcitxKimpanelUI* kimpanel = (FcitxKimpanelUI*) arg;
-    KimEnable(kimpanel, (GetCurrentState(kimpanel->owner) == IS_ACTIVE));
+    KimEnable(kimpanel, (FcitxInstanceGetCurrentStatev2(kimpanel->owner) == IS_ACTIVE));
     KimpanelSetIMStatus(kimpanel);
 }
 
@@ -328,8 +392,8 @@ void KimpanelMoveInputWindow(void* arg)
 
     int x = 0, y = 0;
 
-    FcitxInputContext* ic = GetCurrentIC(kimpanel->owner);
-    GetWindowPosition(kimpanel->owner, ic, &x, &y);
+    FcitxInputContext* ic = FcitxInstanceGetCurrentIC(kimpanel->owner);
+    FcitxInstanceGetWindowPosition(kimpanel->owner, ic, &x, &y);
 
     KimUpdateSpotLocation(kimpanel, x, y);
 }
@@ -365,45 +429,46 @@ void KimpanelShowInputWindow(void* arg)
     FcitxKimpanelUI* kimpanel = (FcitxKimpanelUI*) arg;
     FcitxInstance* instance = kimpanel->owner;
     FcitxInputState* input = FcitxInstanceGetInputState(instance);
-    kimpanel->iCursorPos = NewMessageToOldStyleMessage(instance, kimpanel->messageUp, kimpanel->messageDown);
-    Messages* messageDown = kimpanel->messageDown;
-    Messages* messageUp = kimpanel->messageUp;
+    kimpanel->iCursorPos = FcitxUINewMessageToOldStyleMessage(instance, kimpanel->messageUp, kimpanel->messageDown);
+    FcitxMessages* messageDown = kimpanel->messageDown;
+    FcitxMessages* messageUp = kimpanel->messageUp;
     FcitxLog(DEBUG, "KimpanelShowInputWindow");
 
-    int n = GetMessageCount(messageDown);
+    int n = FcitxMessagesGetMessageCount(messageDown);
     int nLabels = 0;
     int nTexts = 0;
     char *label[33];
     char *text[33];
-    char cmb[100] = "";
+    char cmb[KIMPANEL_BUFFER_SIZE] = "";
     int i;
 
     if (n) {
         for (i = 0; i < n; i++) {
-            FcitxLog(DEBUG, "Type: %d Text: %s" , GetMessageType(messageDown, i), GetMessageString(messageDown, i));
+            FcitxLog(DEBUG, "Type: %d Text: %s" , FcitxMessagesGetMessageType(messageDown, i), FcitxMessagesGetMessageString(messageDown, i));
 
-            if (GetMessageType(messageDown, i) == MSG_INDEX) {
+            if (FcitxMessagesGetMessageType(messageDown, i) == MSG_INDEX) {
                 if (nLabels) {
                     text[nTexts++] = strdup(cmb);
                 }
-                char *needfree = ProcessOutputFilter(instance, GetMessageString(messageDown, i));
+                char *needfree = FcitxInstanceProcessOutputFilter(instance, FcitxMessagesGetMessageString(messageDown, i));
                 char *msgstr;
                 if (needfree)
                     msgstr = needfree;
                 else
-                    msgstr = strdup(GetMessageString(messageDown, i));
+                    msgstr = strdup(FcitxMessagesGetMessageString(messageDown, i));
 
                 label[nLabels++] = msgstr;
                 strcpy(cmb, "");
             } else {
-                char *needfree = ProcessOutputFilter(instance, GetMessageString(messageDown, i));
+                char *needfree = FcitxInstanceProcessOutputFilter(instance, FcitxMessagesGetMessageString(messageDown, i));
                 char *msgstr;
                 if (needfree)
                     msgstr = needfree;
                 else
-                    msgstr = GetMessageString(messageDown, i);
-
-                strcat(cmb, msgstr);
+                    msgstr = FcitxMessagesGetMessageString(messageDown, i);
+                
+                if (strlen(cmb) + strlen(msgstr) + 1 < KIMPANEL_BUFFER_SIZE)
+                    strcat(cmb, msgstr);
                 if (needfree)
                     free(needfree);
             }
@@ -427,8 +492,8 @@ void KimpanelShowInputWindow(void* arg)
                                  nLabels,
                                  text,
                                  nTexts,
-                                 CandidateWordHasPrev(FcitxInputStateGetCandidateList(input)),
-                                 CandidateWordHasNext(FcitxInputStateGetCandidateList(input)));
+                                 FcitxCandidateWordHasPrev(FcitxInputStateGetCandidateList(input)),
+                                 FcitxCandidateWordHasNext(FcitxInputStateGetCandidateList(input)));
             KimShowLookupTable(kimpanel, true);
         }
         for (i = 0; i < nTexts; i++)
@@ -441,23 +506,23 @@ void KimpanelShowInputWindow(void* arg)
                              0,
                              NULL,
                              0,
-                             CandidateWordHasPrev(FcitxInputStateGetCandidateList(input)),
-                             CandidateWordHasNext(FcitxInputStateGetCandidateList(input)));
+                             FcitxCandidateWordHasPrev(FcitxInputStateGetCandidateList(input)),
+                             FcitxCandidateWordHasNext(FcitxInputStateGetCandidateList(input)));
         KimShowLookupTable(kimpanel, false);
     }
 
-    n = GetMessageCount(messageUp);
+    n = FcitxMessagesGetMessageCount(messageUp);
     char aux[MESSAGE_MAX_LENGTH] = "";
     char empty[MESSAGE_MAX_LENGTH] = "";
     if (n) {
         for (i = 0; i < n; i++) {
 
-            char *needfree = ProcessOutputFilter(instance, GetMessageString(messageUp, i));
+            char *needfree = FcitxInstanceProcessOutputFilter(instance, FcitxMessagesGetMessageString(messageUp, i));
             char *msgstr;
             if (needfree)
                 msgstr = needfree;
             else
-                msgstr = GetMessageString(messageUp, i);
+                msgstr = FcitxMessagesGetMessageString(messageUp, i);
 
             strcat(aux, msgstr);
             if (needfree)
@@ -486,9 +551,7 @@ void KimpanelShowInputWindow(void* arg)
 void KimpanelUpdateStatus(void* arg, FcitxUIStatus* status)
 {
     FcitxKimpanelUI* kimpanel = (FcitxKimpanelUI*) arg;
-    char *prop = NULL;
-    prop = Status2String(status);
-    KimUpdateProperty(kimpanel, prop);
+    KimpanelRegisterAllStatus(kimpanel);
     return ;
 }
 
@@ -515,85 +578,96 @@ DBusHandlerResult KimpanelDBusFilter(DBusConnection* connection, DBusMessage* ms
     FcitxInputState* input = FcitxInstanceGetInputState(kimpanel->owner);
     int int0;
     const char* s0 = NULL;
-    DBusError error;
-    dbus_error_init(&error);
     if (dbus_message_is_signal(msg, "org.kde.impanel", "MovePreeditCaret")) {
         FcitxLog(DEBUG, "MovePreeditCaret");
+        DBusError error;
+        dbus_error_init(&error);
         dbus_message_get_args(msg, &error, DBUS_TYPE_INT32, &int0 , DBUS_TYPE_INVALID);
+        dbus_error_free(&error);
         return DBUS_HANDLER_RESULT_HANDLED;
     } else if (dbus_message_is_signal(msg, "org.kde.impanel", "SelectCandidate")) {
         FcitxLog(DEBUG, "SelectCandidate: ");
+        DBusError error;
+        dbus_error_init(&error);
         if (dbus_message_get_args(msg, &error, DBUS_TYPE_INT32, &int0 , DBUS_TYPE_INVALID)) {
-            if (GetCurrentState(instance) == IS_ACTIVE && int0 < 10) {
-                struct _CandidateWordList* candList = FcitxInputStateGetCandidateList(input);
-                const char* choose = CandidateWordGetChoose(candList);
-                ProcessKey(kimpanel->owner, FCITX_PRESS_KEY, 0, choose[int0], 0);
+            if (FcitxInstanceGetCurrentStatev2(instance) == IS_ACTIVE && int0 < 10) {
+                INPUT_RETURN_VALUE retVal = FcitxCandidateWordChooseByIndex(FcitxInputStateGetCandidateList(input), int0);
+                FcitxInstanceProcessInputReturnValue(instance, retVal);
             }
         }
+        dbus_error_free(&error);
         return DBUS_HANDLER_RESULT_HANDLED;
     } else if (dbus_message_is_signal(msg, "org.kde.impanel", "LookupTablePageUp")) {
         FcitxLog(DEBUG, "LookupTablePageUp");
-        if (CandidateWordPageCount(FcitxInputStateGetCandidateList(input)) != 0) {
-            CandidateWordGoPrevPage(FcitxInputStateGetCandidateList(input));
-            ProcessInputReturnValue(instance, IRV_DISPLAY_CANDWORDS);
+        if (FcitxCandidateWordPageCount(FcitxInputStateGetCandidateList(input)) != 0) {
+            FcitxCandidateWordGoPrevPage(FcitxInputStateGetCandidateList(input));
+            FcitxInstanceProcessInputReturnValue(instance, IRV_DISPLAY_CANDWORDS);
         }
         return DBUS_HANDLER_RESULT_HANDLED;
     } else if (dbus_message_is_signal(msg, "org.kde.impanel", "LookupTablePageDown")) {
         FcitxLog(DEBUG, "LookupTablePageDown");
-        if (CandidateWordPageCount(FcitxInputStateGetCandidateList(input)) != 0) {
-            CandidateWordGoNextPage(FcitxInputStateGetCandidateList(input));
-            ProcessInputReturnValue(instance, IRV_DISPLAY_CANDWORDS);
+        if (FcitxCandidateWordPageCount(FcitxInputStateGetCandidateList(input)) != 0) {
+            FcitxCandidateWordGoNextPage(FcitxInputStateGetCandidateList(input));
+            FcitxInstanceProcessInputReturnValue(instance, IRV_DISPLAY_CANDWORDS);
         }
         return DBUS_HANDLER_RESULT_HANDLED;
     } else if (dbus_message_is_signal(msg, "org.kde.impanel", "TriggerProperty")) {
         FcitxLog(DEBUG, "TriggerProperty: ");
+        DBusError error;
+        dbus_error_init(&error);
         if (dbus_message_get_args(msg, &error, DBUS_TYPE_STRING, &s0 , DBUS_TYPE_INVALID)) {
             size_t len = strlen("/Fcitx/");
             if (strlen(s0) > len) {
                 s0 += len;
                 if (strcmp("logo", s0) == 0) {
-                    if (GetCurrentState(instance) == IS_CLOSED) {
-                        EnableIM(instance, GetCurrentIC(instance), false);
+                    if (FcitxInstanceGetCurrentState(instance) == IS_CLOSED) {
+                        FcitxInstanceEnableIM(instance, FcitxInstanceGetCurrentIC(instance), false);
                     } else {
-                        CloseIM(instance, GetCurrentIC(instance));
+                        FcitxInstanceCloseIM(instance, FcitxInstanceGetCurrentIC(instance));
                     }
+                } else if (strcmp("keyboard", s0) == 0) {
+                    FcitxInstanceCloseIM(instance, FcitxInstanceGetCurrentIC(instance));
                 } else if (strncmp("im/", s0, strlen("im/")) == 0) {
                     s0 += strlen("im/");
-                    int index = atoi(s0);
-                    SwitchIM(instance, index);
+                    int index = FcitxInstanceGetIMIndexByName(instance, s0);
+                    FcitxInstanceSwitchIM(instance, index);
+                    if (FcitxInstanceGetCurrentState(instance) != IS_ACTIVE) {
+                        FcitxInstanceEnableIM(instance, FcitxInstanceGetCurrentIC(instance), false);
+                    }
                 } else if (strncmp("im", s0, strlen("im")) == 0) {
                     UT_array* imes = FcitxInstanceGetIMEs(instance);
                     FcitxIM* pim;
-                    int index = 0;
-                    size_t len = utarray_len(imes);
-                    char **prop = fcitx_malloc0(len * sizeof(char*));
+                    int index = 1;
+                    size_t len = utarray_len(imes) + 1;
+                    char **prop = fcitx_utils_malloc0(len * sizeof(char*));
+                    asprintf(&prop[0], "/Fcitx/keyboard:%s:fcitx-%s:%s", _("Disabled"), "kbd", _("Input Method Disabled"));
                     for (pim = (FcitxIM *) utarray_front(imes);
                             pim != NULL;
                             pim = (FcitxIM *) utarray_next(imes, pim)) {
-                        asprintf(&prop[index], "/Fcitx/im/%d:%s:fcitx-%s:%s", index, _(pim->strName), pim->strIconName, _(pim->strName));
+                        asprintf(&prop[index], "/Fcitx/im/%s:%s:fcitx-%s:%s", pim->uniqueName, _(pim->strName), pim->strIconName, _(pim->strName));
                         index ++;
                     }
                     KimExecMenu(kimpanel, prop , len);
                     while (len --)
                         free(prop[len]);
                 } else
-                    UpdateStatus(instance, s0);
+                    FcitxUIUpdateStatus(instance, s0);
             }
         }
+        dbus_error_free(&error);
         return DBUS_HANDLER_RESULT_HANDLED;
     } else if (dbus_message_is_signal(msg, "org.kde.impanel", "PanelCreated")) {
         FcitxLog(DEBUG, "PanelCreated");
-
+        FcitxUIResumeFromFallback(instance);
         KimpanelRegisterAllStatus(kimpanel);
         return DBUS_HANDLER_RESULT_HANDLED;
     } else if (dbus_message_is_signal(msg, "org.kde.impanel", "Exit")) {
         FcitxLog(DEBUG, "Exit");
-        KimRegisterProperties(kimpanel, NULL, 0);
-        EndInstance(instance);
+        FcitxInstanceEnd(instance);
         return DBUS_HANDLER_RESULT_HANDLED;
     } else if (dbus_message_is_signal(msg, "org.kde.impanel", "ReloadConfig")) {
         FcitxLog(DEBUG, "ReloadConfig");
-        ReloadConfig(instance);
+        FcitxInstanceReloadConfig(instance);
         return DBUS_HANDLER_RESULT_HANDLED;
     } else if (dbus_message_is_signal(msg, "org.kde.impanel", "Configure")) {
         FcitxLog(DEBUG, "Configure");
@@ -603,6 +677,27 @@ DBusHandlerResult KimpanelDBusFilter(DBusConnection* connection, DBusMessage* ms
             pclose(p);
         else
             FcitxLog(ERROR, _("Unable to create process"));
+        return DBUS_HANDLER_RESULT_HANDLED;
+    } else if (dbus_message_is_signal(msg, DBUS_INTERFACE_DBUS, "NameOwnerChanged")) {
+        const char* service, *oldowner, *newowner;
+        DBusError error;
+        dbus_error_init(&error);
+        if (dbus_message_get_args(msg, &error,
+                                  DBUS_TYPE_STRING, &service ,
+                                  DBUS_TYPE_STRING, &oldowner ,
+                                  DBUS_TYPE_STRING, &newowner ,
+                                  DBUS_TYPE_INVALID)) {
+            /* old die and no new one */
+            if (strcmp(service, "org.kde.impanel") == 0
+                    && strlen(oldowner) > 0
+                    && strlen(newowner) == 0)
+                FcitxUISwitchToFallback(instance);
+            /*
+             * since if new rise, it will send PanelCreated,
+             * So don't need to re-register here
+             */
+        }
+        dbus_error_free(&error);
         return DBUS_HANDLER_RESULT_HANDLED;
     }
 
@@ -1167,7 +1262,7 @@ int CalKimCursorPos(FcitxKimpanelUI *kimpanel)
     size_t             i = 0;
     int             iChar;
     int             iCount = 0;
-    Messages* messageUp = kimpanel->messageUp;
+    FcitxMessages* messageUp = kimpanel->messageUp;
 
     const char      *p1;
     const char      *pivot;
@@ -1175,21 +1270,73 @@ int CalKimCursorPos(FcitxKimpanelUI *kimpanel)
     iChar = kimpanel->iCursorPos;
 
 
-    for (i = 0; i < GetMessageCount(messageUp) ; i++) {
+    for (i = 0; i < FcitxMessagesGetMessageCount(messageUp) ; i++) {
         if (kimpanel->iCursorPos && iChar) {
-            p1 = pivot = GetMessageString(messageUp, i);
+            p1 = pivot = FcitxMessagesGetMessageString(messageUp, i);
             while (*p1 && p1 < pivot + iChar) {
-                p1 = p1 + utf8_char_len(p1);
+                p1 = p1 + fcitx_utf8_char_len(p1);
                 iCount ++;
             }
-            if (strlen(GetMessageString(messageUp, i)) > iChar) {
+            if (strlen(FcitxMessagesGetMessageString(messageUp, i)) > iChar) {
                 iChar = 0;
             } else {
-                iChar -= strlen(GetMessageString(messageUp, i));
+                iChar -= strlen(FcitxMessagesGetMessageString(messageUp, i));
             }
         }
     }
 
     return iCount;
 }
+
+void KimpanelServiceExistCallback(DBusPendingCall *call, void *data)
+{
+    FcitxKimpanelUI* kimpanel = (FcitxKimpanelUI*) data;
+
+    DBusMessage* msg = dbus_pending_call_steal_reply(call);
+
+    if (msg) {
+        dbus_bool_t has;
+        DBusError error;
+        dbus_error_init(&error);
+        dbus_message_get_args(msg, &error, DBUS_TYPE_BOOLEAN, &has , DBUS_TYPE_INVALID);
+        if (!has)
+            FcitxUISwitchToFallback(kimpanel->owner);
+        dbus_message_unref(msg);
+        dbus_error_free(&error);
+    }
+
+    dbus_pending_call_cancel(call);
+    dbus_pending_call_unref(call);
+}
+
+void KimpanelDestroy(void* arg)
+{
+    FcitxKimpanelUI* kimpanel = (FcitxKimpanelUI*) arg;
+    KimpanelCloseInputWindow(kimpanel);
+    KimRegisterProperties(kimpanel, NULL, 0);
+    dbus_connection_unregister_object_path(kimpanel->conn, FCITX_KIMPANEL_PATH);
+    dbus_connection_remove_filter(kimpanel->conn, KimpanelDBusFilter, kimpanel);
+
+    DBusError err;
+    dbus_error_init(&err);
+    dbus_bus_remove_match(kimpanel->conn,
+                          "type='signal',interface='org.kde.impanel'",
+                          &err);
+    dbus_connection_flush(kimpanel->conn);
+
+    dbus_bus_remove_match(kimpanel->conn,
+                        "type='signal',"
+                        "interface='" DBUS_INTERFACE_DBUS "',"
+                        "path='" DBUS_PATH_DBUS "',"
+                        "member='NameOwnerChanged'",
+                        &err);
+
+    dbus_connection_flush(kimpanel->conn);
+    dbus_error_free(&err);
+    
+    free(kimpanel->messageUp);
+    free(kimpanel->messageDown);
+    free(kimpanel);
+}
+
 // kate: indent-mode cstyle; space-indent on; indent-width 0;

@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 /**
@@ -33,6 +33,7 @@
 #include <fcitx-utils/utf8.h>
 #include <fcitx-config/hotkey.h>
 #include <fcitx/ui.h>
+#include <fcitx/addon.h>
 
 #ifdef __cplusplus
 
@@ -40,8 +41,6 @@ extern "C" {
 #endif
 
 #define MAX_CODE_LEN    63
-
-#define MAX_IM_NAME    (8 * UTF8_MAX_LENGTH)
 
 #define MAX_CAND_LEN    127
 #define MAX_TIPS_LEN    9
@@ -58,7 +57,12 @@ extern "C" {
     struct _FcitxInputContext;
     struct _FcitxInstance;
     struct _FcitxAddon;
-    struct _CandidateWordList;
+    struct _FcitxCandidateWordList;
+    
+    typedef enum _FcitxIMAvailableStatus {
+        IMAS_Enable,
+        IMAS_Disable,
+    } FcitxIMAvailableStatus;
 
     typedef enum _KEY_RELEASED {
         KR_OTHER = 0,
@@ -80,6 +84,7 @@ extern "C" {
         IRV_FLAG_PUNC = 1 << 7, /* special */
         IRV_FLAG_DISPLAY_LAST = 1 << 8, /* special */
         IRV_FLAG_DO_PHRASE_TIPS = 1 << 9, /* special */
+        IRV_FLAG_ASYNC = 1 << 10,
         /* compatible */
         IRV_DONOT_PROCESS = IRV_FLAG_FORWARD_KEY,
         IRV_COMMIT_STRING = IRV_FLAG_PENDING_COMMIT_STRING | IRV_FLAG_DO_PHRASE_TIPS,
@@ -92,7 +97,8 @@ extern "C" {
         IRV_DISPLAY_MESSAGE = IRV_FLAG_UPDATE_INPUT_WINDOW,
         IRV_ENG = IRV_FLAG_PENDING_COMMIT_STRING | IRV_FLAG_ENG | IRV_FLAG_RESET_INPUT,
         IRV_PUNC = IRV_FLAG_PENDING_COMMIT_STRING | IRV_FLAG_PUNC | IRV_FLAG_RESET_INPUT,
-        IRV_DISPLAY_LAST = IRV_FLAG_UPDATE_INPUT_WINDOW | IRV_FLAG_DISPLAY_LAST
+        IRV_DISPLAY_LAST = IRV_FLAG_UPDATE_INPUT_WINDOW | IRV_FLAG_DISPLAY_LAST,
+        IRV_ASYNC = IRV_FLAG_ASYNC
     } INPUT_RETURN_VALUE;
 
     /**
@@ -111,6 +117,7 @@ extern "C" {
     typedef boolean(*FcitxIMPhraseTips)(void *arg);
     typedef void (*FcitxIMSave)(void *arg);
     typedef void (*FcitxIMReloadConfig)(void *arg);
+    typedef INPUT_RETURN_VALUE (*FcitxIMKeyBlocker)(void* arg, FcitxKeySym, unsigned int);
 
     /**
      * @brief Fcitx Input method instance
@@ -119,11 +126,11 @@ extern "C" {
         /**
          * @brief The name that can be display on the UI
          **/
-        char               strName[MAX_IM_NAME + 1];
+        char              *strName;
         /**
          * @brief icon name used to find icon
          **/
-        char               strIconName[MAX_IM_NAME + 1];
+        char              *strIconName;
         /**
          * @brief reset im status
          **/
@@ -165,20 +172,30 @@ extern "C" {
          **/
         int iPriority;
         /**
-         * @brief private data for this input method
-         **/
-        void* priv;
-        /**
          * @brief Language Code
          **/
         char langCode[LANGCODE_LENGTH + 1];
-        
+
         /**
          * @brief uniqueName
          **/
-        char uniqueName[MAX_IM_NAME + 1];
+        char *uniqueName;
 
-        int padding[5];
+        /**
+         * @brief input method initialized or not
+         */
+        boolean initialized;
+
+        /**
+         * @brief Fcitx Addon
+         **/
+        FcitxAddon* owner;
+        /**
+         * @brief reload config function
+         **/
+        FcitxIMKeyBlocker KeyBlocker;
+
+        void* padding[10];
     } FcitxIM;
 
     typedef enum _FcitxKeyEventType {
@@ -191,17 +208,7 @@ extern "C" {
      **/
     typedef struct _FcitxInputState FcitxInputState;
 
-    FcitxInputState* CreateFcitxInputState();
-
-    /**
-     * @brief check the key is this hotkey or not
-     *
-     * @param sym keysym
-     * @param state key state
-     * @param hotkey hotkey
-     * @return boolean
-     **/
-    boolean IsHotKey(FcitxKeySym sym, int state, HOTKEYS * hotkey);
+    FcitxInputState* FcitxInputStateCreate();
 
     /**
      * @brief the string pending commit
@@ -209,7 +216,7 @@ extern "C" {
      * @param input input state
      * @return char*
      **/
-    char* GetOutputString(FcitxInputState* input);
+    char* FcitxInputStateGetOutputString(FcitxInputState* input);
 
     /**
      * @brief get current input method
@@ -217,7 +224,7 @@ extern "C" {
      * @param instance fcitx instance
      * @return _FcitxIM*
      **/
-    struct _FcitxIM* GetCurrentIM(struct _FcitxInstance *instance);
+    struct _FcitxIM* FcitxInstanceGetCurrentIM(struct _FcitxInstance *instance);
 
     /**
      * @brief enable im
@@ -227,7 +234,7 @@ extern "C" {
      * @param keepState keep current state or not
      * @return void
      **/
-    void EnableIM(struct _FcitxInstance* instance, struct _FcitxInputContext* ic, boolean keepState);
+    void FcitxInstanceEnableIM(struct _FcitxInstance* instance, struct _FcitxInputContext* ic, boolean keepState);
 
     /**
      * @brief End Input
@@ -236,7 +243,7 @@ extern "C" {
      * @param ic input context
      * @return void
      **/
-    void CloseIM(struct _FcitxInstance* instance, struct _FcitxInputContext* ic);
+    void FcitxInstanceCloseIM(struct _FcitxInstance* instance, struct _FcitxInputContext* ic);
 
     /**
      * @brief Change im state between IS_ACTIVE and IS_ENG
@@ -245,7 +252,7 @@ extern "C" {
      * @param ic input context
      * @return void
      **/
-    void ChangeIMState(struct _FcitxInstance* instance, struct _FcitxInputContext* ic);
+    void FcitxInstanceChangeIMState(struct _FcitxInstance* instance, struct _FcitxInputContext* ic);
 
     /**
      * @brief reset input state
@@ -253,7 +260,7 @@ extern "C" {
      * @param instance fcitx instance
      * @return void
      **/
-    void ResetInput(struct _FcitxInstance* instance);
+    void FcitxInstanceResetInput(struct _FcitxInstance* instance);
 
     /**
      * @brief clean whole input window
@@ -261,7 +268,7 @@ extern "C" {
      * @param instance fcitx instance
      * @return void
      **/
-    void CleanInputWindow(struct _FcitxInstance *instance);
+    void FcitxInstanceCleanInputWindow(struct _FcitxInstance *instance);
 
     /**
      * @brief clean preedit string and aux up
@@ -269,7 +276,7 @@ extern "C" {
      * @param instance fcitx instance
      * @return void
      **/
-    void CleanInputWindowUp(struct _FcitxInstance *instance);
+    void FcitxInstanceCleanInputWindowUp(struct _FcitxInstance *instance);
 
     /**
      * @brief clean candidate word list and aux down
@@ -277,7 +284,7 @@ extern "C" {
      * @param instance fcitx instance
      * @return void
      **/
-    void CleanInputWindowDown(struct _FcitxInstance *instance);
+    void FcitxInstanceCleanInputWindowDown(struct _FcitxInstance *instance);
 
     /**
      * @brief Sometimes, we use INPUT_RETURN_VALUE not from ProcessKey, so use this function to do the correct thing.
@@ -286,7 +293,7 @@ extern "C" {
      * @param retVal input return val
      * @return void
      **/
-    void ProcessInputReturnValue(
+    void FcitxInstanceProcessInputReturnValue(
         struct _FcitxInstance* instance,
         INPUT_RETURN_VALUE retVal
     );
@@ -307,44 +314,11 @@ extern "C" {
      * @param ReloadConfig reload config callback
      * @param priv private data for this input method.
      * @param priority order of this input method
-     * @return void
-     **/
-    void FcitxRegisterIM(struct _FcitxInstance *instance,
-                         void *addonInstance,
-                         const char* name,
-                         const char* iconName,
-                         FcitxIMInit Init,
-                         FcitxIMResetIM ResetIM,
-                         FcitxIMDoInput DoInput,
-                         FcitxIMGetCandWords GetCandWords,
-                         FcitxIMPhraseTips PhraseTips,
-                         FcitxIMSave Save,
-                         FcitxIMReloadConfig ReloadConfig,
-                         void *priv,
-                         int priority
-                        );
-
-    /**
-     * @brief register a new input method
-     *
-     * @param instance fcitx instance
-     * @param addonInstance instance of addon
-     * @param name input method name
-     * @param iconName icon name
-     * @param Init init callback
-     * @param ResetIM reset callback
-     * @param DoInput do input callback
-     * @param GetCandWords get candidate words callback
-     * @param PhraseTips phrase tips callback
-     * @param Save save callback
-     * @param ReloadConfig reload config callback
-     * @param priv private data for this input method.
-     * @param priority order of this input method
      * @param langCode language code for this input method
      * @return void
      **/
-    void FcitxRegisterIMv2(struct _FcitxInstance *instance,
-                           void *addonInstance,
+    void FcitxInstanceRegisterIM(struct _FcitxInstance *instance,
+                           void *imclass,
                            const char* uniqueName,
                            const char* name,
                            const char* iconName,
@@ -355,11 +329,10 @@ extern "C" {
                            FcitxIMPhraseTips PhraseTips,
                            FcitxIMSave Save,
                            FcitxIMReloadConfig ReloadConfig,
-                           void *priv,
+                           FcitxIMKeyBlocker KeyBlocker,
                            int priority,
                            const char *langCode
                           );
-
     /**
      * @brief process a key event, should only used by frontend
      *
@@ -370,7 +343,16 @@ extern "C" {
      * @param state key state
      * @return INPUT_RETURN_VALUE
      **/
-    INPUT_RETURN_VALUE ProcessKey(struct _FcitxInstance* instance, FcitxKeyEventType event, long unsigned int timestamp, FcitxKeySym sym, unsigned int state);
+    INPUT_RETURN_VALUE FcitxInstanceProcessKey(struct _FcitxInstance* instance, FcitxKeyEventType event, long unsigned int timestamp, FcitxKeySym sym, unsigned int state);
+
+    FCITX_EXPORT_API
+    INPUT_RETURN_VALUE FcitxInstanceDoInputCallback(
+        struct _FcitxInstance* instance,
+        INPUT_RETURN_VALUE retVal,
+        FcitxKeyEventType event,
+        long unsigned int timestamp,
+        FcitxKeySym sym,
+        unsigned int state);
 
     /**
      * @brief send a new key event to client
@@ -382,7 +364,7 @@ extern "C" {
      * @param state key state
      * @return void
      **/
-    void ForwardKey(struct _FcitxInstance* instance, struct _FcitxInputContext* ic, FcitxKeyEventType event, FcitxKeySym sym, unsigned int state);
+    void FcitxInstanceForwardKey(struct _FcitxInstance* instance, struct _FcitxInputContext* ic, FcitxKeyEventType event, FcitxKeySym sym, unsigned int state);
 
     /**
      * @brief save all input method data
@@ -390,7 +372,7 @@ extern "C" {
      * @param instance fcitx instance
      * @return void
      **/
-    void SaveAllIM(struct _FcitxInstance* instance);
+    void FcitxInstanceSaveAllIM(struct _FcitxInstance* instance);
 
     /**
      * @brief reload all config
@@ -398,7 +380,7 @@ extern "C" {
      * @param instance fcitx instance
      * @return void
      **/
-    void ReloadConfig(struct _FcitxInstance* instance);
+    void FcitxInstanceReloadConfig(struct _FcitxInstance* instance);
 
     /**
      * @brief switch to input method by index
@@ -407,7 +389,7 @@ extern "C" {
      * @param index input method index
      * @return void
      **/
-    void SwitchIM(struct _FcitxInstance* instance, int index);
+    void FcitxInstanceSwitchIM(struct _FcitxInstance* instance, int index);
 
     /**
      * @brief check is choose key or not, if so, return the choose index
@@ -417,9 +399,31 @@ extern "C" {
      * @param strChoose choose key string
      * @return int
      **/
-    int CheckChooseKey(FcitxKeySym sym, int state, const char* strChoose);
+    int FcitxHotkeyCheckChooseKey(FcitxKeySym sym, int state, const char* strChoose);
 
-    struct _CandidateWordList* FcitxInputStateGetCandidateList(FcitxInputState* input);
+    /**
+     * @brief check is choose key or not, if so, return the choose index
+     *
+     * @param sym keysym
+     * @param state keystate
+     * @param strChoose choose key string
+     * @param candState candidate keystate
+     * @return int
+     **/
+    int FcitxHotkeyCheckChooseKeyAndModifier(FcitxKeySym sym, int state, const char* strChoose, int candState);
+    
+    /**
+     * @brief get im index by im name
+     *
+     * @param instance fcitx instance
+     * @param imName im name
+     * @return int im index
+     * 
+     * @since 4.2
+     **/
+    int FcitxInstanceGetIMIndexByName(struct _FcitxInstance* instance, const char* imName);
+
+    struct _FcitxCandidateWordList* FcitxInputStateGetCandidateList(FcitxInputState* input);
 
     boolean FcitxInputStateGetIsInRemind(FcitxInputState* input);
 
@@ -439,13 +443,13 @@ extern "C" {
 
     void FcitxInputStateSetClientCursorPos(FcitxInputState* input, int cursorPos);
 
-    Messages* FcitxInputStateGetAuxUp(FcitxInputState* input);
+    FcitxMessages* FcitxInputStateGetAuxUp(FcitxInputState* input);
 
-    Messages* FcitxInputStateGetAuxDown(FcitxInputState* input);
+    FcitxMessages* FcitxInputStateGetAuxDown(FcitxInputState* input);
 
-    Messages* FcitxInputStateGetPreedit(FcitxInputState* input);
+    FcitxMessages* FcitxInputStateGetPreedit(FcitxInputState* input);
 
-    Messages* FcitxInputStateGetClientPreedit(FcitxInputState* input);
+    FcitxMessages* FcitxInputStateGetClientPreedit(FcitxInputState* input);
 
     int FcitxInputStateGetRawInputBufferSize(FcitxInputState* input);
 
@@ -461,9 +465,9 @@ extern "C" {
 
     void FcitxInputStateSetKeyReleased(FcitxInputState* input, KEY_RELEASED keyReleased);
 
-    FcitxIM* GetIMFromIMList(UT_array* imes, const char* name);
-    
-    void UpdateIMList(struct _FcitxInstance* instance);
+    FcitxIM* FcitxInstanceGetIMFromIMList(struct _FcitxInstance* instance, FcitxIMAvailableStatus imas, const char* name);
+
+    void FcitxInstanceUpdateIMList(struct _FcitxInstance* instance);
 
 #ifdef __cplusplus
 }

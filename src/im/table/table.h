@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 #ifndef _TABLE_H
 #define _TABLE_H
@@ -60,11 +60,11 @@ typedef struct _FcitxTableState {
     char            strTableRemindSource[PHRASE_MAX_LENGTH * UTF8_MAX_LENGTH + 1];
 
     boolean            bIsTableDelPhrase;
-    HOTKEYS         hkTableDelPhrase[HOT_KEY_COUNT];
+    FcitxHotkey         hkTableDelPhrase[HOT_KEY_COUNT];
     boolean            bIsTableAdjustOrder;
-    HOTKEYS         hkTableAdjustOrder[HOT_KEY_COUNT];
+    FcitxHotkey         hkTableAdjustOrder[HOT_KEY_COUNT];
     boolean            bIsTableAddPhrase;
-    HOTKEYS         hkTableAddPhrase[HOT_KEY_COUNT];
+    FcitxHotkey         hkTableAddPhrase[HOT_KEY_COUNT];
 
     char            iTableNewPhraseHZCount;
 
@@ -75,36 +75,35 @@ typedef struct _FcitxTableState {
 
     struct _FcitxInstance* owner;
     struct _FcitxAddon* pyaddon;
-    CandidateWordCommitCallback pygetcandword;
+    FcitxCandidateWordCommitCallback pygetcandword;
 } FcitxTableState;
 
 void            LoadTableInfo(FcitxTableState* tbl);
 boolean TableInit(void* arg);
-void            FreeTableIM(FcitxTableState* tbl, char i);
 void            SaveTableIM(void* arg);
 
 INPUT_RETURN_VALUE DoTableInput(void* arg, FcitxKeySym sym, unsigned int state);
 INPUT_RETURN_VALUE TableGetCandWords(void* arg);
 void TableAddCandWord(RECORD * record, TABLECANDWORD* tableCandWord);
-void            TableAddAutoCandWord(FcitxTableState* tbl, short int which, TABLECANDWORD* tableCandWord);
-INPUT_RETURN_VALUE TableGetRemindCandWords(FcitxTableState* tbl);
+void            TableAddAutoCandWord(TableMetaData* table, short int which, TABLECANDWORD* tableCandWord);
+INPUT_RETURN_VALUE TableGetRemindCandWords(TableMetaData* table);
 void TableAddRemindCandWord(RECORD * record, TABLECANDWORD* tableCandWord);
-INPUT_RETURN_VALUE TableGetFHCandWords(FcitxTableState* tbl);
-INPUT_RETURN_VALUE TableGetPinyinCandWords(FcitxTableState* tbl);
+INPUT_RETURN_VALUE TableGetFHCandWords(TableMetaData* table);
+INPUT_RETURN_VALUE TableGetPinyinCandWords(TableMetaData* table);
 void            TableResetStatus(void* arg);
 INPUT_RETURN_VALUE TableGetRemindCandWord(void* arg, TABLECANDWORD* tableCandWord);
-INPUT_RETURN_VALUE TableGetFHCandWord(FcitxTableState* tbl, TABLECANDWORD* tableCandWord);
-void TableAdjustOrderByIndex(FcitxTableState* tbl, TABLECANDWORD* tableCandWord);
-void            TableDelPhraseByIndex(FcitxTableState* tbl, TABLECANDWORD* tableCandWord);
-void            TableCreateNewPhrase(FcitxTableState* tbl);
-INPUT_RETURN_VALUE _TableGetCandWord(FcitxTableState* tbl, TABLECANDWORD* tableCandWord, boolean _bRemind);
-INPUT_RETURN_VALUE TableGetCandWord(void* arg, CandidateWord* candWord);
+INPUT_RETURN_VALUE TableGetFHCandWord(TableMetaData* table, TABLECANDWORD* tableCandWord);
+void TableAdjustOrderByIndex(TableMetaData* table, TABLECANDWORD* tableCandWord);
+void            TableDelPhraseByIndex(TableMetaData* table, TABLECANDWORD* tableCandWord);
+void            TableCreateNewPhrase(TableMetaData* table);
+INPUT_RETURN_VALUE _TableGetCandWord(TableMetaData* table, TABLECANDWORD* tableCandWord, boolean _bRemind);
+INPUT_RETURN_VALUE TableGetCandWord(void* arg, FcitxCandidateWord* candWord);
 boolean            TablePhraseTips(void* arg);
-void            TableSetCandWordsFlag(FcitxTableState* tbl, int iCount, boolean flag);
+void            TableSetCandWordsFlag(TableMetaData* table, int iCount, boolean flag);
 
-void            UpdateHZLastInput(FcitxTableState* tbl, char* str);
+void            UpdateHZLastInput(TableMetaData* table, char* str);
 
-ConfigFileDesc *GetTableConfigDesc();
+FcitxConfigFileDesc *GetTableConfigDesc();
 
 #endif
 

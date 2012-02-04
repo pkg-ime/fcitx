@@ -186,6 +186,12 @@ typedef struct {
         }                                                                           \
         (a)->i -= (len);                                                            \
     } while(0)
+    
+#define utarray_remove_quick(a,pos) do {                                         \
+        if ((a)->i - 1 != (pos))                                                 \
+            memcpy( _utarray_eltptr(a,pos), _utarray_eltptr(a,(a)->i-1), (a)->icd->sz); \
+        (a)->i --;                                                           \
+    } while(0)
 
 #define utarray_clear(a) do {                                                 \
         if ((a)->i > 0) {                                                           \
@@ -233,7 +239,7 @@ static void utarray_str_dtor(void *elt)
 static const UT_icd ut_str_icd _UNUSED_ = {sizeof(char*), NULL, utarray_str_cpy, utarray_str_dtor};
 static const UT_icd ut_int_icd _UNUSED_ = {sizeof(int), NULL, NULL, NULL};
 
-#define utarray_custom_bsearch(key, a, acc, cmp) custom_bsearch((key), (a)->d, (a)->i, (a)->icd->sz, (acc), cmp )
+#define utarray_custom_bsearch(key, a, acc, cmp) fcitx_utils_custom_bsearch((key), (a)->d, (a)->i, (a)->icd->sz, (acc), cmp )
 
 #endif /* UTARRAY_H */
 

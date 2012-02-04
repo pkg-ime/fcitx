@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 /**
  * @file   instance-internal.h
@@ -25,12 +25,29 @@
 #ifndef _FCITX_INSTANCE_INTERNAL_H_
 #define _FCITX_INSTANCE_INTERNAL_H_
 
+#include <sys/stat.h>
+#include <pthread.h>
 #include <semaphore.h>
 
 #include "fcitx-utils/utarray.h"
+#include "ui-internal.h"
 #include "configfile.h"
 #include "profile.h"
 #include "addon.h"
+#include "context.h"
+
+#define FCITX_KEY_EVENT_QUEUE_LENGTH 64
+
+typedef struct _FcitxKeyEventQueue {
+    uint32_t cur;
+    
+    uint32_t tail;
+    
+    uint64_t sequenceId;
+    
+    /* too long key event doesn't make sense */
+    FcitxKeyEvent queue[FCITX_KEY_EVENT_QUEUE_LENGTH];
+} FcitxKeyEventQueue;
 
 struct _FcitxInstance {
     pthread_mutex_t fcitxMutex;
@@ -45,7 +62,7 @@ struct _FcitxInstance {
     boolean readonlyMode;
 
     /* config file */
-    FcitxConfig* config;
+    FcitxGlobalConfig* config;
     FcitxProfile* profile;
     UT_array addons;
     UT_array imeclasses;
@@ -73,10 +90,11 @@ struct _FcitxInstance {
     struct _HookStack* hookInputUnFocusHook;
     struct _HookStack* hookUpdateCandidateWordHook;
     struct _HookStack* hookUpdateIMListHook;
+    struct _HookStack* hookCommitFilter;
 
     FcitxUIFlag uiflag;
 
-    IME_STATE globalState;
+    FcitxContextState globalState;
 
     time_t totaltime;
     time_t timeStart;
@@ -88,8 +106,17 @@ struct _FcitxInstance {
 
     boolean imLoaded;
 
-    /* gives more padding, since we want to break abi */
-    int padding[62];
+    FcitxAddon* uifallback;
+
+    FcitxAddon* uinormal;
+    
+    FcitxKeyEventQueue eventQueue;
+    
+    FcitxContext* context;
+    
+    boolean tryReplace;
+    
+    int lastIMIndex;
 };
 
 #endif

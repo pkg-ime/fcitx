@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 /**
  * @file   utils.c
@@ -36,6 +36,7 @@
 #include <limits.h>
 #include <libgen.h>
 #include <ctype.h>
+#include <stdarg.h>
 
 #include "config.h"
 #include "fcitx/fcitx.h"
@@ -51,7 +52,7 @@
 #endif
 
 FCITX_EXPORT_API
-int CalculateRecordNumber(FILE * fpDict)
+int fcitx_utils_calculate_record_number(FILE* fpDict)
 {
     char           *strBuf = NULL;
     size_t          bufLen = 0;
@@ -69,9 +70,9 @@ int CalculateRecordNumber(FILE * fpDict)
 }
 
 FCITX_EXPORT_API
-void *custom_bsearch(const void *key, const void *base,
-                     size_t nmemb, size_t size, int accurate,
-                     int (*compar)(const void *, const void *))
+void *fcitx_utils_custom_bsearch(const void *key, const void *base,
+                                 size_t nmemb, size_t size, int accurate,
+                                 int (*compar)(const void *, const void *))
 {
     if (accurate)
         return bsearch(key, base, nmemb, size, compar);
@@ -100,7 +101,7 @@ void *custom_bsearch(const void *key, const void *base,
 }
 
 FCITX_EXPORT_API
-void InitAsDaemon()
+void fcitx_utils_init_as_daemon()
 {
     pid_t pid;
     if ((pid = fork()) > 0) {
@@ -123,20 +124,29 @@ void InitAsDaemon()
 }
 
 FCITX_EXPORT_API
-UT_array* SplitString(const char *str, char delm)
+UT_array* fcitx_utils_new_string_list()
+{
+    UT_array* array;
+    utarray_new(array, &ut_str_icd);
+    return array;
+}
+
+FCITX_EXPORT_API
+UT_array* fcitx_utils_split_string(const char* str, char delm)
 {
     UT_array* array;
     utarray_new(array, &ut_str_icd);
     char *bakstr = strdup(str);
     size_t len = strlen(bakstr);
     size_t i = 0, last = 0;
-    for (i = 0 ; i <= len ; i++) {
-        if (bakstr[i] == delm || bakstr[i] == '\0') {
-            bakstr[i] = '\0';
-            char *p = &bakstr[last];
-            if (strlen(p) > 0)
+    if (len) {
+        for (i = 0 ; i <= len ; i++) {
+            if (bakstr[i] == delm || bakstr[i] == '\0') {
+                bakstr[i] = '\0';
+                char *p = &bakstr[last];
                 utarray_push_back(array, &p);
-            last = i + 1;
+                last = i + 1;
+            }
         }
     }
     free(bakstr);
@@ -144,13 +154,71 @@ UT_array* SplitString(const char *str, char delm)
 }
 
 FCITX_EXPORT_API
-void FreeStringList(UT_array *list)
+void fcitx_utils_string_list_printf_append(UT_array* list, const char* fmt,...)
+{
+    char* buffer;
+    va_list ap;
+    va_start(ap, fmt);
+    vasprintf(&buffer, fmt, ap);
+    va_end(ap);
+    utarray_push_back(list, &buffer);
+    free(buffer);
+}
+
+FCITX_EXPORT_API
+char* fcitx_utils_join_string_list(UT_array* list, char delm)
+{
+    if (!list)
+        return NULL;
+    
+    if (utarray_len(list) == 0)
+        return strdup("");
+    
+    size_t len = 0;
+    char** str;
+    for (str = (char**) utarray_front(list);
+         str != NULL;
+         str = (char**) utarray_next(list, str))
+    {
+        len += strlen(*str) + 1;
+    }
+    
+    char* result = (char*) fcitx_utils_malloc0(sizeof(char) * len);
+    char* p = result;
+    for (str = (char**) utarray_front(list);
+         str != NULL;
+         str = (char**) utarray_next(list, str))
+    {
+        size_t strl = strlen(*str);
+        strcpy(p, *str);
+        p[strl] = delm;
+        p += strl + 1;
+    }
+    result[len - 1] = '\0';
+    
+    return result;
+}
+
+FCITX_EXPORT_API
+void fcitx_utils_free_string_list(UT_array* list)
 {
     utarray_free(list);
 }
 
 FCITX_EXPORT_API
-void *fcitx_malloc0(size_t bytes)
+void fcitx_utils_free_string_hash_set(FcitxStringHashSet* sset)
+{
+    FcitxStringHashSet *curStr;
+    while (sset) {
+        curStr = sset;
+        HASH_DEL(sset, curStr);
+        free(curStr->name);
+        free(curStr);
+    }
+}
+
+FCITX_EXPORT_API
+void* fcitx_utils_malloc0(size_t bytes)
 {
     void *p = malloc(bytes);
     if (!p)
@@ -161,26 +229,28 @@ void *fcitx_malloc0(size_t bytes)
 }
 
 FCITX_EXPORT_API
-char *fcitx_trim(char *s)
+char* fcitx_utils_trim(const char* s)
 {
-    register char *end;
-    register char csave;
+    register const char *end;
 
     while (isspace(*s))                 /* skip leading space */
         ++s;
-    end = strchr(s, '\0') - 1;
+    end = s + (strlen(s) - 1);
     while (end >= s && isspace(*end))               /* skip trailing space */
         --end;
 
-    csave = end[1];
-    end[1] = '\0';
-    s = strdup(s);
-    end[1] = csave;
-    return (s);
+    end++;
+
+    size_t len = end - s;
+
+    char* result = fcitx_utils_malloc0(len + 1);
+    memcpy(result, s, len);
+    result[len] = '\0';
+    return result;
 }
 
 FCITX_EXPORT_API
-int FcitxGetDisplayNumber()
+int fcitx_utils_get_display_number()
 {
     int displayNumber = 0;
     char* display = getenv("DISPLAY"), *strDisplayNumber = NULL;
@@ -199,8 +269,9 @@ int FcitxGetDisplayNumber()
         if (*p == '.') {
             *p = '\0';
         }
-
-        sscanf(strDisplayNumber, "%d", &displayNumber);
+        
+        if (strDisplayNumber)
+            sscanf(strDisplayNumber, "%d", &displayNumber);
 
         free(display);
     }
@@ -208,13 +279,38 @@ int FcitxGetDisplayNumber()
 }
 
 FCITX_EXPORT_API
-char* fcitx_get_process_name()
+char* fcitx_utils_get_current_langcode()
+{
+    /* language[_territory][.codeset][@modifier]" or "C" */
+    const char* p;
+    p = getenv("LC_CTYPE");
+    if (!p) {
+        p = getenv("LC_ALL");
+        if (!p)
+            p = getenv("LANG");
+    }
+    if (p) {
+        char* result = strdup(p);
+        char* m;
+        m = strchr(result, '.');
+        if (m) *m = '\0';
+        
+        m = strchr(result, '@');
+        if (m) *m= '\0';
+        return result;
+    }
+    return strdup("C");
+}
+
+FCITX_EXPORT_API
+char* fcitx_utils_get_process_name()
 {
 #if defined(__linux__)
-    char buf[PATH_MAX + 1];
+    const size_t bufsize = 4096;
+    char buf[bufsize];
     char *result = NULL;
     ssize_t len;
-    if ((len = readlink("/proc/self/exe", buf, PATH_MAX)) != -1) {
+    if ((len = readlink("/proc/self/exe", buf, bufsize)) != -1) {
         buf[len] = '\0';
         result = basename(buf);
     } else {
@@ -222,7 +318,7 @@ char* fcitx_get_process_name()
         result = buf;
     }
 
-    return fcitx_trim(result);
+    return fcitx_utils_trim(result);
 #elif defined(LIBKVM_FOUND)
     kvm_t *vm = kvm_open(0, "/dev/null", 0, O_RDONLY, NULL);
     if (vm == 0)

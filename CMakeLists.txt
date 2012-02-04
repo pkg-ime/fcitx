@@ -2,9 +2,9 @@ cmake_minimum_required (VERSION 2.6)
 
 project(fcitx)
 
-set(version 4.1.2)
+set(version 4.2.0)
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 option(ENABLE_CAIRO "Enable Cairo" ON)
 option(ENABLE_DBUS "Enable DBus Support" ON)
@@ -92,6 +92,11 @@ if (ENABLE_OPENCC)
     endif (OPENCC_FOUND)
 endif (ENABLE_OPENCC)
 
+set(HAVE_XINERAMA 0)
+if (X11_Xinerama_FOUND)
+    set(HAVE_XINERAMA 1)
+endif (X11_Xinerama_FOUND)
+
 if(ENABLE_DEBUG)
     set(_DEBUG)
 endif(ENABLE_DEBUG)
@@ -110,6 +115,7 @@ set(addondir ${libdir}/${package} )
 set(pkgdatadir ${prefix}/share/${package})
 set(configdescdir ${pkgdatadir}/configdesc)
 set(addonconfigdir ${pkgdatadir}/addon)
+set(imconfigdir ${pkgdatadir}/inputmethod)
 set(localedir ${CMAKE_INSTALL_PREFIX}/share/locale)
 set(includedir  ${CMAKE_INSTALL_PREFIX}/include)
 
@@ -125,6 +131,7 @@ endif("${isSystemDir}" STREQUAL "-1")
 set(FCITX4_ADDON_INSTALL_DIR ${addondir})
 set(FCITX4_CONFIGDESC_INSTALL_DIR ${configdescdir})
 set(FCITX4_ADDON_CONFIG_INSTALL_DIR ${addonconfigdir})
+set(FCITX4_INPUTMETHOD_CONFIG_INSTALL_DIR ${imconfigdir})
 set(FCITX4_PACKAGE_NAME ${package})
 
 set(CMAKE_C_FLAGS "-Wall -Wextra -Wno-sign-compare -Wno-unused-parameter -fvisibility=hidden ${CMAKE_C_FLAGS}")

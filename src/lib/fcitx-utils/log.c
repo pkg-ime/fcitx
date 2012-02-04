@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 #include <iconv.h>
@@ -78,9 +78,9 @@ void FcitxLogFunc(ErrorLevel e, const char* filename, const int line, const char
         size_t len = strlen(buffer);
         wchar_t *wmessage;
         size_t wlen = (len + 1) * sizeof(wchar_t);
-        wmessage = (wchar_t *) fcitx_malloc0((len + 1) * sizeof(wchar_t));
+        wmessage = (wchar_t *) fcitx_utils_malloc0((len + 1) * sizeof(wchar_t));
 
-        char *inp = buffer;
+        IconvStr inp = buffer;
         char *outp = (char*) wmessage;
 
         iconv(iconvW, &inp, &len, &outp, &wlen);

@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 /**
@@ -38,7 +38,7 @@ extern "C" {
     /**
      * @brief Addon Category Definition
      **/
-    typedef enum _AddonCategory {
+    typedef enum _FcitxAddonCategory {
         /**
          * @brief Input method
          **/
@@ -55,26 +55,35 @@ extern "C" {
          * @brief User Interface, only one of it can be enabled currently.
          **/
         AC_UI
-    } AddonCategory;
+    } FcitxAddonCategory;
 
     /**
      * @brief Supported Addon Type, Currently only sharedlibrary
      **/
-    typedef enum _AddonType {
+    typedef enum _FcitxAddonType {
         AT_SHAREDLIBRARY = 0
-    } AddonType;
+    } FcitxAddonType;
+
+    /**
+     * @brief How addon get input method list
+     **/
+    typedef enum _IMRegisterMethod {
+        IMRM_SELF,
+        IMRM_EXEC,
+        IMRM_CONFIGFILE
+    } IMRegisterMethod;
 
     /**
      * @brief Addon Instance in Fcitx
      **/
     typedef struct _FcitxAddon {
-        GenericConfig config;
+        FcitxGenericConfig config;
         char *name;
         char *generalname;
         char *comment;
         boolean bEnabled;
-        AddonCategory category;
-        AddonType type;
+        FcitxAddonCategory category;
+        FcitxAddonType type;
         char *library;
         char *depend;
         int priority;
@@ -87,6 +96,13 @@ extern "C" {
         };
         void *addonInstance;
         UT_array functionList;
+
+        IMRegisterMethod registerMethod;
+        char* registerArgument;
+        char* uifallback;
+        struct _FcitxInstance* owner;
+
+        void* padding[9];
     } FcitxAddon;
 
     /**
@@ -94,28 +110,28 @@ extern "C" {
      *
      * @return void
      **/
-    void InitFcitxAddons(UT_array* addons);
+    void FcitxAddonsInit(UT_array* addons);
 
     /**
      * @brief Free one addon info
      *
      * @param v addon info
      */
-    void FreeAddon(void *v);
+    void FcitxAddonFree(void *v);
 
     /**
      * @brief Load all addon of fcitx during initialize
      *
      * @return void
      **/
-    void LoadAddonInfo(UT_array* addons);
+    void FcitxAddonsLoad(UT_array* addons);
 
     /**
      * @brief Resolve addon dependency, in order to make every addon works
      *
      * @return void
      **/
-    void AddonResolveDependency(struct _FcitxInstance* instance);
+    void FcitxInstanceResolveAddonDependency(struct _FcitxInstance* instance);
 
     /**
      * @brief Check whether an addon is enabled or not by addon name
@@ -124,7 +140,7 @@ extern "C" {
      * @param name addon name
      * @return boolean
      **/
-    boolean AddonIsAvailable(UT_array* addons, const char* name);
+    boolean FcitxAddonsIsAddonAvailable(UT_array* addons, const char* name);
 
     /**
      * @brief Get addon instance by addon name
@@ -133,14 +149,14 @@ extern "C" {
      * @param name addon name
      * @return FcitxAddon*
      **/
-    FcitxAddon* GetAddonByName(UT_array* addons, const char* name);
+    FcitxAddon* FcitxAddonsGetAddonByName(UT_array* addons, const char* name);
 
     /**
      * @brief Load addon.desc file
      *
-     * @return ConfigFileDesc*
+     * @return FcitxConfigFileDesc*
      **/
-    ConfigFileDesc* GetAddonConfigDesc();
+    FcitxConfigFileDesc* FcitxAddonGetConfigDesc();
 
 #ifdef __cplusplus
 }

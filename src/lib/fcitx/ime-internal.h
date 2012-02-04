@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 /**
  * @file   ime-internal.h
@@ -54,14 +54,26 @@ struct _FcitxInputState {
     boolean dummy3;
 
     /* the ui message part, if there is something in it, then it will be shown */
-    struct _CandidateWordList* candList;
-    Messages* msgPreedit;
-    Messages* msgAuxUp;
-    Messages* msgAuxDown;
-    Messages* msgClientPreedit;
+    struct _FcitxCandidateWordList* candList;
+    FcitxMessages* msgPreedit;
+    FcitxMessages* msgAuxUp;
+    FcitxMessages* msgAuxDown;
+    FcitxMessages* msgClientPreedit;
 
     int padding[63];
 };
+
+struct _FcitxIMEntry {
+    FcitxGenericConfig config;
+    char* uniqueName;
+    char* name;
+    char* iconName;
+    int priority;
+    char* langCode;
+    char* parent;
+};
+
+typedef struct _FcitxIMEntry FcitxIMEntry;
 
 /**
  * @brief init fcitx im array
@@ -69,7 +81,7 @@ struct _FcitxInputState {
  * @param instance instance
  * @return void
  **/
-void InitFcitxIM(struct _FcitxInstance* instance);
+void FcitxInstanceInitIM(struct _FcitxInstance* instance);
 
 /**
  * @brief init builtin hotkey (ESC, ENTER)
@@ -77,7 +89,7 @@ void InitFcitxIM(struct _FcitxInstance* instance);
  * @param instance instance
  * @return void
  **/
-void InitBuiltInHotkey(struct _FcitxInstance* instance);
+void FcitxInstanceInitBuiltInHotkey(struct _FcitxInstance* instance);
 
 /**
  * @brief generat phrase tips
@@ -85,15 +97,7 @@ void InitBuiltInHotkey(struct _FcitxInstance* instance);
  * @param instance fcitx instance
  * @return void
  **/
-void DoPhraseTips(struct _FcitxInstance* instance);
-
-/**
- * @brief unload all input method
- *
- * @param ims im array
- * @return void
- **/
-void UnloadAllIM(UT_array* ims);
+void FcitxInstanceDoPhraseTips(struct _FcitxInstance* instance);
 
 /**
  * @brief load all im from addons
@@ -101,7 +105,7 @@ void UnloadAllIM(UT_array* ims);
  * @param instance instance
  * @return boolean
  **/
-boolean LoadAllIM(struct _FcitxInstance* instance);
+boolean FcitxInstanceLoadAllIM(struct _FcitxInstance* instance);
 
 /**
  * @brief init builtin im menu
@@ -109,7 +113,7 @@ boolean LoadAllIM(struct _FcitxInstance* instance);
  * @param instance instance
  * @return void
  **/
-void InitIMMenu(struct _FcitxInstance* instance);
+void FcitxInstanceInitIMMenu(struct _FcitxInstance* instance);
 
 /**
  * @brief show input speed
@@ -117,7 +121,7 @@ void InitIMMenu(struct _FcitxInstance* instance);
  * @param instance instance
  * @return void
  **/
-void ShowInputSpeed(struct _FcitxInstance* instance);
+void FcitxInstanceShowInputSpeed(struct _FcitxInstance* instance);
 
 /**
  * @brief process enter action
@@ -167,10 +171,18 @@ INPUT_RETURN_VALUE ImProcessSaveAll(void *arg);
  **/
 INPUT_RETURN_VALUE ImSwitchEmbeddedPreedit(void *arg);
 
-int GetIMIndexByName(struct _FcitxInstance* instance, char* imName);
-
 boolean IMIsInIMNameList(UT_array* imList, FcitxIM* ime);
 
+void FcitxInstanceLoadIM(struct _FcitxInstance* instance, FcitxAddon* addon);
+
+void FcitxInstanceSwitchIMInternal(struct _FcitxInstance* instance, int index, boolean skipZero);
+
+/**
+ * @brief Load inputmethod.desc file
+ *
+ * @return FcitxConfigFileDesc*
+ **/
+FcitxConfigFileDesc* GetIMConfigDesc();
 
 #endif
 

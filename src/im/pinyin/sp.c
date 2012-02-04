@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 #include <stdio.h>
 #include <sys/stat.h>
@@ -24,13 +24,14 @@
 #include <string.h>
 
 #include "fcitx/fcitx.h"
+#include "fcitx/context.h"
+#include "fcitx-config/xdg.h"
 
 #include "py.h"
 #include "sp.h"
 #include "spdata.h"
 #include "pyMapTable.h"
 #include "pyParser.h"
-#include "fcitx-config/xdg.h"
 #include "pyconfig.h"
 
 #define STR_SPCONF_NAME 0
@@ -41,19 +42,6 @@
 char* strConstSPConf[] = {
     "方案名称="
 };
-
-boolean SPInit(void *arg)
-{
-    FcitxPinyinState *pystate = (FcitxPinyinState*)arg;
-    pystate->bSP = true;
-    FcitxPinyinConfig* pyconfig = &pystate->pyconfig;
-    pyconfig->cNonS = 'o';
-    memcpy(pyconfig->SPMap_S, SPMap_S_Ziranma, sizeof(SPMap_S_Ziranma));
-    memcpy(pyconfig->SPMap_C, SPMap_C_Ziranma, sizeof(SPMap_C_Ziranma));
-
-    LoadSPData(pystate);
-    return true;
-}
 
 void LoadSPData(FcitxPinyinState *pystate)
 {
@@ -102,7 +90,7 @@ void LoadSPData(FcitxPinyinState *pystate)
             i ++ ;
         }
 
-        fp = GetXDGFileWithPrefix("pinyin", "sp.dat", "rt", NULL);
+        fp = FcitxXDGGetFileWithPrefix("pinyin", "sp.dat", "rt", NULL);
 
         while (1) {
             if (!fgets(str, 100, fp))

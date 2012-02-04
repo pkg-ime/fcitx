@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 /**
@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
     sem_t sem;
     sem_init(&sem, 0, 0);
 
-    instance = CreateFcitxInstance(&sem, argc, argv);
+    instance = FcitxInstanceCreate(&sem, argc, argv);
 
     WaitForEnd(&sem, instanceCount);
     return 0;

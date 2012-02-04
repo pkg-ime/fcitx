@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 #include <cairo.h>
@@ -57,7 +57,7 @@ StringSizeWithContextReal(cairo_t * c, PangoFontDescription* fontDesc, const cha
         if (h) *h = 0;
         return;
     }
-    if (!utf8_check_string(str)) {
+    if (!fcitx_utf8_check_string(str)) {
         if (w) *w = 0;
         if (h) *h = 0;
 
@@ -146,7 +146,7 @@ FontHeightWithContextReal(cairo_t * c)
  */
 void
 OutputString(cairo_t * c, const char *str, const char *font, int fontSize, int x,
-             int y, ConfigColor * color)
+             int y, FcitxConfigColor * color)
 {
     if (!str || str[0] == 0)
         return;
@@ -167,7 +167,7 @@ OutputStringWithContextReal(cairo_t * c, PangoFontDescription* desc, const char 
 {
     if (!str || str[0] == 0)
         return;
-    if (!utf8_check_string(str))
+    if (!fcitx_utf8_check_string(str))
         return;
     cairo_save(c);
 

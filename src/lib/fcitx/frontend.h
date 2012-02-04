@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 #ifndef _FCITX_FRONTEND_H_
@@ -35,27 +35,37 @@ extern "C" {
     /**
      * @brief Input Method State
      **/
-    typedef enum _IME_STATE {
+    typedef enum _FcitxContextState {
         IS_CLOSED = 0,
         IS_ENG,
         IS_ACTIVE
-    } IME_STATE;
+    } FcitxContextState;
 
-    typedef enum _CapacityFlags {
+    typedef enum _FcitxCapacityFlags {
         CAPACITY_NONE = 0,
         CAPACITY_CLIENT_SIDE_UI = (1 << 0),
-        CAPACITY_PREEDIT = (1 << 1)
-    } CapacityFlags;
+        CAPACITY_PREEDIT = (1 << 1),
+        CAPACITY_CLIENT_SIDE_CONTROL_STATE =  (1 << 2)
+    } FcitxCapacityFlags;
+    
+    /**
+     * @brief queued key event
+     **/
+    typedef struct _FcitxKeyEvent {
+        int frontendid;
+        void* event;
+        uint64_t sequenceId;
+    } FcitxKeyEvent;
 
     /**
      * @brief Input Context, normally one for one program
      **/
     typedef struct _FcitxInputContext {
-        IME_STATE state; /* im state */
+        FcitxContextState state; /* im state */
         int offset_x, offset_y;
         int frontendid;
         void *privateic;
-        CapacityFlags contextCaps;
+        FcitxCapacityFlags contextCaps;
         struct _FcitxInputContext* next;
     } FcitxInputContext;
 
@@ -87,7 +97,7 @@ extern "C" {
      * @param  frontends array
      * @return void
      **/
-    void InitFcitxFrontends(UT_array*);
+    void FcitxFrontendsInit(UT_array*);
 
     /**
      * @brief Find Input Context By Frontend Specific filter
@@ -97,7 +107,7 @@ extern "C" {
      * @param filter frontend specfic filter
      * @return FcitxInputContext*
      **/
-    FcitxInputContext* FindIC(struct _FcitxInstance* instance, int frontendid, void* filter);
+    FcitxInputContext* FcitxInstanceFindIC(struct _FcitxInstance* instance, int frontendid, void* filter);
 
     /**
      * @brief Creat New Input Context
@@ -107,7 +117,7 @@ extern "C" {
      * @param priv frontend specfic data
      * @return FcitxInputContext*
      **/
-    FcitxInputContext* CreateIC(struct _FcitxInstance* instance, int frontendid, void* priv);
+    FcitxInputContext* FcitxInstanceCreateIC(struct _FcitxInstance* instance, int frontendid, void* priv);
 
     /**
      * @brief Destroy Input context
@@ -117,7 +127,7 @@ extern "C" {
      * @param filter frontend specfic filter
      * @return void
      **/
-    void DestroyIC(struct _FcitxInstance* instance, int frontendid, void* filter);
+    void FcitxInstanceDestroyIC(struct _FcitxInstance* instance, int frontendid, void* filter);
 
     /**
      * @brief Load All frontend
@@ -125,7 +135,7 @@ extern "C" {
      * @param instance
      * @return void
      **/
-    boolean LoadFrontend(struct _FcitxInstance* instance);
+    boolean FcitxInstanceLoadFrontend(struct _FcitxInstance* instance);
 
     /**
      * @brief Commit String to Client
@@ -135,7 +145,7 @@ extern "C" {
      * @param str String to commit
      * @return void
      **/
-    void CommitString(struct _FcitxInstance* instance, FcitxInputContext* ic, char* str);
+    void FcitxInstanceCommitString(struct _FcitxInstance* instance, FcitxInputContext* ic, char* str);
 
     /**
      * @brief Set Cursor Position
@@ -146,7 +156,7 @@ extern "C" {
      * @param y ypos
      * @return void
      **/
-    void SetWindowOffset(struct _FcitxInstance* instance, FcitxInputContext* ic, int x, int y);
+    void FcitxInstanceSetWindowOffset(struct _FcitxInstance* instance, FcitxInputContext* ic, int x, int y);
 
     /**
      * @brief Get Cursor Position
@@ -157,7 +167,7 @@ extern "C" {
      * @param y ypos
      * @return void
      **/
-    void GetWindowPosition(struct _FcitxInstance*, FcitxInputContext *ic, int* x, int* y);
+    void FcitxInstanceGetWindowPosition(struct _FcitxInstance*, FcitxInputContext *ic, int* x, int* y);
 
     /**
      * @brief Update preedit text to client window
@@ -166,7 +176,7 @@ extern "C" {
      * @param ic input context
      * @return void
      **/
-    void UpdatePreedit(struct _FcitxInstance* instance, FcitxInputContext* ic);
+    void FcitxInstanceUpdatePreedit(struct _FcitxInstance* instance, FcitxInputContext* ic);
 
     /**
      * @brief Update all user interface element to client (Aux Text, Preedit, Candidate Word)
@@ -175,7 +185,7 @@ extern "C" {
      * @param ic input context
      * @return void
      **/
-    void UpdateClientSideUI(struct _FcitxInstance* instance, FcitxInputContext* ic);
+    void FcitxInstanceUpdateClientSideUI(struct _FcitxInstance* instance, FcitxInputContext* ic);
 
     /**
      * @brief Get Current State, if only want to get state, this function is better, because it will handle the case that Input Context is NULL.
@@ -183,7 +193,17 @@ extern "C" {
      * @param instance fcitx instance
      * @return IME_STATE
      **/
-    IME_STATE GetCurrentState(struct _FcitxInstance* instance);
+    FcitxContextState FcitxInstanceGetCurrentState(struct _FcitxInstance* instance);
+    
+    /**
+     * @brief Get Current State, consider the option firstAsInactive
+     *
+     * @param instance fcitx instance
+     * @return IME_STATE
+     * 
+     * @see FcitxInstanceGetCurrentState
+     **/
+    FcitxContextState FcitxInstanceGetCurrentStatev2(struct _FcitxInstance* instance);
 
     /**
      * @brief get current ic capacity flag, if only want to get capacity, this function is better, because it will handle the case that Input Context is NULL.
@@ -191,10 +211,36 @@ extern "C" {
      * @param instance fcitx instance
      * @return CapacityFlags
      **/
-    CapacityFlags GetCurrentCapacity(struct _FcitxInstance* instance);
+    FcitxCapacityFlags FcitxInstanceGetCurrentCapacity(struct _FcitxInstance* instance);
 
-    void SetICStateFromSameApplication(struct _FcitxInstance* instance, int frontendid, FcitxInputContext *ic);
+    /**
+     * @brief set all ic from same application to the given ic
+     *
+     * @param instance fcitx instance
+     * @param frontendid frontend id
+     * @param ic object ic
+     * @return void
+     **/
+    void FcitxInstanceSetICStateFromSameApplication(struct _FcitxInstance* instance, int frontendid, FcitxInputContext *ic);
 
+    
+    /**
+     * @brief push a key event into the key event queue
+     *
+     * @param instance fcitx instance
+     * @param keyEvent private key event
+     * @return uint64_t key seqence
+     **/
+    uint64_t FcitxInstancePushKeyEvent(struct _FcitxInstance* instance, int frontendid, void* keyEvent);
+    
+    /**
+     * @brief pop a key event out
+     *
+     * @param instance fcitx instance
+     * @param seqenceId key sequence
+     * @return void*
+     **/
+    FcitxKeyEvent FcitxInstancePopKeyEvent(struct _FcitxInstance* instance, uint64_t seqenceId);
 #ifdef __cplusplus
 }
 #endif

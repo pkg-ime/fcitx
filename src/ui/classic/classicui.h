@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 #ifndef CLASSICUI_H
 #define CLASSICUI_H
@@ -50,7 +50,7 @@ typedef enum _HIDE_MAINWINDOW {
  * @brief Config and Global State for Classic UI
  **/
 typedef struct _FcitxClassicUI {
-    GenericConfig gconfig;
+    FcitxGenericConfig gconfig;
     Display* dpy;
     int iScreen;
     Atom protocolAtom;
@@ -80,9 +80,12 @@ typedef struct _FcitxClassicUI {
     UT_array status;
     struct _XlibMenu* mainMenuWindow;
     FcitxUIMenu mainMenu;
+    boolean isSuspend;
+    boolean isfallback;
 } FcitxClassicUI;
 
 void GetScreenSize(FcitxClassicUI* classicui, int* width, int* height);
+FcitxRect GetScreenGeometry(FcitxClassicUI* classicui, int x, int y);
 void
 ClassicUIInitWindowAttribute(FcitxClassicUI* classicui, Visual ** vs, Colormap * cmap,
                              XSetWindowAttributes * attrib,
@@ -95,8 +98,9 @@ void ActivateWindow(Display *dpy, int iScreen, Window window);
 boolean LoadClassicUIConfig(FcitxClassicUI* classicui);
 void SaveClassicUIConfig(FcitxClassicUI* classicui);
 boolean WindowIsVisable(Display* dpy, Window window);
+boolean EnlargeCairoSurface(cairo_surface_t** sur, int w, int h);
 
-#define GetPrivateStatus(status) ((FcitxClassicUIStatus*)(status)->priv)
+#define GetPrivateStatus(status) ((FcitxClassicUIStatus*)(status)->uipriv[classicui->isfallback])
 
 CONFIG_BINDING_DECLARE(FcitxClassicUI);
 #endif

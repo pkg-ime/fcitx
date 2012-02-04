@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 #ifndef CAIROSTUFF_H
 #define CAIROSTUFF_H
@@ -24,7 +24,7 @@
 #include <cairo.h>
 
 int StringWidth(const char *str, const char *font, int fontSize);
-void OutputString(cairo_t * c, const char *str, const char *font, int fontSize, int x,  int y, ConfigColor * color);
+void OutputString(cairo_t * c, const char *str, const char *font, int fontSize, int x,  int y, FcitxConfigColor * color);
 
 #ifdef _ENABLE_PANGO
 

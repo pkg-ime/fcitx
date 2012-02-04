@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 /**
@@ -30,6 +30,7 @@
 #define _FCITX_XDG_H_
 
 #include <stdio.h>
+#include <fcitx-utils/utils.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -44,20 +45,20 @@ extern "C"
      * @param retFile return file name
      * @return FILE*
      **/
-    FILE *GetLibFile(const char *filename, const char *mode, char **retFile);
+    FILE *FcitxXDGGetLibFile(const char *filename, const char *mode, char **retFile);
     /**
      * @brief get a xdg file pointer with given path, if mode contains "w", it will create necessary parent folder
      *
      * @param fileName filename
-     * @param path returns by GetXDGPath
+     * @param path returns by FcitxXDGGetPath
      * @param mode file open mode
      * @param len length of path
      * @param retFile return file name
      * @return FILE*
      *
-     * @see GetXDGPath
+     * @see FcitxXDGGetPath
      **/
-    FILE *GetXDGFile(const char *fileName, char **path, const char *mode, size_t len, char **retFile);
+    FILE *FcitxXDGGetFile(const char *fileName, char **path, const char *mode, size_t len, char **retFile);
     /**
      * @brief get xdg path with given arguement
      *
@@ -69,7 +70,7 @@ extern "C"
      * @param suffixGlobal suffixGlobal
      * @return char**
      **/
-    char **GetXDGPath(
+    char **FcitxXDGGetPath(
         size_t *len,
         const char* homeEnv,
         const char* homeDefault,
@@ -88,7 +89,7 @@ extern "C"
      *
      * @see GetXDGFile
      **/
-    FILE *GetXDGFileWithPrefix(const char* prefix, const char *fileName, const char *mode, char**retFile);
+    FILE *FcitxXDGGetFileWithPrefix(const char* prefix, const char *fileName, const char *mode, char**retFile);
     /**
      * @brief get xdg file with prefix string, usually ~/.config/fcitx/prefix/filename
      *
@@ -100,15 +101,31 @@ extern "C"
      *
      * @see GetXDGFile
      **/
-    FILE *GetXDGFileUserWithPrefix(const char* prefix, const char *fileName, const char *mode, char **retFile);
+    FILE *FcitxXDGGetFileUserWithPrefix(const char* prefix, const char *fileName, const char *mode, char **retFile);
     /**
-     * @brief free xdg path return by GetXDGPath
+     * @brief free xdg path return by FcitxXDGGetPath
      *
      * @param path path array
      * @return void
      * @see GetXDGFile
      **/
-    void FreeXDGPath(char **path);
+    void FcitxXDGFreePath(char **path);
+
+    /**
+     * @brief Get All files under directory with a suffix
+     *
+     * @param path xdg subpath
+     * @param suffix filename suffix
+     * @param prefix filename prefix
+     * @return StringHashSet*
+     *
+     * @since 4.2.0
+     **/
+    FcitxStringHashSet* FcitxXDGGetFiles(
+        char* path,
+        char* suffix,
+        char* prefix
+    );
 
 #ifdef __cplusplus
 }

@@ -4,6 +4,7 @@ set(FCITX_UTILS_SOURCES
     log.c
     qsort_r.c
     msort_r.c
+    memory.c
 )
 
 set(FCITX_UTILS_HEADERS
@@ -12,6 +13,7 @@ set(FCITX_UTILS_HEADERS
     utf8.h
     utils.h
     uthash.h
+    memory.h
 )
 
 if (LIBKVM_FOUND)
@@ -20,8 +22,8 @@ endif (LIBKVM_FOUND)
 
 add_library(fcitx-utils SHARED ${FCITX_UTILS_SOURCES})
 set_target_properties(fcitx-utils
-                      PROPERTIES VERSION 0.1.0
-                      SOVERSION 0.1
+                      PROPERTIES VERSION 0.1
+                      SOVERSION 0
                       COMPILE_FLAGS "-fvisibility=hidden"
                       LINK_FLAGS "-Wl,--no-undefined"
 )

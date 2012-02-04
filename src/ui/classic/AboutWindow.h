@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 /**
@@ -35,8 +35,8 @@ struct _FcitxClassicUI;
 typedef struct _AboutWindow {
     Window window;
     cairo_surface_t* surface;
-    ConfigColor color;
-    ConfigColor fontColor;
+    FcitxConfigColor color;
+    FcitxConfigColor fontColor;
     int width;
     int fontSize;
     Atom     about_kill_atom;

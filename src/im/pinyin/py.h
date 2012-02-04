@@ -15,13 +15,14 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 #ifndef _PY_H
 #define _PY_H
 
 #include "fcitx/ime.h"
 #include "fcitx/fcitx.h"
+#include "fcitx-utils/memory.h"
 #include "pyconfig.h"
 #include "pyParser.h"
 
@@ -36,7 +37,7 @@
 #define AUTOSAVE_ORDER_COUNT    1024
 #define AUTOSAVE_FREQ_COUNT     32
 
-struct _CandidateWord;
+struct _FcitxCandidateWord;
 struct _FcitxInstance;
 struct _FcitxPinyinState;
 struct MHPY;
@@ -191,11 +192,15 @@ typedef struct _FcitxPinyinState {
 
     boolean bSP_UseSemicolon;
     boolean bSP;
+    
+    FcitxMemoryPool* pool;
+    
     struct _FcitxInstance *owner;
 } FcitxPinyinState;
 
 void *PYCreate(struct _FcitxInstance* instance);
-boolean            PYInit(void* arg);
+boolean         PYInit(void* arg);
+boolean         SPInit(void* arg);
 boolean         LoadPYBaseDict(struct _FcitxPinyinState* pystate);
 boolean         LoadPYOtherDict(struct _FcitxPinyinState* pystate);
 void            ResetPYStatus(void* pystate);
@@ -207,7 +212,7 @@ void            CalculateCursorPosition(struct _FcitxPinyinState* pystate);
 
 void            PYCreateAuto(struct _FcitxPinyinState* pystate);
 INPUT_RETURN_VALUE PYGetCandWords(void* arg);
-INPUT_RETURN_VALUE PYGetCandWord(void* arg, struct _CandidateWord* pycandWord);
+INPUT_RETURN_VALUE PYGetCandWord(void* arg, struct _FcitxCandidateWord* pycandWord);
 void            PYGetSymCandWords(FcitxPinyinState* pystate, PyFreq* pCurFreq);
 void PYAddSymCandWord(HZ* hz, PYCandWord* pycandWord);
 void            PYGetBaseCandWords(FcitxPinyinState* pystate, PyFreq* pCurFreq);

@@ -15,13 +15,14 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 #include <stdio.h>
 #include <iconv.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include "config.h"
 
 #include "fcitx-utils/utarray.h"
 
@@ -108,7 +109,8 @@ int main(int argc, char **argv)
 
     fseek(fp, DESC_START, SEEK_SET);
     fread(buf, 1, DESC_LENGTH, fp);
-    char *in = buf, *out = bufout;
+    IconvStr in = buf;
+    char *out = bufout;
     size_t inlen = DESC_LENGTH, outlen = BUFLEN;
     iconv(conv, &in, &inlen, &out, &outlen);
     fprintf(stderr, "%s\n", bufout);

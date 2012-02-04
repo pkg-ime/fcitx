@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 #include <signal.h>
@@ -58,9 +58,9 @@ void OnException(int signo)
     FcitxLog(INFO, _("FCITX -- Get Signal No.: %d"), signo);
 
     if (signo != SIGSEGV && signo != SIGCONT) {
-        FcitxLock(instance);
-        SaveAllIM(instance);
-        FcitxUnlock(instance);
+        FcitxInstanceLock(instance);
+        FcitxInstanceSaveAllIM(instance);
+        FcitxInstanceUnlock(instance);
     }
 
     void *array[10];
@@ -76,7 +76,7 @@ void OnException(int signo)
         FILE *fp = NULL;
 
         if (signo == SIGSEGV || signo == SIGABRT || signo == SIGKILL)
-            fp = GetXDGFileWithPrefix("log", "crash.log", "wt", NULL);
+            fp = FcitxXDGGetFileWithPrefix("log", "crash.log", "wt", NULL);
 
         printf("Obtained %zd stack frames.\n", size);
 

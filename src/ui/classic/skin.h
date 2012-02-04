@@ -14,7 +14,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 /**
  * @file   skin.h
@@ -69,8 +69,8 @@ typedef struct _SkinInfo {
 typedef struct _SkinFont {
     int fontSize;
     int menuFontSize;
-    ConfigColor fontColor[7];
-    ConfigColor menuFontColor[2];
+    FcitxConfigColor fontColor[7];
+    FcitxConfigColor menuFontColor[2];
 } SkinFont;
 
 typedef struct _SkinMenu {
@@ -79,8 +79,8 @@ typedef struct _SkinMenu {
     int marginBottom;
     int marginLeft;
     int marginRight;
-    ConfigColor activeColor;
-    ConfigColor lineColor;
+    FcitxConfigColor activeColor;
+    FcitxConfigColor lineColor;
     FillRule fillV;
     FillRule fillH;
 } SkinMenu;
@@ -105,7 +105,7 @@ typedef struct _SkinMainBar {
 
 typedef struct _SkinInputBar {
     char* backImg;
-    ConfigColor cursorColor;
+    FcitxConfigColor cursorColor;
     int marginTop;
     int marginBottom;
     int marginLeft;
@@ -123,7 +123,7 @@ typedef struct _SkinInputBar {
 } SkinInputBar;
 
 typedef struct _SkinPlacement {
-    char name[MAX_STATUS_NAME + 1];
+    char *name;;
     int x;
     int y;
     UT_hash_handle hh;
@@ -146,14 +146,14 @@ typedef struct _SkinTrayIcon {
 
 typedef struct _SkinKeyboard {
     char* backImg;
-    ConfigColor keyColor;
+    FcitxConfigColor keyColor;
 } SkinKeyboard;
 
 /**
 * 配置文件结构,方便处理,结构固定
 */
 typedef struct _FcitxSkin {
-    GenericConfig config;
+    FcitxGenericConfig config;
     SkinInfo skinInfo;
     SkinFont skinFont;
     SkinMainBar skinMainBar;
@@ -167,10 +167,10 @@ typedef struct _FcitxSkin {
     SkinImage* imageTable;
 } FcitxSkin;
 
-ConfigFileDesc* GetSkinDesc();
+FcitxConfigFileDesc* GetSkinDesc();
 int LoadSkinConfig(FcitxSkin* sc, char** skinType);
 void DrawImage(cairo_t* c, cairo_surface_t* png, int x, int y, MouseE mouse);
-void DrawInputBar(FcitxSkin* sc, struct _InputWindow* inputWindow, int cursorPos, struct _Messages * msgup, struct _Messages *msgdown , unsigned int * iheight, unsigned int *iwidth);
+void DrawInputBar(FcitxSkin* sc, struct _InputWindow* inputWindow, int cursorPos, struct _FcitxMessages * msgup, struct _FcitxMessages *msgdown , unsigned int * iheight, unsigned int *iwidth);
 SkinImage* LoadImage(FcitxSkin* sc, const char* name, boolean fallback);
 void LoadInputMessage(FcitxSkin* sc, struct _InputWindow* inputWindow, const char* font);
 void InitSkinMenu(struct _FcitxClassicUI* classicui);

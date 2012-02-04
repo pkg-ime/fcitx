@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 #include "fcitx/fcitx.h"
@@ -26,7 +26,7 @@
 #include "fcitx/ui.h"
 
 
-static void FilterPlacement(GenericConfig* config, ConfigGroup *group, ConfigOption *option, void* value, ConfigSync sync, void* arg);
+static void FilterPlacement(FcitxGenericConfig* config, FcitxConfigGroup *group, FcitxConfigOption *option, void* value, FcitxConfigSync sync, void* arg);
 
 CONFIG_BINDING_BEGIN(FcitxSkin)
 CONFIG_BINDING_REGISTER("SkinInfo", "Name", skinInfo.skinName)
@@ -93,7 +93,7 @@ CONFIG_BINDING_REGISTER("SkinKeyboard", "KeyColor", skinKeyboard.keyColor)
 
 CONFIG_BINDING_END()
 
-void FilterPlacement(GenericConfig* config, ConfigGroup *group, ConfigOption *option, void* value, ConfigSync sync, void* arg)
+void FilterPlacement(FcitxGenericConfig* config, FcitxConfigGroup *group, FcitxConfigOption *option, void* value, FcitxConfigSync sync, void* arg)
 {
     FcitxSkin* sc = (FcitxSkin*) config;
     if (sync == Raw2Value) {

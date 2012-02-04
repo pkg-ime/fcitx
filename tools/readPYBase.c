@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 #include <stdio.h>
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
     if (pybase_mb)
         fi = fopen(pybase_mb , "r");
     else
-        fi = GetXDGFileWithPrefix("pinyin", PY_BASE_FILE, "r", &pybase_mb);
+        fi = FcitxXDGGetFileWithPrefix("pinyin", PY_BASE_FILE, "r", &pybase_mb);
 
     if (!fi) {
         perror("fopen");

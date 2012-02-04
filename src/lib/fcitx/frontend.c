@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 #include <dlfcn.h>
@@ -38,13 +38,13 @@
 static const UT_icd frontend_icd = {sizeof(FcitxAddon*), NULL, NULL, NULL };
 
 FCITX_EXPORT_API
-void InitFcitxFrontends(UT_array* frontends)
+void FcitxFrontendsInit(UT_array* frontends)
 {
     utarray_init(frontends, &frontend_icd);
 }
 
 FCITX_EXPORT_API
-FcitxInputContext* CreateIC(FcitxInstance* instance, int frontendid, void * priv)
+FcitxInputContext* FcitxInstanceCreateIC(FcitxInstance* instance, int frontendid, void * priv)
 {
     UT_array* frontends = &instance->frontends;
     FcitxAddon** pfrontend = (FcitxAddon**) utarray_eltptr(frontends, frontendid);
@@ -83,7 +83,52 @@ FcitxInputContext* CreateIC(FcitxInstance* instance, int frontendid, void * priv
 }
 
 FCITX_EXPORT_API
-FcitxInputContext* FindIC(FcitxInstance* instance, int frontendid, void *filter)
+uint64_t FcitxInstancePushKeyEvent(FcitxInstance* instance, int frontendid, void* keyEvent)
+{
+    FcitxKeyEventQueue* eq = &instance->eventQueue;
+    
+    uint32_t next = (eq->cur + 1) % FCITX_KEY_EVENT_QUEUE_LENGTH;
+    
+    /* ok lets throw the new event anyway, on any system,
+     * it should not be such slow on system, otherwise 
+     * there might be a bug some where.
+     * 
+     * Input method is something that requires highly consistency.
+     */
+    if (next == eq->tail) {
+        return 0; 
+    }
+    
+    eq->queue[next].event = keyEvent;
+    eq->queue[next].sequenceId = ++eq->sequenceId; /* make it start with 1 */
+    
+    eq->cur = next;
+    
+    return eq->sequenceId;
+}
+
+FCITX_EXPORT_API
+FcitxKeyEvent FcitxInstancePopKeyEvent(FcitxInstance* instance, uint64_t seqenceId)
+{
+    FcitxKeyEventQueue* eq = &instance->eventQueue;
+    FcitxKeyEvent result;
+    while (eq->cur != eq->tail) {
+        uint32_t nexttail = (eq->tail + FCITX_KEY_EVENT_QUEUE_LENGTH - 1) % FCITX_KEY_EVENT_QUEUE_LENGTH;
+        
+        if (seqenceId == eq->queue[nexttail].sequenceId) {        
+            result = eq->queue[nexttail];
+            break;
+        } else if (seqenceId < eq->queue[nexttail].sequenceId) {
+            break;
+        }
+        eq->tail = nexttail;
+    }
+    
+    return result;
+}
+
+FCITX_EXPORT_API
+FcitxInputContext* FcitxInstanceFindIC(FcitxInstance* instance, int frontendid, void *filter)
 {
     UT_array* frontends = &instance->frontends;
     FcitxAddon** pfrontend = (FcitxAddon**) utarray_eltptr(frontends, frontendid);
@@ -100,7 +145,7 @@ FcitxInputContext* FindIC(FcitxInstance* instance, int frontendid, void *filter)
 }
 
 FCITX_EXPORT_API
-void SetICStateFromSameApplication(FcitxInstance* instance, int frontendid, FcitxInputContext *ic)
+void FcitxInstanceSetICStateFromSameApplication(FcitxInstance* instance, int frontendid, FcitxInputContext *ic)
 {
     UT_array* frontends = &instance->frontends;
     FcitxAddon** pfrontend = (FcitxAddon**) utarray_eltptr(frontends, frontendid);
@@ -120,7 +165,7 @@ void SetICStateFromSameApplication(FcitxInstance* instance, int frontendid, Fcit
 }
 
 FCITX_EXPORT_API
-void DestroyIC(FcitxInstance* instance, int frontendid, void* filter)
+void FcitxInstanceDestroyIC(FcitxInstance* instance, int frontendid, void* filter)
 {
     FcitxInputContext             *rec, *last;
     UT_array* frontends = &instance->frontends;
@@ -141,10 +186,10 @@ void DestroyIC(FcitxInstance* instance, int frontendid, void* filter)
             rec->next = instance->free_list;
             instance->free_list = rec;
 
-            if (rec == GetCurrentIC(instance)) {
-                CloseInputWindow(instance);
-                OnInputUnFocus(instance);
-                SetCurrentIC(instance, NULL);
+            if (rec == FcitxInstanceGetCurrentIC(instance)) {
+                FcitxUICloseInputWindow(instance);
+                FcitxUIOnInputUnFocus(instance);
+                FcitxInstanceSetCurrentIC(instance, NULL);
             }
 
             frontend->DestroyIC((*pfrontend)->addonInstance, rec);
@@ -156,7 +201,7 @@ void DestroyIC(FcitxInstance* instance, int frontendid, void* filter)
 }
 
 FCITX_EXPORT_API
-IME_STATE GetCurrentState(FcitxInstance* instance)
+FcitxContextState FcitxInstanceGetCurrentState(FcitxInstance* instance)
 {
     if (instance->CurrentIC)
         return instance->CurrentIC->state;
@@ -165,7 +210,19 @@ IME_STATE GetCurrentState(FcitxInstance* instance)
 }
 
 FCITX_EXPORT_API
-CapacityFlags GetCurrentCapacity(FcitxInstance* instance)
+FcitxContextState FcitxInstanceGetCurrentStatev2(FcitxInstance* instance)
+{
+    if (instance->CurrentIC) {
+        if (instance->config->firstAsInactive && instance->CurrentIC->state == IS_ENG)
+            return IS_ACTIVE;
+        return instance->CurrentIC->state;
+    }
+    else
+        return IS_CLOSED;
+}
+
+FCITX_EXPORT_API
+FcitxCapacityFlags FcitxInstanceGetCurrentCapacity(FcitxInstance* instance)
 {
     if (instance->CurrentIC)
         return instance->CurrentIC->contextCaps;
@@ -174,7 +231,7 @@ CapacityFlags GetCurrentCapacity(FcitxInstance* instance)
 }
 
 FCITX_EXPORT_API
-void CommitString(FcitxInstance* instance, FcitxInputContext* ic, char* str)
+void FcitxInstanceCommitString(FcitxInstance* instance, FcitxInputContext* ic, char* str)
 {
     if (str == NULL)
         return ;
@@ -184,7 +241,7 @@ void CommitString(FcitxInstance* instance, FcitxInputContext* ic, char* str)
 
     UT_array* frontends = &instance->frontends;
 
-    char *pstr = ProcessOutputFilter(instance, str);
+    char *pstr = FcitxInstanceProcessCommitFilter(instance, str);
     if (pstr != NULL)
         str = pstr;
 
@@ -199,7 +256,7 @@ void CommitString(FcitxInstance* instance, FcitxInputContext* ic, char* str)
 }
 
 FCITX_EXPORT_API
-void UpdatePreedit(FcitxInstance* instance, FcitxInputContext* ic)
+void FcitxInstanceUpdatePreedit(FcitxInstance* instance, FcitxInputContext* ic)
 {
     if (!instance->profile->bUsePreedit)
         return;
@@ -220,7 +277,7 @@ void UpdatePreedit(FcitxInstance* instance, FcitxInputContext* ic)
 }
 
 FCITX_EXPORT_API
-void UpdateClientSideUI(FcitxInstance* instance, FcitxInputContext* ic)
+void FcitxInstanceUpdateClientSideUI(FcitxInstance* instance, FcitxInputContext* ic)
 {
     if (ic == NULL)
         return;
@@ -239,7 +296,7 @@ void UpdateClientSideUI(FcitxInstance* instance, FcitxInputContext* ic)
 }
 
 FCITX_EXPORT_API
-void SetWindowOffset(FcitxInstance* instance, FcitxInputContext *ic, int x, int y)
+void FcitxInstanceSetWindowOffset(FcitxInstance* instance, FcitxInputContext *ic, int x, int y)
 {
     UT_array* frontends = &instance->frontends;
     FcitxAddon** pfrontend = (FcitxAddon**) utarray_eltptr(frontends, ic->frontendid);
@@ -251,7 +308,7 @@ void SetWindowOffset(FcitxInstance* instance, FcitxInputContext *ic, int x, int 
 }
 
 FCITX_EXPORT_API
-void GetWindowPosition(FcitxInstance* instance, FcitxInputContext* ic, int* x, int* y)
+void FcitxInstanceGetWindowPosition(FcitxInstance* instance, FcitxInputContext* ic, int* x, int* y)
 {
     if (ic == NULL)
         return;
@@ -266,7 +323,7 @@ void GetWindowPosition(FcitxInstance* instance, FcitxInputContext* ic, int* x, i
 }
 
 FCITX_EXPORT_API
-boolean LoadFrontend(FcitxInstance* instance)
+boolean FcitxInstanceLoadFrontend(FcitxInstance* instance)
 {
     UT_array* addons = &instance->addons;
     UT_array* frontends = &instance->frontends;
@@ -280,7 +337,7 @@ boolean LoadFrontend(FcitxInstance* instance)
             char *modulePath;
             switch (addon->type) {
             case AT_SHAREDLIBRARY: {
-                FILE *fp = GetLibFile(addon->library, "r", &modulePath);
+                FILE *fp = FcitxXDGGetLibFile(addon->library, "r", &modulePath);
                 void *handle;
                 FcitxFrontend* frontend;
                 if (!fp)

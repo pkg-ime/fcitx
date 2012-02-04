@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 #include "fcitx/fcitx.h"
@@ -24,8 +24,6 @@
 #include "fcitx-utils/log.h"
 
 #include <ctype.h>
-
-#include <iconv.h>
 #include <X11/Xatom.h>
 #include <string.h>
 #include "classicui.h"
@@ -44,7 +42,7 @@ static void DisplayMessageWindow(MessageWindow *messageWindow);
 
 MessageWindow* CreateMessageWindow(FcitxClassicUI * classicui)
 {
-    MessageWindow* messageWindow = fcitx_malloc0(sizeof(MessageWindow));
+    MessageWindow* messageWindow = fcitx_utils_malloc0(sizeof(MessageWindow));
     Display *dpy = classicui->dpy;
     int iScreen = classicui->iScreen;
     messageWindow->owner = classicui;
@@ -140,9 +138,12 @@ void DrawMessageWindow(MessageWindow* messageWindow, char *title, char **msg, in
     FcitxLog(DEBUG, "%s", title);
 
     XTextProperty   tp;
-    Xutf8TextListToTextProperty(dpy, &title, 1, XUTF8StringStyle, &tp);
-    XSetWMName(dpy, messageWindow->window, &tp);
-    XFree(tp.value);
+    memset(&tp, 0, sizeof(XTextProperty));
+    if (tp.value) {
+        Xutf8TextListToTextProperty(dpy, &title, 1, XUTF8StringStyle, &tp);
+        XSetWMName(dpy, messageWindow->window, &tp);
+        XFree(tp.value);
+    }
 
     if (msg) {
         if (messageWindow->msg) {

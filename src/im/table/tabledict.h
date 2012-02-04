@@ -3,6 +3,7 @@
 
 #include <fcitx-utils/utf8.h>
 #include <fcitx-config/fcitx-config.h>
+#include <fcitx-utils/memory.h>
 
 #define MAX_CODE_LENGTH  30
 #define PHRASE_MAX_LENGTH 10
@@ -10,6 +11,13 @@
 #define TABLE_AUTO_SAVE_AFTER 1024
 #define AUTO_PHRASE_COUNT 10000
 #define SINGLE_HZ_COUNT 66000
+
+#define RECORDTYPE_NORMAL 0x0
+#define RECORDTYPE_PINYIN 0x1
+#define RECORDTYPE_CONSTRUCT 0x2
+#define RECORDTYPE_PROMPT 0x3
+
+struct _FcitxTableState;
 
 typedef enum _ADJUSTORDER {
     AD_NO = 0,
@@ -40,7 +48,7 @@ typedef struct _RECORD {
     struct _RECORD *prev;
     unsigned int    iHit;
     unsigned int    iIndex;
-    boolean         bPinyin;
+    int8_t          type;
 } RECORD;
 
 typedef struct _AUTOPHRASE {
@@ -61,7 +69,7 @@ typedef struct _SINGLE_HZ {
 } SINGLE_HZ;
 
 typedef struct _TableMetaData {
-    GenericConfig   config;
+    FcitxGenericConfig   config;
     char           *uniqueName;
     char           *strName;
     char           *strIconName;
@@ -85,8 +93,11 @@ typedef struct _TableMetaData {
     char           *strSymbolFile;
     char           *strChoose;      //设置选择键
     char           *langCode;
+    char           *kbdlayout;
+    boolean         customPrompt;
     boolean         bEnabled;
 
+    struct _FcitxTableState* owner;
     struct _TableDict* tableDict;
 } TableMetaData;
 
@@ -101,6 +112,7 @@ typedef struct _TableDict {
     RULE* rule;
     unsigned int iRecordCount;
     RECORD* tableSingleHZ[SINGLE_HZ_COUNT];
+    RECORD* tableSingleHZCons[SINGLE_HZ_COUNT];
     unsigned int iTableIndex;
     boolean bHasPinyin;
     RECORD* currentRecord;
@@ -114,6 +126,8 @@ typedef struct _TableDict {
     int iTableChanged;
     int iHZLastInputCount;
     SINGLE_HZ       hzLastInput[PHRASE_MAX_LENGTH]; //Records last HZ input
+    RECORD* promptCode[256];
+    FcitxMemoryPool* pool;
 } TableDict;
 
 boolean LoadTableDict(TableMetaData* tableMetaData);
