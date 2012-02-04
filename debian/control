@@ -513,6 +513,7 @@ Description: Flexible Input Method Framework - core modules
 
 Package: fcitx-module-dbus
 Architecture: any
+Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-modules
 Description: Flexible Input Method Framework - D-Bus module and IPC frontend
  Fcitx is a input method framework with extension support, which provides
