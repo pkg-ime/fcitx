@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 #ifndef _FCITX_CONFIGFILE_H_
 #define _FCITX_CONFIGFILE_H_
@@ -28,40 +28,36 @@
 extern "C" {
 #endif
 
-    typedef enum _SWITCHKEY {
+    typedef enum _FcitxSwitchKey {
         SWITCHKEY_R_CTRL = 0,
         SWITCHKEY_R_SHIFT = 1,
         SWITCHKEY_L_SHIFT = 2,
         SWITCHKEY_L_CTRL = 3,
-        SWITCHKEY_NONE = 4
-    } SWITCHKEY;
+        SWITCHKEY_ALT_L_SHIFT = 4,
+        SWITCHKEY_ALT_R_SHIFT = 5,
+        SWITCHKEY_None = 6
+    } FcitxSwitchKey;
 
-    typedef enum _ENTER_TO_DO {
+    typedef enum _FcitxEnterAcion {
         K_ENTER_NOTHING = 0,
         K_ENTER_CLEAN = 1,
         K_ENTER_SEND = 2
-    } ENTER_TO_DO;
+    } FcitxEnterAcion;
 
-    typedef enum _SEMICOLON_TO_DO {
-        K_SEMICOLON_NOCHANGE = 0,
-        K_SEMICOLON_ENG = 1,
-        K_SEMICOLON_QUICKPHRASE = 2
-    } SEMICOLON_TO_DO;
-
-    typedef enum _ShareState {
+    typedef enum _FcitxShareState {
         ShareState_None = 0,
         ShareState_All = 1,
         ShareState_PerProgram = 2
-    } ShareState;
+    } FcitxShareState;
 
     /**
      * @brief struct opposite to ~/.config/fcitx/config
      **/
     typedef struct _FcitxConfig {
         /**
-         * @brief derives GenericConfig
+         * @brief derives FcitxGenericConfig
          **/
-        GenericConfig gconfig;
+        FcitxGenericConfig gconfig;
         /* program config */
         /**
          * @brief delay start seconds
@@ -80,7 +76,7 @@ extern "C" {
         /**
          * @brief enter key action
          **/
-        ENTER_TO_DO enterToDo;
+        FcitxEnterAcion enterToDo;
         /**
          * @brief Remind mode can has multipage
          **/
@@ -120,15 +116,15 @@ extern "C" {
         /**
          * @brief trigger key
          **/
-        HOTKEYS hkTrigger[2];
+        FcitxHotkey hkTrigger[2];
         /**
          * @brief switch key
          **/
-        SWITCHKEY iSwitchKey;
+        FcitxSwitchKey iSwitchKey;
         /**
          * @brief hotkey format of switch key
          **/
-        HOTKEYS switchKey[2];
+        FcitxHotkey switchKey[2];
         /**
          * @brief enable double press switch action
          **/
@@ -140,44 +136,44 @@ extern "C" {
         /**
          * @brief hotkey for switch VK
          **/
-        HOTKEYS hkVK[2];
+        FcitxHotkey hkVK[2];
         /**
          * @brief hotkey for switch remind mode
          **/
-        HOTKEYS hkRemind[2];
+        FcitxHotkey hkRemind[2];
         /**
          * @brief hotkey for switch full width char
          **/
-        HOTKEYS hkFullWidthChar[2];
+        FcitxHotkey hkFullWidthChar[2];
         /**
          * @brief hotkey for switch punc
          **/
-        HOTKEYS hkPunc[2];
+        FcitxHotkey hkPunc[2];
         /**
          * @brief prev page
          **/
-        HOTKEYS hkPrevPage[2];
+        FcitxHotkey hkPrevPage[2];
         /**
          * @brief next page
          **/
-        HOTKEYS hkNextPage[2];
+        FcitxHotkey hkNextPage[2];
         /**
          * @brief 2nd 3rd candidate select key
          **/
-        HOTKEYS str2nd3rdCand[2];
+        FcitxHotkey str2nd3rdCand[2];
         /**
          * @brief save all key
          **/
-        HOTKEYS hkSaveAll[2];
+        FcitxHotkey hkSaveAll[2];
 
         /**
          * @brief hotkey format for 2nd select key
          **/
-        HOTKEYS i2ndSelectKey[2];
+        FcitxHotkey i2ndSelectKey[2];
         /**
          * @brief hotkey format for 3rd select key
          **/
-        HOTKEYS i3rdSelectKey[2];
+        FcitxHotkey i3rdSelectKey[2];
 
         /**
          * @brief hide input window when there is only preedit string
@@ -192,25 +188,28 @@ extern "C" {
         /**
          * @brief switch the preedit should show in client window or not
          **/
-        HOTKEYS hkSwitchEmbeddedPreedit[2];
+        FcitxHotkey hkSwitchEmbeddedPreedit[2];
 
         /**
          * @brief Input method use global shared state
          **/
-        ShareState shareState;
+        FcitxShareState shareState;
 
         /**
          * @brief Input method enable by default
          **/
-        IME_STATE defaultIMState;
+        FcitxContextState defaultIMState;
 
         /**
          * @brief Enable Left Ctrl + Left Shift to Switch Between Input Method
          **/
         boolean bIMSwitchKey;
+        
+        boolean firstAsInactive;
 
-        int padding[63];
-    } FcitxConfig;
+        FcitxContextState _defaultIMState;
+        int padding[61];
+    } FcitxGlobalConfig;
 
     /**
      * @brief load config
@@ -218,14 +217,14 @@ extern "C" {
      * @param fc config instance
      * @return boolean load success or not
      **/
-    boolean LoadConfig(FcitxConfig* fc);
+    boolean FcitxGlobalConfigLoad(FcitxGlobalConfig* fc);
     /**
      * @brief save config
      *
      * @param fc config instance
      * @return void
      **/
-    void SaveConfig(FcitxConfig* fc);
+    void FcitxGlobalConfigSave(FcitxGlobalConfig* fc);
 
 #ifdef __cplusplus
 }

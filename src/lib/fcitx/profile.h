@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 #ifndef _FCITX_PROFILE_H_
@@ -39,9 +39,9 @@ extern "C" {
      **/
     typedef struct _FcitxProfile {
         /**
-         * @brief derives from GenericConfig
+         * @brief derives from FcitxGenericConfig
          **/
-        GenericConfig gconfig;
+        FcitxGenericConfig gconfig;
         /**
          * @brief use remind mode
          **/
@@ -80,14 +80,14 @@ extern "C" {
      * @param profile profile instance
      * @return boolean loading successful
      **/
-    boolean LoadProfile(FcitxProfile* profile, struct _FcitxInstance* instance);
+    boolean FcitxProfileLoad(FcitxProfile* profile, struct _FcitxInstance* instance);
     /**
      * @brief save profile
      *
      * @param profile profile instance
      * @return void
      **/
-    void SaveProfile(FcitxProfile* profile);
+    void FcitxProfileSave(FcitxProfile* profile);
 
 #ifdef __cplusplus
 }

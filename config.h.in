@@ -1,3 +1,6 @@
+#ifndef ___CONFIG_H___
+#define ___CONFIG_H___
+
 #cmakedefine HAVE_UNISTD_H
 #cmakedefine HAVE_MALLOC_H
 #cmakedefine HAVE_STDBOOL_H
@@ -7,6 +10,8 @@
 #cmakedefine _ENABLE_PANGO
 #cmakedefine _ENABLE_OPENCC
 #cmakedefine LIBKVM_FOUND
+#cmakedefine HAVE_XINERAMA
+#cmakedefine LIBICONV_SECOND_ARGUMENT_IS_CONST
 #define LOCALEDIR "@localedir@"
 #define PACKAGE "@package@"
 #define DATADIR "@prefix@/share"
@@ -15,3 +20,11 @@
 #define LIBDIR "@libdir@"
 #define VERSION "@version@"
 #define INTERNAL_VERSION 3
+
+#ifdef LIBICONV_SECOND_ARGUMENT_IS_CONST
+typedef const char* IconvStr;
+#else
+typedef char* IconvStr;
+#endif
+
+#endif

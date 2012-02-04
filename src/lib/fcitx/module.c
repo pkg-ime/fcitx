@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 #include <dlfcn.h>
@@ -30,6 +30,7 @@
 #include "instance.h"
 #include "instance-internal.h"
 #include "addon-internal.h"
+#include "ime-internal.h"
 
 static UT_icd  module_icd = {sizeof(FcitxModule*), NULL, NULL, NULL};
 typedef void*(*FcitxModuleFunction)(void *arg, FcitxModuleFunctionArg);
@@ -41,7 +42,7 @@ void InitFcitxModules(UT_array* modules)
 }
 
 FCITX_EXPORT_API
-void LoadModule(FcitxInstance* instance)
+void FcitxModuleLoad(FcitxInstance* instance)
 {
     UT_array* addons = &instance->addons;
     FcitxAddon *addon;
@@ -52,7 +53,7 @@ void LoadModule(FcitxInstance* instance)
             char *modulePath;
             switch (addon->type) {
             case AT_SHAREDLIBRARY: {
-                FILE *fp = GetLibFile(addon->library, "r", &modulePath);
+                FILE *fp = FcitxXDGGetLibFile(addon->library, "r", &modulePath);
                 void *handle;
                 FcitxModule* module;
                 void* moduleinstance = NULL;
@@ -96,15 +97,35 @@ void LoadModule(FcitxInstance* instance)
 }
 
 FCITX_EXPORT_API
-void* InvokeModuleFunction(FcitxAddon* addon, int functionId, FcitxModuleFunctionArg args)
+void* FcitxModuleInvokeFunction(FcitxAddon* addon, int functionId, FcitxModuleFunctionArg args)
 {
     if (addon == NULL) {
-        FcitxLog(ERROR, "addon is not valid");
+        FcitxLog(DEBUG, "addon is not valid");
         return NULL;
     }
+
+    /*
+     * Input Method can support lazy load
+     */
+    if (addon->category == AC_INPUTMETHOD) {
+        boolean flag = false;
+        FcitxAddon** pimclass = NULL;
+        for (pimclass = (FcitxAddon**) utarray_front(&addon->owner->imeclasses);
+                pimclass != NULL;
+                pimclass = (FcitxAddon**) utarray_next(&addon->owner->imeclasses, pimclass)
+            ) {
+            if (*pimclass == addon) {
+                flag = true;
+                break;
+            }
+        }
+        if (!flag)
+            FcitxInstanceLoadIM(addon->owner, addon);
+    }
+
     FcitxModuleFunction* func = (FcitxModuleFunction*) utarray_eltptr(&addon->functionList, functionId);
     if (func == NULL) {
-        FcitxLog(ERROR, "addon %s doesn't have function with id %d", addon->name, functionId);
+        FcitxLog(DEBUG, "addon %s doesn't have function with id %d", addon->name, functionId);
         return NULL;
     }
     void* result = (*func)(addon->addonInstance, args);
@@ -112,12 +133,13 @@ void* InvokeModuleFunction(FcitxAddon* addon, int functionId, FcitxModuleFunctio
 }
 
 FCITX_EXPORT_API
-void* InvokeModuleFunctionWithName(FcitxInstance* instance, const char* name, int functionId, FcitxModuleFunctionArg args)
+void* FcitxModuleInvokeFunctionByName(FcitxInstance* instance, const char* name, int functionId, FcitxModuleFunctionArg args)
 {
-    FcitxAddon* module = GetAddonByName(&instance->addons, name);
+    FcitxAddon* module = FcitxAddonsGetAddonByName(&instance->addons, name);
+
     if (module == NULL)
         return NULL;
     else
-        return InvokeModuleFunction(module, functionId, args);
+        return FcitxModuleInvokeFunction(module, functionId, args);
 }
 // kate: indent-mode cstyle; space-indent on; indent-width 0;

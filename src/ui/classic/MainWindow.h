@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 /**
  * @file   MainWindow.h
@@ -48,7 +48,6 @@ typedef struct _MainWindow {
     Window window;
     cairo_surface_t* cs_main_bar;
     cairo_surface_t* cs_x_main_bar;
-    GC main_win_gc;
     boolean bMainWindowHidden;
     FcitxClassicUIStatus logostat;
     FcitxClassicUIStatus imiconstat;

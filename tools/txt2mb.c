@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 #ifdef FCITX_HAVE_CONFIG_H
 #include <config.h>
@@ -30,6 +30,7 @@
 #include "fcitx-utils/utf8.h"
 #include "fcitx/fcitx.h"
 #include "fcitx-config/fcitx-config.h"
+#include "im/table/tabledict.h"
 
 #define STR_KEYCODE 0
 #define STR_CODELEN 1
@@ -54,30 +55,6 @@ int strLength[CONST_STR_SIZE];
 char            strInputCode[100] = "\0";
 char            strIgnoreChars[100] = "\0";
 char            cPinyinKey = '\0';
-
-typedef struct _RECORD {
-    char           *strCode;
-    char           *strHZ;
-    int8_t            bPinyin;
-
-    struct _RECORD *next;
-
-    struct _RECORD *prev;
-    unsigned int    iHit;
-    unsigned int    iIndex;
-} RECORD;
-
-typedef struct _RULE_RULE {
-    unsigned char   iFlag;  // 1 --> 正序   0 --> 逆序
-    unsigned char   iWhich; //第几个字
-    unsigned char   iIndex; //第几个编码
-} RULE_RULE;
-
-typedef struct _RULE {
-    unsigned char   iWords; //多少个字
-    unsigned char   iFlag;  //1 --> 大于等于iWords  0 --> 等于iWords
-    RULE_RULE      *rule;
-} RULE;
 
 void InitStrLength()
 {
@@ -109,7 +86,7 @@ boolean IsValidCode(char cChar)
         p++;
     }
 
-    if (cChar == cPinyinKey)
+    if (cChar == cPinyinKey || cChar == '^' || cChar == '&')
         return true;
 
     return false;
@@ -134,7 +111,7 @@ int main(int argc, char *argv[])
     unsigned char   iCodeLength = 0;
     unsigned char   iPYCodeLength = 0;
 
-    boolean            bPY;
+    int8_t          type;
 
     if (argc != 3) {
         printf("\nUsage: txt2mb <Source File> <IM File>\n\n");
@@ -379,23 +356,35 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-        if (((strCode[0] != cPinyinKey) && (strlen(strCode) > iCodeLength)) || ((strCode[0] == cPinyinKey) && (strlen(strCode) > (iPYCodeLength + 1)))) {
+        if (((strCode[0] != cPinyinKey) && (strlen(strCode) > iCodeLength))
+            || ((strCode[0] == cPinyinKey) && (strlen(strCode) > (iPYCodeLength + 1)))
+            || ((strCode[0] == '^') && (strlen(strCode) > (iCodeLength + 1)))
+            || ((strCode[0] == '&') && (strlen(strCode) > (iPYCodeLength + 1)))
+        ) {
             printf("Delete:  %s %s, Too long\n", strCode, strHZ);
             continue;
         }
 
-        if (utf8_strlen(strHZ) > PHRASE_MAX_LENGTH) { //最长词组长度为10个汉字
+        size_t hzLen = fcitx_utf8_strlen(strHZ);
+         // Utf-8 Longest Phrase Length is 10, longest construct code length is 1
+        if (hzLen > PHRASE_MAX_LENGTH || (strCode[0] == '^' && hzLen != 1)) {
             printf("Delete:  %s %s, Too long\n", strCode, strHZ);
             continue;
         }
 
-        bPY = false;
+        type = RECORDTYPE_NORMAL;
 
         pstr = strCode;
 
         if (strCode[0] == cPinyinKey) {
             pstr ++;
-            bPY = true;
+            type = RECORDTYPE_PINYIN;
+        } else if (strCode[0] == '^') {
+            pstr ++;
+            type = RECORDTYPE_CONSTRUCT;
+        } else if (strCode[0] == '&') {
+            pstr ++;
+            type = RECORDTYPE_PROMPT;
         }
 
         //查找是否重复
@@ -404,7 +393,7 @@ int main(int argc, char *argv[])
         if (temp != head) {
             if (strcmp(temp->strCode, pstr) >= 0) {
                 while (temp != head && strcmp(temp->strCode, pstr) >= 0) {
-                    if (!strcmp(temp->strHZ, strHZ) && !strcmp(temp->strCode, pstr)) {
+                    if (!strcmp(temp->strHZ, strHZ) && !strcmp(temp->strCode, pstr) && temp->type == type) {
                         printf("Delete:  %s %s\n", pstr, strHZ);
                         goto _next;
                     }
@@ -419,7 +408,7 @@ int main(int argc, char *argv[])
                     temp = temp->next;
             } else {
                 while (temp != head && strcmp(temp->strCode, pstr) <= 0) {
-                    if (!strcmp(temp->strHZ, strHZ) && !strcmp(temp->strCode, pstr)) {
+                    if (!strcmp(temp->strHZ, strHZ) && !strcmp(temp->strCode, pstr) && temp->type == type) {
                         printf("Delete:  %s %s\n", pstr, strHZ);
                         goto _next;
                     }
@@ -440,7 +429,7 @@ int main(int argc, char *argv[])
 
         strcpy(newRec->strHZ, strHZ);
 
-        newRec->bPinyin = bPY;
+        newRec->type = type;
 
         newRec->iHit = 0;
 
@@ -477,8 +466,8 @@ int main(int argc, char *argv[])
 
     //写入版本号--如果第一个字为0,表示后面那个字节为版本号
     iTemp = 0;
-    fwrite(&iTemp, sizeof(unsigned int), 1, fpDict);
-    fwrite(&iInternalVersion, sizeof(int8_t), 1, fpDict);
+    fwrite(&iTemp, sizeof(unsigned int), 1, fpNew);
+    fwrite(&iInternalVersion, sizeof(int8_t), 1, fpNew);
 
     iTemp = (unsigned int) strlen(strInputCode);
     fwrite(&iTemp, sizeof(unsigned int), 1, fpNew);
@@ -513,7 +502,7 @@ int main(int argc, char *argv[])
         s = strlen(current->strHZ) + 1;
         fwrite(&s, sizeof(unsigned int), 1, fpNew);
         fwrite(current->strHZ, sizeof(char), s, fpNew);
-        fwrite(&(current->bPinyin), sizeof(char), 1, fpDict);
+        fwrite(&(current->type), sizeof(int8_t), 1, fpNew);
         fwrite(&(current->iHit), sizeof(unsigned int), 1, fpNew);
         fwrite(&(current->iIndex), sizeof(unsigned int), 1, fpNew);
         current = current->next;

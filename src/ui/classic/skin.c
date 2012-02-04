@@ -17,7 +17,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 /**
@@ -26,7 +26,7 @@
  *
  * @date   2009-10-9
  *
- * @brief  皮肤设置相关定义及初始化加载工作
+ * @brief  Skin setting related code and draw code.
  *
  *
  */
@@ -62,7 +62,7 @@
 static const UT_icd place_icd = {sizeof(SkinPlacement), NULL, NULL, NULL };
 
 static boolean SkinMenuAction(FcitxUIMenu* menu, int index);
-static void UpdateSkinMenuShell(FcitxUIMenu* menu);
+static void UpdateSkinMenu(FcitxUIMenu* menu);
 static void UnloadImage(FcitxSkin* skin);
 
 CONFIG_DESC_DEFINE(GetSkinDesc, "skin.desc")
@@ -73,12 +73,11 @@ CONFIG_DESC_DEFINE(GetSkinDesc, "skin.desc")
 int LoadSkinConfig(FcitxSkin* sc, char** skinType)
 {
     FILE    *fp;
-    char  buf[PATH_MAX] = {0};
     boolean    isreload = False;
     int ret = 0;
     if (sc->config.configFile) {
         utarray_done(&sc->skinMainBar.skinPlacement);
-        FreeConfigFile(sc->config.configFile);
+        FcitxConfigFreeConfigFile(sc->config.configFile);
         free(sc->skinInfo.skinName);
         free(sc->skinInfo.skinVersion);
         free(sc->skinInfo.skinAuthor);
@@ -104,10 +103,11 @@ reload:
     //获取配置文件的绝对路径
     {
         if (!isreload) {
-            snprintf(buf, PATH_MAX, "%s/fcitx_skin.conf", *skinType);
-            buf[PATH_MAX - 1] = '\0';
+            char* buf;
+            asprintf(&buf, "%s/fcitx_skin.conf", *skinType);
 
-            fp = GetXDGFileWithPrefix("skin", buf, "r", NULL);
+            fp = FcitxXDGGetFileWithPrefix("skin", buf, "r", NULL);
+            free(buf);
         } else {
             FcitxLog(INFO, PKGDATADIR "/skin/default/fcitx_skin.conf");
             fp = fopen(PKGDATADIR "/skin/default/fcitx_skin.conf", "r");
@@ -115,20 +115,20 @@ reload:
     }
 
     if (fp) {
-        ConfigFile *cfile;
-        ConfigFileDesc* skinDesc = GetSkinDesc();
+        FcitxConfigFile *cfile;
+        FcitxConfigFileDesc* skinDesc = GetSkinDesc();
         if (sc->config.configFile == NULL) {
-            cfile = ParseConfigFileFp(fp, skinDesc);
+            cfile = FcitxConfigParseConfigFileFp(fp, skinDesc);
         } else {
             cfile = sc->config.configFile;
-            cfile = ParseIniFp(fp, cfile);
+            cfile = FcitxConfigParseIniFp(fp, cfile);
         }
         if (!cfile) {
             fclose(fp);
             fp = NULL;
         } else {
             FcitxSkinConfigBind(sc, cfile, skinDesc);
-            ConfigBindSync((GenericConfig*)sc);
+            FcitxConfigBindSync((FcitxGenericConfig*)sc);
         }
     }
 
@@ -158,7 +158,6 @@ reload:
 
 SkinImage* LoadImage(FcitxSkin* sc, const char* name, boolean fallback)
 {
-    char buf[PATH_MAX];
     cairo_surface_t *png = NULL;
     SkinImage *image = NULL;
 
@@ -168,13 +167,14 @@ SkinImage* LoadImage(FcitxSkin* sc, const char* name, boolean fallback)
     if (strlen(name) > 0 && strcmp(name , "NONE") != 0) {
         char *skintype = strdup(*sc->skinType);
         size_t len;
-        char ** path = GetXDGPath(&len, "XDG_CONFIG_HOME", ".config", PACKAGE "/skin" , DATADIR, PACKAGE "/skin");
+        char ** path = FcitxXDGGetPath(&len, "XDG_CONFIG_HOME", ".config", PACKAGE "/skin" , DATADIR, PACKAGE "/skin");
         char *filename;
-        while (True) {
-            snprintf(buf, PATH_MAX, "%s/%s", skintype, name);
-            buf[PATH_MAX - 1] = '\0';
+        while (true) {
+            char* buf = NULL;
+            asprintf(&buf, "%s/%s", skintype, name);
 
-            FILE* fp = GetXDGFile(buf, path, "r", len, &filename);
+            FILE* fp = FcitxXDGGetFile(buf, path, "r", len, &filename);
+            free(buf);
 
             Bool flagNoFile = (fp == NULL);
             if (fp) {
@@ -194,11 +194,11 @@ SkinImage* LoadImage(FcitxSkin* sc, const char* name, boolean fallback)
         }
         free(filename);
         free(skintype);
-        FreeXDGPath(path);
+        FcitxXDGFreePath(path);
     }
 
     if (png != NULL) {
-        image = fcitx_malloc0(sizeof(SkinImage));
+        image = fcitx_utils_malloc0(sizeof(SkinImage));
         image->name = strdup(name);
         image->image = png;
         HASH_ADD_KEYPTR(hh, sc->imageTable, image->name, strlen(image->name), image);
@@ -470,7 +470,7 @@ void LoadInputMessage(FcitxSkin* sc, InputWindow* inputWindow, const char* font)
 {
     int i = 0;
 
-    ConfigColor cursorColor = sc->skinInputBar.cursorColor;
+    FcitxConfigColor cursorColor = sc->skinInputBar.cursorColor;
 
     if (inputWindow->c_back) {
         cairo_destroy(inputWindow->c_back);
@@ -532,7 +532,7 @@ void DrawImage(cairo_t *c, cairo_surface_t * png, int x, int y, MouseE mouse)
     cairo_restore(c);
 }
 
-void DrawInputBar(FcitxSkin* sc, InputWindow* inputWindow, int iCursorPos, Messages * msgup, Messages *msgdown , unsigned int * iheight, unsigned int *iwidth)
+void DrawInputBar(FcitxSkin* sc, InputWindow* inputWindow, int iCursorPos, FcitxMessages * msgup, FcitxMessages *msgdown , unsigned int * iheight, unsigned int *iwidth)
 {
     int i;
     char *strUp[MAX_MESSAGE_COUNT];
@@ -547,6 +547,7 @@ void DrawInputBar(FcitxSkin* sc, InputWindow* inputWindow, int iCursorPos, Messa
     cairo_t *c = NULL;
     FcitxInputState* input = FcitxInstanceGetInputState(inputWindow->owner->owner);
     FcitxInstance* instance = inputWindow->owner->owner;
+    FcitxClassicUI* classicui = inputWindow->owner;
     int iChar = iCursorPos;
     int strWidth = 0, strHeight = 0;
 
@@ -555,7 +556,7 @@ void DrawInputBar(FcitxSkin* sc, InputWindow* inputWindow, int iCursorPos, Messa
     prev = LoadImage(sc, sc->skinInputBar.backArrow, false);
     next = LoadImage(sc, sc->skinInputBar.forwardArrow, false);
 
-    if (!IsMessageChanged(msgup) && !IsMessageChanged(msgdown))
+    if (!FcitxMessagesIsMessageChanged(msgup) && !FcitxMessagesIsMessageChanged(msgdown))
         return;
 
     inputWidth = 0;
@@ -563,20 +564,20 @@ void DrawInputBar(FcitxSkin* sc, InputWindow* inputWindow, int iCursorPos, Messa
     SetFontContext(dummy, inputWindow->owner->font, sc->skinFont.fontSize);
 #endif
 
-    for (i = 0; i < GetMessageCount(msgup) ; i++) {
-        char *trans = ProcessOutputFilter(instance, GetMessageString(msgup, i));
+    for (i = 0; i < FcitxMessagesGetMessageCount(msgup) ; i++) {
+        char *trans = FcitxInstanceProcessOutputFilter(instance, FcitxMessagesGetMessageString(msgup, i));
         if (trans)
             strUp[i] = trans;
         else
-            strUp[i] = GetMessageString(msgup, i);
+            strUp[i] = FcitxMessagesGetMessageString(msgup, i);
         posUpX[i] = sc->skinInputBar.marginLeft + inputWidth;
 
-        StringSizeWithContext(inputWindow->c_font[GetMessageType(msgup, i)], strUp[i], &strWidth, &strHeight);
+        StringSizeWithContext(inputWindow->c_font[FcitxMessagesGetMessageType(msgup, i)], strUp[i], &strWidth, &strHeight);
 
         posUpY[i] = sc->skinInputBar.marginTop + sc->skinInputBar.iInputPos - strHeight;
         inputWidth += strWidth;
         if (FcitxInputStateGetShowCursor(input)) {
-            int length = strlen(GetMessageString(msgup, i));
+            int length = strlen(FcitxMessagesGetMessageString(msgup, i));
             if (iChar >= 0) {
                 if (iChar < length) {
                     char strTemp[MESSAGE_MAX_LENGTH];
@@ -584,7 +585,7 @@ void DrawInputBar(FcitxSkin* sc, InputWindow* inputWindow, int iCursorPos, Messa
                     strncpy(strTemp, strUp[i], iChar);
                     strTemp[iChar] = '\0';
                     strGBKT = strTemp;
-                    StringSizeWithContext(inputWindow->c_font[GetMessageType(msgup, i)], strGBKT, &strWidth, &strHeight);
+                    StringSizeWithContext(inputWindow->c_font[FcitxMessagesGetMessageType(msgup, i)], strGBKT, &strWidth, &strHeight);
                     cursor_pos = posUpX[i]
                                  + strWidth + 2;
                 }
@@ -600,15 +601,15 @@ void DrawInputBar(FcitxSkin* sc, InputWindow* inputWindow, int iCursorPos, Messa
     outputWidth = 0;
     outputHeight = 0;
     int currentX = 0;
-    for (i = 0; i < GetMessageCount(msgdown) ; i++) {
-        char *trans = ProcessOutputFilter(instance, GetMessageString(msgdown, i));
+    for (i = 0; i < FcitxMessagesGetMessageCount(msgdown) ; i++) {
+        char *trans = FcitxInstanceProcessOutputFilter(instance, FcitxMessagesGetMessageString(msgdown, i));
         if (trans)
             strDown[i] = trans;
         else
-            strDown[i] = GetMessageString(msgdown, i);
+            strDown[i] = FcitxMessagesGetMessageString(msgdown, i);
 
         if (inputWindow->owner->bVerticalList) { /* vertical */
-            if (GetMessageType(msgdown, i) == MSG_INDEX) {
+            if (FcitxMessagesGetMessageType(msgdown, i) == MSG_INDEX) {
                 if (currentX > outputWidth)
                     outputWidth = currentX;
                 if (i != 0) {
@@ -617,12 +618,12 @@ void DrawInputBar(FcitxSkin* sc, InputWindow* inputWindow, int iCursorPos, Messa
                 }
             }
             posDownX[i] = sc->skinInputBar.marginLeft + currentX;
-            StringSizeWithContext(inputWindow->c_font[GetMessageType(msgdown, i)], strDown[i], &strWidth, &strHeight);
+            StringSizeWithContext(inputWindow->c_font[FcitxMessagesGetMessageType(msgdown, i)], strDown[i], &strWidth, &strHeight);
             currentX += strWidth;
             posDownY[i] =  sc->skinInputBar.marginTop + sc->skinInputBar.iOutputPos + outputHeight - strHeight;
         } else { /* horizontal */
             posDownX[i] = sc->skinInputBar.marginLeft + outputWidth;
-            StringSizeWithContext(inputWindow->c_font[GetMessageType(msgdown, i)], strDown[i], &strWidth, &strHeight);
+            StringSizeWithContext(inputWindow->c_font[FcitxMessagesGetMessageType(msgdown, i)], strDown[i], &strWidth, &strHeight);
             posDownY[i] = sc->skinInputBar.marginTop + sc->skinInputBar.iOutputPos - strHeight;
             outputWidth += strWidth;
         }
@@ -638,16 +639,19 @@ void DrawInputBar(FcitxSkin* sc, InputWindow* inputWindow, int iCursorPos, Messa
     /* round to ROUND_SIZE in order to decrease resize */
     newWidth = (newWidth / ROUND_SIZE) * ROUND_SIZE + ROUND_SIZE;
 
-    //输入条长度应该比背景图长度要长,比最大长度要短
-    newWidth = (newWidth >= INPUT_BAR_MAX_WIDTH) ? INPUT_BAR_MAX_WIDTH : newWidth;
     if (inputWindow->owner->bVerticalList) { /* vertical */
         newWidth = (newWidth < INPUT_BAR_VMIN_WIDTH) ? INPUT_BAR_VMIN_WIDTH : newWidth;
     } else {
         newWidth = (newWidth < INPUT_BAR_HMIN_WIDTH) ? INPUT_BAR_HMIN_WIDTH : newWidth;
     }
-
+    
     *iwidth = newWidth;
     *iheight = newHeight;
+
+    EnlargeCairoSurface(&inputWindow->cs_input_back, newWidth, newHeight);
+    if (EnlargeCairoSurface(&inputWindow->cs_input_bar, newWidth, newHeight)) {
+        LoadInputMessage(&classicui->skin, classicui->inputWindow, classicui->font);
+    }
 
     if (oldHeight != newHeight || oldWidth != newWidth) {
         c = cairo_create(inputWindow->cs_input_back);
@@ -680,7 +684,7 @@ void DrawInputBar(FcitxSkin* sc, InputWindow* inputWindow, int iCursorPos, Messa
             cairo_set_source_surface(inputWindow->c_back, prev->image,
                                      newWidth - sc->skinInputBar.iBackArrowX ,
                                      sc->skinInputBar.iBackArrowY);
-            if (CandidateWordHasPrev(FcitxInputStateGetCandidateList(input)))
+            if (FcitxCandidateWordHasPrev(FcitxInputStateGetCandidateList(input)))
                 cairo_paint(inputWindow->c_back);
             else
                 cairo_paint_with_alpha(inputWindow->c_back, 0.5);
@@ -689,22 +693,22 @@ void DrawInputBar(FcitxSkin* sc, InputWindow* inputWindow, int iCursorPos, Messa
             cairo_set_source_surface(inputWindow->c_back, next->image,
                                      newWidth - sc->skinInputBar.iForwardArrowX ,
                                      sc->skinInputBar.iForwardArrowY);
-            if (CandidateWordHasNext(FcitxInputStateGetCandidateList(input)))
+            if (FcitxCandidateWordHasNext(FcitxInputStateGetCandidateList(input)))
                 cairo_paint(inputWindow->c_back);
             else
                 cairo_paint_with_alpha(inputWindow->c_back, 0.5);
         }
     }
 
-    for (i = 0; i < GetMessageCount(msgup) ; i++) {
-        OutputStringWithContext(inputWindow->c_font[GetMessageType(msgup, i)], strUp[i], posUpX[i], posUpY[i]);
-        if (strUp[i] != GetMessageString(msgup, i))
+    for (i = 0; i < FcitxMessagesGetMessageCount(msgup) ; i++) {
+        OutputStringWithContext(inputWindow->c_font[FcitxMessagesGetMessageType(msgup, i)], strUp[i], posUpX[i], posUpY[i]);
+        if (strUp[i] != FcitxMessagesGetMessageString(msgup, i))
             free(strUp[i]);
     }
 
-    for (i = 0; i < GetMessageCount(msgdown) ; i++) {
-        OutputStringWithContext(inputWindow->c_font[GetMessageType(msgdown, i)], strDown[i], posDownX[i], posDownY[i]);
-        if (strDown[i] != GetMessageString(msgdown, i))
+    for (i = 0; i < FcitxMessagesGetMessageCount(msgdown) ; i++) {
+        OutputStringWithContext(inputWindow->c_font[FcitxMessagesGetMessageType(msgdown, i)], strDown[i], posDownX[i], posDownY[i]);
+        if (strDown[i] != FcitxMessagesGetMessageString(msgdown, i))
             free(strDown[i]);
     }
 
@@ -718,8 +722,8 @@ void DrawInputBar(FcitxSkin* sc, InputWindow* inputWindow, int iCursorPos, Messa
     }
 
     cairo_destroy(c);
-    SetMessageChanged(msgup, false);
-    SetMessageChanged(msgdown, false);
+    FcitxMessagesSetMessageChanged(msgup, false);
+    FcitxMessagesSetMessageChanged(msgdown, false);
 }
 
 void DisplaySkin(FcitxClassicUI* classicui, char * skinname)
@@ -730,7 +734,7 @@ void DisplaySkin(FcitxClassicUI* classicui, char * skinname)
         free(pivot);
 
     if (LoadSkinConfig(&classicui->skin, &classicui->skinType))
-        EndInstance(classicui->owner);
+        FcitxInstanceEnd(classicui->owner);
 
 #ifndef _ENABLE_PANGO
     GetValidFont(classicui->strUserLocale, &classicui->font);
@@ -772,8 +776,8 @@ void LoadSkinDirectory(FcitxClassicUI* classicui)
     struct dirent *drt;
     struct stat fileStat;
     size_t len;
-    char pathBuf[PATH_MAX];
-    char **skinPath = GetXDGPath(&len, "XDG_CONFIG_HOME", ".config", PACKAGE "/skin" , DATADIR, PACKAGE "/skin");
+    char *pathBuf;
+    char **skinPath = FcitxXDGGetPath(&len, "XDG_CONFIG_HOME", ".config", PACKAGE "/skin" , DATADIR, PACKAGE "/skin");
     for (i = 0; i < len; i++) {
         dir = opendir(skinPath[i]);
         if (dir == NULL)
@@ -782,9 +786,11 @@ void LoadSkinDirectory(FcitxClassicUI* classicui)
         while ((drt = readdir(dir)) != NULL) {
             if (strcmp(drt->d_name , ".") == 0 || strcmp(drt->d_name, "..") == 0)
                 continue;
-            sprintf(pathBuf, "%s/%s", skinPath[i], drt->d_name);
+            asprintf(&pathBuf, "%s/%s", skinPath[i], drt->d_name);
 
-            if (stat(pathBuf, &fileStat) == -1) {
+            int statresult = stat(pathBuf, &fileStat);
+            free(pathBuf);
+            if (statresult == -1) {
                 continue;
             }
             if (fileStat.st_mode & S_IFDIR) {
@@ -805,7 +811,7 @@ void LoadSkinDirectory(FcitxClassicUI* classicui)
         closedir(dir);
     }
 
-    FreeXDGPath(skinPath);
+    FcitxXDGFreePath(skinPath);
 
     return;
 }
@@ -813,11 +819,11 @@ void LoadSkinDirectory(FcitxClassicUI* classicui)
 void InitSkinMenu(FcitxClassicUI* classicui)
 {
     utarray_init(&classicui->skinBuf, &ut_str_icd);
-    strcpy(classicui->skinMenu.candStatusBind, "skin");
-    strcpy(classicui->skinMenu.name, _("Skin"));
-    utarray_init(&classicui->skinMenu.shell, &menuICD);
+    FcitxMenuInit(&classicui->skinMenu);
+    classicui->skinMenu.candStatusBind = strdup("skin");
+    classicui->skinMenu.name =  strdup(_("Skin"));
 
-    classicui->skinMenu.UpdateMenuShell = UpdateSkinMenuShell;
+    classicui->skinMenu.UpdateMenu = UpdateSkinMenu;
     classicui->skinMenu.MenuAction = SkinMenuAction;
     classicui->skinMenu.priv = classicui;
     classicui->skinMenu.isSubMenu = false;
@@ -826,17 +832,17 @@ void InitSkinMenu(FcitxClassicUI* classicui)
 boolean SkinMenuAction(FcitxUIMenu* menu, int index)
 {
     FcitxClassicUI* classicui = (FcitxClassicUI*) menu->priv;
-    MenuShell* shell = (MenuShell*) utarray_eltptr(&menu->shell, index);
+    FcitxMenuItem* shell = (FcitxMenuItem*) utarray_eltptr(&menu->shell, index);
     if (shell)
         DisplaySkin(classicui, shell->tipstr);
     return true;
 }
 
-void UpdateSkinMenuShell(FcitxUIMenu* menu)
+void UpdateSkinMenu(FcitxUIMenu* menu)
 {
     FcitxClassicUI* classicui = (FcitxClassicUI*) menu->priv;
     LoadSkinDirectory(classicui);
-    ClearMenuShell(menu);
+    FcitxMenuClear(menu);
     char **s;
     int i = 0;
 
@@ -846,7 +852,7 @@ void UpdateSkinMenuShell(FcitxUIMenu* menu)
         if (strcmp(*s, classicui->skinType) == 0) {
             menu->mark = i;
         }
-        AddMenuShell(menu, *s, MENUTYPE_SIMPLE, NULL);
+        FcitxMenuAddMenuItem(menu, *s, MENUTYPE_SIMPLE, NULL);
         i ++;
     }
 
@@ -854,7 +860,7 @@ void UpdateSkinMenuShell(FcitxUIMenu* menu)
 
 void ParsePlacement(UT_array* sps, char* placment)
 {
-    UT_array* array = SplitString(placment, ';');
+    UT_array* array = fcitx_utils_split_string(placment, ';');
     char** str;
     utarray_clear(sps);
     for (str = (char**) utarray_front(array);
@@ -864,13 +870,10 @@ void ParsePlacement(UT_array* sps, char* placment)
         char* p = strchr(s, ':');
         if (p == NULL)
             continue;
-        if ((strchr(s, ':') - s) > MAX_STATUS_NAME)
-            continue;
 
         int len = p - s;
         SkinPlacement sp;
-        strncpy(sp.name, s, len);
-        sp.name[len] = '\0';
+        sp.name = strndup(s, len);
         int ret = sscanf(p + 1, "%d,%d", &sp.x, &sp.y);
         if (ret != 2)
             continue;

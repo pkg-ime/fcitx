@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 #include <X11/Xlib.h>
@@ -40,7 +40,7 @@ void InitXErrorHandler(FcitxX11* x11priv)
 int FcitxXIOErrorHandler(Display *d)
 {
     /* Do not log, because this is likely to happen while log out */
-    SaveAllIM(x11handle->owner);
+    FcitxInstanceSaveAllIM(x11handle->owner);
 
     if (oldXIOErrorHandler)
         oldXIOErrorHandler(d);
@@ -53,13 +53,13 @@ int FcitxXErrorHandler(Display * dpy, XErrorEvent * event)
     char    str[256];
     FILE* fp = NULL;
 
-    fp = GetXDGFileUserWithPrefix("log", "crash.log", "wt" , NULL);
+    fp = FcitxXDGGetFileUserWithPrefix("log", "crash.log", "wt" , NULL);
     if (fp) {
         XGetErrorText(dpy, event->error_code, str, 255);
         fprintf(fp, "fcitx: %s\n", str);
     }
 
-    SaveAllIM(x11handle->owner);
+    FcitxInstanceSaveAllIM(x11handle->owner);
 
     if (fp)
         fclose(fp);

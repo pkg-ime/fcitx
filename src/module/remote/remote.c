@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 #include <errno.h>
 #include <stdio.h>
@@ -55,28 +55,29 @@ FCITX_EXPORT_API
 int ABI_VERSION = FCITX_ABI_VERSION;
 
 typedef struct _FcitxRemote {
-    char socketfile[PATH_MAX];
     FcitxInstance* owner;
     int socket_fd;
 } FcitxRemote;
 
 void* RemoteCreate(FcitxInstance* instance)
 {
-    FcitxRemote* remote = fcitx_malloc0(sizeof(FcitxRemote));
+    FcitxRemote* remote = fcitx_utils_malloc0(sizeof(FcitxRemote));
     remote->owner = instance;
 
-    char *socketfile = remote->socketfile;
-    sprintf(socketfile, "/tmp/fcitx-socket-:%d", FcitxGetDisplayNumber());
+    char *socketfile;
+    asprintf(&socketfile, "/tmp/fcitx-socket-:%d", fcitx_utils_get_display_number());
     remote->socket_fd = CreateSocket(socketfile);
     if (remote->socket_fd < 0) {
         FcitxLog(ERROR, _("Can't open socket %s: %s"), socketfile, strerror(errno));
         free(remote);
+        free(socketfile);
         return NULL;
     }
 
     fcntl(remote->socket_fd, F_SETFD, FD_CLOEXEC);
     fcntl(remote->socket_fd, F_SETFL, O_NONBLOCK);
     chmod(socketfile, 0600);
+    free(socketfile);
     return remote;
 }
 
@@ -136,7 +137,7 @@ int UdAccept(int listenfd)
 
 static void SendIMState(FcitxRemote* remote, int fd)
 {
-    IME_STATE r = GetCurrentState(remote->owner);
+    FcitxContextState r = FcitxInstanceGetCurrentState(remote->owner);
     write(fd, &r, sizeof(r));
 }
 
@@ -151,7 +152,7 @@ static void RemoteProcessEvent(void* p)
     read(client_fd, &O, sizeof(int));
     unsigned int cmd = O & 0xFFFF;
     unsigned int arg = (O >> 16) & 0xFFFF;
-    FcitxLock(remote->owner);
+    FcitxInstanceLock(remote->owner);
     switch (cmd) {
         /// {{{
     case 0:
@@ -159,18 +160,18 @@ static void RemoteProcessEvent(void* p)
         break;
     case 1:
         if (arg == IS_CLOSED)
-            CloseIM(remote->owner, GetCurrentIC(remote->owner));
+            FcitxInstanceCloseIM(remote->owner, FcitxInstanceGetCurrentIC(remote->owner));
         else
-            EnableIM(remote->owner, GetCurrentIC(remote->owner), false);
+            FcitxInstanceEnableIM(remote->owner, FcitxInstanceGetCurrentIC(remote->owner), false);
         break;
     case 2:
-        ReloadConfig(remote->owner);
+        FcitxInstanceReloadConfig(remote->owner);
         break;
     default:
         break;
         /// }}}
     }
-    FcitxUnlock(remote->owner);
+    FcitxInstanceUnlock(remote->owner);
     close(client_fd);
 }
 

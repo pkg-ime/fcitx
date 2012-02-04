@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 #ifndef _FCITX_MODULE_H
@@ -81,7 +81,7 @@ extern "C" {
      * @param instance fcitx instance
      * @return void
      **/
-    void LoadModule(struct _FcitxInstance* instance);
+    void FcitxModuleLoad(struct _FcitxInstance* instance);
 
     /**
      * @brief invode inter module function wiht addon pointer, returns NULL when fails (the function itself can also return NULL)
@@ -91,7 +91,7 @@ extern "C" {
      * @param args arguments
      * @return void*
      **/
-    void* InvokeModuleFunction(struct _FcitxAddon* addon, int functionId, FcitxModuleFunctionArg args);
+    void* FcitxModuleInvokeFunction(struct _FcitxAddon* addon, int functionId, FcitxModuleFunctionArg args);
 
     /**
      * @brief invoke inter module function with addon name, returns NULL when fails (the function itself can also return NULL)
@@ -102,10 +102,10 @@ extern "C" {
      * @param args arguments
      * @return void*
      **/
-    void* InvokeModuleFunctionWithName(struct _FcitxInstance* instance, const char* name, int functionId, FcitxModuleFunctionArg args);
+    void* FcitxModuleInvokeFunctionByName(struct _FcitxInstance* instance, const char* name, int functionId, FcitxModuleFunctionArg args);
 
 #define InvokeFunction(INST, MODULE, FUNC, ARG)  \
-    ((MODULE##_##FUNC##_RETURNTYPE) InvokeModuleFunctionWithName(INST, MODULE##_NAME, MODULE##_##FUNC, ARG))
+    ((MODULE##_##FUNC##_RETURNTYPE) FcitxModuleInvokeFunctionByName(INST, MODULE##_NAME, MODULE##_##FUNC, ARG))
 
 #define AddFunction(ADDON, Realname) \
     do { \

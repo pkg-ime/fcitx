@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 #include <unistd.h>
@@ -54,7 +54,7 @@ FCITX_GETTER_REF(FcitxInstance, WriteFDSet, wfds, fd_set)
 FCITX_GETTER_REF(FcitxInstance, ExceptFDSet, efds, fd_set)
 FCITX_GETTER_VALUE(FcitxInstance, MaxFD, maxfd, int)
 FCITX_SETTER(FcitxInstance, MaxFD, maxfd, int)
-FCITX_GETTER_VALUE(FcitxInstance, Config, config, FcitxConfig*)
+FCITX_GETTER_VALUE(FcitxInstance, GlobalConfig, config, FcitxGlobalConfig*)
 FCITX_GETTER_VALUE(FcitxInstance, Profile, profile, FcitxProfile*)
 FCITX_GETTER_VALUE(FcitxInstance, InputState, input, FcitxInputState*)
 
@@ -67,6 +67,7 @@ static boolean ProcessOption(FcitxInstance* instance, int argc, char* argv[]);
 static void Usage();
 static void Version();
 static void* RunInstance(void* arg);
+static void FcitxInstanceInitBuiltContext(FcitxInstance* instance);
 
 /**
  * @brief 显示命令行参数
@@ -74,6 +75,7 @@ static void* RunInstance(void* arg);
 void Usage()
 {
     printf("Usage: fcitx [OPTION]\n"
+           "\t-r, --replace\t\ttry replace existing fcitx, need module support.\n"
            "\t-d\t\t\trun as daemon(default)\n"
            "\t-D\t\t\tdon't run as daemon\n"
            "\t-s[sleep time]\t\toverride delay start time in config file, 0 for immediate start\n"
@@ -91,24 +93,24 @@ void Version()
 }
 
 FCITX_EXPORT_API
-FcitxInstance* CreateFcitxInstance(sem_t *sem, int argc, char* argv[])
+FcitxInstance* FcitxInstanceCreate(sem_t *sem, int argc, char* argv[])
 {
-    FcitxInstance* instance = fcitx_malloc0(sizeof(FcitxInstance));
-    InitFcitxAddons(&instance->addons);
-    InitFcitxIM(instance);
-    InitFcitxFrontends(&instance->frontends);
+    FcitxInstance* instance = fcitx_utils_malloc0(sizeof(FcitxInstance));
+    FcitxAddonsInit(&instance->addons);
+    FcitxInstanceInitIM(instance);
+    FcitxFrontendsInit(&instance->frontends);
     InitFcitxModules(&instance->eventmodules);
     utarray_init(&instance->uistats, &stat_icd);
     utarray_init(&instance->uimenus, &menup_icd);
-    instance->input = CreateFcitxInputState();
+    instance->input = FcitxInputStateCreate();
     instance->sem = sem;
-    instance->config = fcitx_malloc0(sizeof(FcitxConfig));
-    instance->profile = fcitx_malloc0(sizeof(FcitxProfile));
+    instance->config = fcitx_utils_malloc0(sizeof(FcitxGlobalConfig));
+    instance->profile = fcitx_utils_malloc0(sizeof(FcitxProfile));
 
-    if (!LoadConfig(instance->config))
+    if (!FcitxGlobalConfigLoad(instance->config))
         goto error_exit;
 
-    CandidateWordSetPageSize(instance->input->candList, instance->config->iMaxCandWord);
+    FcitxCandidateWordSetPageSize(instance->input->candList, instance->config->iMaxCandWord);
 
     if (!ProcessOption(instance, argc, argv))
         goto error_exit;
@@ -118,43 +120,54 @@ FcitxInstance* CreateFcitxInstance(sem_t *sem, int argc, char* argv[])
     instance->totaltime = 0;
 
     FcitxInitThread(instance);
-    if (!LoadProfile(instance->profile, instance))
+    if (!FcitxProfileLoad(instance->profile, instance))
         goto error_exit;
-    if (GetAddonConfigDesc() == NULL)
+    if (FcitxAddonGetConfigDesc() == NULL)
+        goto error_exit;
+    if (GetIMConfigDesc() == NULL)
         goto error_exit;
 
-    LoadAddonInfo(&instance->addons);
-    AddonResolveDependency(instance);
-    InitBuiltInHotkey(instance);
-    LoadModule(instance);
-    if (!LoadAllIM(instance)) {
-        EndInstance(instance);
+    FcitxAddonsLoad(&instance->addons);
+
+    /* FIXME: a walkaround for not have instance in function FcitxModuleInvokeFunction */
+    FcitxAddon* addon;
+    for (addon = (FcitxAddon *) utarray_front(&instance->addons);
+            addon != NULL;
+            addon = (FcitxAddon *) utarray_next(&instance->addons, addon)) {
+        addon->owner = instance;
+    }
+    FcitxInstanceResolveAddonDependency(instance);
+    FcitxInstanceInitBuiltInHotkey(instance);
+    FcitxInstanceInitBuiltContext(instance);
+    FcitxModuleLoad(instance);
+    if (!FcitxInstanceLoadAllIM(instance)) {
+        FcitxInstanceEnd(instance);
         return instance;
     }
 
-    InitIMMenu(instance);
-    RegisterMenu(instance, &instance->imMenu);
-    RegisterStatus(instance, instance, "remind", _("Remind"), _("Remind"), ToggleRemindState, GetRemindEnabled);
+    FcitxInstanceInitIMMenu(instance);
+    FcitxUIRegisterMenu(instance, &instance->imMenu);
+    FcitxUIRegisterStatus(instance, instance, "remind", _("Remind"), _("Remind"), ToggleRemindState, GetRemindEnabled);
 
-    LoadUserInterface(instance);
+    FcitxUILoad(instance);
 
-    instance->iIMIndex = GetIMIndexByName(instance, instance->profile->imName);
+    instance->iIMIndex = FcitxInstanceGetIMIndexByName(instance, instance->profile->imName);
 
-    SwitchIM(instance, instance->iIMIndex);
+    FcitxInstanceSwitchIM(instance, instance->iIMIndex);
+    instance->lastIMIndex = instance->iIMIndex;
 
-    if (!LoadFrontend(instance)) {
-        EndInstance(instance);
+    if (!FcitxInstanceLoadFrontend(instance)) {
+        FcitxInstanceEnd(instance);
         return instance;
     }
 
     if (instance->config->bFirstRun) {
         instance->config->bFirstRun = false;
-        SaveConfig(instance->config);
+        FcitxGlobalConfigSave(instance->config);
 
         const char *imname = "fcitx";
-        char strTemp[PATH_MAX];
-        snprintf(strTemp, PATH_MAX, "@im=%s", imname);
-        strTemp[PATH_MAX - 1] = '\0';
+        char *strTemp;
+        asprintf(&strTemp, "@im=%s", imname);
 
         if ((getenv("XMODIFIERS") != NULL && CHECK_ENV("XMODIFIERS", strTemp, true)) ||
                 (CHECK_ENV("GTK_IM_MODULE", "xim", false) && CHECK_ENV("GTK_IM_MODULE", "fcitx", false))
@@ -173,8 +186,10 @@ FcitxInstance* CreateFcitxInstance(sem_t *sem, int argc, char* argv[])
             msg[10] = _("If you use login manager like gdm or kdm, put those lines in your ~/.xprofile.");
             msg[11] = _("If you use ~/.xinitrc and startx, put those lines in ~/.xinitrc.");
 
-            DisplayMessage(instance, _("Setting Hint"), msg, 12);
+            FcitxUIDisplayMessage(instance, _("Setting Hint"), msg, 12);
         }
+
+        free(strTemp);
     }
     /* make in order to use block X, query is not good here */
     pthread_create(&instance->pid, NULL, RunInstance, instance);
@@ -182,7 +197,7 @@ FcitxInstance* CreateFcitxInstance(sem_t *sem, int argc, char* argv[])
     return instance;
 
 error_exit:
-    EndInstance(instance);
+    FcitxInstanceEnd(instance);
     return instance;
 
 }
@@ -202,10 +217,10 @@ void* RunInstance(void* arg)
             }
 
             if (instance->uiflag & UI_MOVE)
-                MoveInputWindowReal(instance);
+                FcitxUIMoveInputWindowReal(instance);
 
             if (instance->uiflag & UI_UPDATE)
-                UpdateInputWindowReal(instance);
+                FcitxUIUpdateInputWindowReal(instance);
         } while (instance->uiflag != UI_NONE);
 
         FD_ZERO(&instance->rfds);
@@ -227,9 +242,19 @@ void* RunInstance(void* arg)
 }
 
 FCITX_EXPORT_API
-void EndInstance(FcitxInstance* instance)
+void FcitxInstanceEnd(FcitxInstance* instance)
 {
-    SaveAllIM(instance);
+    FcitxInstanceSaveAllIM(instance);
+    
+    if (instance->uinormal && instance->uinormal->ui->Destroy)
+        instance->uinormal->ui->Destroy(instance->uinormal->addonInstance);
+    
+    if (instance->uifallback && instance->uifallback->ui->Destroy)
+        instance->uifallback->ui->Destroy(instance->uifallback->addonInstance);
+    
+    instance->uifallback = NULL;
+    instance->ui = NULL;
+    instance->uinormal = NULL;
 
     /* handle exit */
     FcitxAddon** pimclass;
@@ -281,7 +306,7 @@ void FcitxInitThread(FcitxInstance* inst)
 }
 
 FCITX_EXPORT_API
-int FcitxLock(FcitxInstance* inst)
+int FcitxInstanceLock(FcitxInstance* inst)
 {
     if (inst->bMutexInited)
         return pthread_mutex_lock(&inst->fcitxMutex);
@@ -289,7 +314,7 @@ int FcitxLock(FcitxInstance* inst)
 }
 
 FCITX_EXPORT_API
-int FcitxUnlock(FcitxInstance* inst)
+int FcitxInstanceUnlock(FcitxInstance* inst)
 {
     if (inst->bMutexInited)
         return pthread_mutex_unlock(&inst->fcitxMutex);
@@ -300,7 +325,7 @@ void ToggleRemindState(void* arg)
 {
     FcitxInstance* instance = (FcitxInstance*) arg;
     instance->profile->bUseRemind = !instance->profile->bUseRemind;
-    SaveProfile(instance->profile);
+    FcitxProfileSave(instance->profile);
 }
 
 boolean GetRemindEnabled(void* arg)
@@ -313,6 +338,7 @@ boolean ProcessOption(FcitxInstance* instance, int argc, char* argv[])
 {
     struct option longOptions[] = {
         {"ui", 1, 0, 0},
+        {"replace", 0, 0, 0},
         {"help", 0, 0, 0}
     };
 
@@ -321,12 +347,15 @@ boolean ProcessOption(FcitxInstance* instance, int argc, char* argv[])
     char* uiname = NULL;
     boolean runasdaemon = true;
     int             overrideDelay = -1;
-    while ((c = getopt_long(argc, argv, "u:dDs:hv", longOptions, &optionIndex)) != EOF) {
+    while ((c = getopt_long(argc, argv, "ru:dDs:hv", longOptions, &optionIndex)) != EOF) {
         switch (c) {
         case 0: {
             switch (optionIndex) {
             case 0:
                 uiname = strdup(optarg);
+                break;
+            case 1:
+                instance->tryReplace = true;
                 break;
             default:
                 Usage();
@@ -334,6 +363,9 @@ boolean ProcessOption(FcitxInstance* instance, int argc, char* argv[])
             }
         }
         break;
+        case 'r':
+            instance->tryReplace = true;
+            break;
         case 'u':
             uiname = strdup(optarg);
             break;
@@ -365,7 +397,7 @@ boolean ProcessOption(FcitxInstance* instance, int argc, char* argv[])
         instance->uiname = NULL;
 
     if (runasdaemon)
-        InitAsDaemon();
+        fcitx_utils_init_as_daemon();
 
     if (overrideDelay < 0)
         overrideDelay = instance->config->iDelayStart;
@@ -377,19 +409,19 @@ boolean ProcessOption(FcitxInstance* instance, int argc, char* argv[])
 }
 
 FCITX_EXPORT_API
-FcitxInputContext* GetCurrentIC(FcitxInstance* instance)
+FcitxInputContext* FcitxInstanceGetCurrentIC(FcitxInstance* instance)
 {
     return instance->CurrentIC;
 }
 
 FCITX_EXPORT_API
-boolean SetCurrentIC(FcitxInstance* instance, FcitxInputContext* ic)
+boolean FcitxInstanceSetCurrentIC(FcitxInstance* instance, FcitxInputContext* ic)
 {
-    IME_STATE prevstate = GetCurrentState(instance);
+    FcitxContextState prevstate = FcitxInstanceGetCurrentState(instance);
     boolean changed = (instance->CurrentIC != ic);
     instance->CurrentIC = ic;
 
-    IME_STATE nextstate = GetCurrentState(instance);
+    FcitxContextState nextstate = FcitxInstanceGetCurrentState(instance);
 
     if (!((prevstate == IS_CLOSED && nextstate == IS_CLOSED) || (prevstate != IS_CLOSED && nextstate != IS_CLOSED))) {
         if (prevstate == IS_CLOSED)
@@ -405,6 +437,27 @@ FCITX_EXPORT_API
 void FcitxInstanceIncreateInputCharacterCount(FcitxInstance* instance, int count)
 {
     instance += count;
+}
+
+void FcitxInstanceInitBuiltContext(FcitxInstance* instance)
+{
+    FcitxInstanceRegisterWatchableContext(instance, CONTEXT_ALTERNATIVE_PREVPAGE_KEY, FCT_Hotkey, FCF_ResetOnInputMethodChange);
+    FcitxInstanceRegisterWatchableContext(instance, CONTEXT_ALTERNATIVE_NEXTPAGE_KEY, FCT_Hotkey, FCF_ResetOnInputMethodChange);
+    FcitxInstanceRegisterWatchableContext(instance, CONTEXT_IM_KEYBOARD_LAYOUT, FCT_String, FCF_ResetOnInputMethodChange);
+    FcitxInstanceRegisterWatchableContext(instance, CONTEXT_IM_LANGUAGE, FCT_String, FCF_None);
+    
+}
+
+FCITX_EXPORT_API
+boolean FcitxInstanceIsTryReplace(FcitxInstance* instance)
+{
+    return instance->tryReplace;
+}
+
+FCITX_EXPORT_API
+void FcitxInstanceResetTryReplace(FcitxInstance* instance)
+{
+    instance->tryReplace = false;
 }
 
 // kate: indent-mode cstyle; space-indent on; indent-width 0;

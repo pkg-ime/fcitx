@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 #ifdef FCITX_HAVE_CONFIG_H
 #include <config.h>
@@ -23,24 +23,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "im/table/tabledict.h"
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
 
 #define MAX_CODE_LENGTH 30
-
-typedef struct _RULE_RULE {
-    unsigned char   iFlag;  // 1 --> 正序   0 --> 逆序
-    unsigned char   iWhich; //第几个字
-    unsigned char   iIndex; //第几个编码
-} RULE_RULE;
-
-typedef struct _RULE {
-    unsigned char   iWords; //多少个字
-    unsigned char   iFlag;  //1 --> 大于等于iWords  0 --> 等于iWords
-    RULE_RULE      *rule;
-} RULE;
 
 int main(int argc, char *argv[])
 {
@@ -144,12 +133,15 @@ int main(int argc, char *argv[])
         if (iVersion) {
             fread(&iRule, sizeof(unsigned char), 1, fpDict);
 
-            if (iRule)
+            if (iRule == RECORDTYPE_PINYIN)
                 printf("@%s %s\n", strCode, strHZ);
+            else if (iRule == RECORDTYPE_CONSTRUCT)
+                printf("^%s %s\n", strCode, strHZ);
+            else if (iRule == RECORDTYPE_PROMPT)
+                printf("&%s %s\n", strCode, strHZ);
             else
                 printf("%s %s\n", strCode, strHZ);
-        } else
-            printf("%s %s\n", strCode, strHZ);
+        }
 
         fread(&iTemp, sizeof(unsigned int), 1, fpDict);
 

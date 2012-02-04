@@ -17,7 +17,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 #include "fcitx/fcitx.h"
@@ -49,7 +49,7 @@ void InitTrayWindow(TrayWindow *trayWindow)
     Display *dpy = classicui->dpy;
     int iScreen = classicui->iScreen;
     char   strWindowName[] = "Fcitx Tray Window";
-    if (!classicui->bUseTrayIcon)
+    if (!classicui->bUseTrayIcon || classicui->isSuspend)
         return;
 
     InitTray(dpy, trayWindow);
@@ -101,7 +101,7 @@ void InitTrayWindow(TrayWindow *trayWindow)
 
 TrayWindow* CreateTrayWindow(FcitxClassicUI *classicui)
 {
-    TrayWindow *trayWindow = fcitx_malloc0(sizeof(TrayWindow));
+    TrayWindow *trayWindow = fcitx_utils_malloc0(sizeof(TrayWindow));
     trayWindow->owner = classicui;
     FcitxModuleFunctionArg arg;
     arg.args[0] = TrayEventHandler;
@@ -123,6 +123,7 @@ void ReleaseTrayWindow(TrayWindow *trayWindow)
     trayWindow->window = None;
     trayWindow->cs = NULL;
     trayWindow->cs_x = NULL;
+    trayWindow->bTrayMapped = false;
 }
 
 void DrawTrayWindow(TrayWindow* trayWindow)
@@ -134,7 +135,7 @@ void DrawTrayWindow(TrayWindow* trayWindow)
     if (!classicui->bUseTrayIcon)
         return;
 
-    if (GetCurrentState(classicui->owner) == IS_ACTIVE)
+    if (FcitxInstanceGetCurrentState(classicui->owner) == IS_ACTIVE)
         f_state = ACTIVE_ICON;
     else
         f_state = INACTIVE_ICON;
@@ -230,10 +231,10 @@ boolean TrayEventHandler(void *arg, XEvent* event)
         if (event->xbutton.window == trayWindow->window) {
             switch (event->xbutton.button) {
             case Button1:
-                if (GetCurrentState(instance) == IS_CLOSED) {
-                    EnableIM(instance, GetCurrentIC(instance), false);
+                if (FcitxInstanceGetCurrentState(instance) == IS_CLOSED) {
+                    FcitxInstanceEnableIM(instance, FcitxInstanceGetCurrentIC(instance), false);
                 } else {
-                    CloseIM(instance, GetCurrentIC(instance));
+                    FcitxInstanceCloseIM(instance, FcitxInstanceGetCurrentIC(instance));
                 }
                 break;
             case Button3: {

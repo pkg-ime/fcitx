@@ -14,7 +14,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.              *
  ***************************************************************************/
 
 /**
@@ -191,12 +191,12 @@ static guint16 cedilla_compose_seqs[] = {
 };
 
 static
-boolean FcitxIsHotKey(FcitxKeySym sym, int state, HOTKEYS * hotkey);
+boolean FcitxIsHotKey(FcitxKeySym sym, int state, FcitxHotkey * hotkey);
 
 static
-boolean FcitxIsHotKey(FcitxKeySym sym, int state, HOTKEYS * hotkey)
+boolean FcitxIsHotKey(FcitxKeySym sym, int state, FcitxHotkey * hotkey)
 {
-    state &= KEY_CTRL_ALT_SHIFT_COMP;
+    state &= FcitxKeyState_Ctrl_Alt_Shift;
     if (hotkey[0].sym && sym == hotkey[0].sym && (hotkey[0].state == state))
         return true;
     if (hotkey[1].sym && sym == hotkey[1].sym && (hotkey[1].state == state))
@@ -410,10 +410,10 @@ fcitx_im_context_filter_keypress(GtkIMContext *context,
     FcitxLog(LOG_LEVEL, "fcitx_im_context_filter_keypress");
     FcitxIMContext *fcitxcontext = FCITX_IM_CONTEXT(context);
 
-    if (G_UNLIKELY(event->state & KEY_HANDLED_MASK))
+    if (G_UNLIKELY(event->state & FcitxKeyState_HandledMask))
         return TRUE;
 
-    if (G_UNLIKELY(event->state & KEY_IGNORED_MASK))
+    if (G_UNLIKELY(event->state & FcitxKeyState_IgnoredMask))
         return gtk_im_context_filter_keypress(fcitxcontext->slave, event);
 
     if (IsFcitxIMClientValid(fcitxcontext->client)) {
@@ -444,10 +444,10 @@ fcitx_im_context_filter_keypress(GtkIMContext *context,
                                                   (event->type == GDK_KEY_PRESS) ? (FCITX_PRESS_KEY) : (FCITX_RELEASE_KEY),
                                                   event->time);
             if (ret <= 0) {
-                event->state |= KEY_IGNORED_MASK;
+                event->state |= FcitxKeyState_IgnoredMask;
                 return gtk_im_context_filter_keypress(fcitxcontext->slave, event);
             } else {
-                event->state |= KEY_HANDLED_MASK;
+                event->state |= FcitxKeyState_HandledMask;
                 return TRUE;
             }
         } else {
@@ -464,7 +464,7 @@ fcitx_im_context_filter_keypress(GtkIMContext *context,
                                     event->state,
                                     (event->type == GDK_KEY_PRESS) ? (FCITX_PRESS_KEY) : (FCITX_RELEASE_KEY),
                                     event->time);
-            event->state |= KEY_HANDLED_MASK;
+            event->state |= FcitxKeyState_HandledMask;
             return TRUE;
         }
     } else {
@@ -484,7 +484,7 @@ _fcitx_im_context_process_key_cb(DBusGProxy *proxy,
     int ret;
     dbus_g_proxy_end_call(proxy, call_id, &error, G_TYPE_INT, &ret, G_TYPE_INVALID);
     if (ret <= 0) {
-        event->state |= KEY_IGNORED_MASK;
+        event->state |= FcitxKeyState_IgnoredMask;
         gdk_event_put((GdkEvent *)event);
     }
     gdk_event_free((GdkEvent *)event);
@@ -505,7 +505,9 @@ _fcitx_im_context_update_preedit_cb(DBusGProxy* proxy, char* str, int cursor_pos
         context->preedit_string = NULL;
     }
     context->preedit_string = g_strdup(str);
-    context->cursor_pos = cursor_pos;
+    char* tempstr = g_strndup(str, cursor_pos);
+    context->cursor_pos =  fcitx_utf8_strlen(tempstr);
+    g_free(tempstr);
 
     gboolean new_visible = false;
 
@@ -675,7 +677,7 @@ void
 _fcitx_im_context_set_capacity(FcitxIMContext* fcitxcontext)
 {
     if (IsFcitxIMClientValid(fcitxcontext->client)) {
-        CapacityFlags flags = CAPACITY_NONE;
+        FcitxCapacityFlags flags = CAPACITY_NONE;
         if (fcitxcontext->use_preedit)
             flags |= CAPACITY_PREEDIT;
         FcitxIMClientSetCapacity(fcitxcontext->client, flags);
@@ -834,7 +836,7 @@ void _fcitx_im_context_forward_key_cb(DBusGProxy* proxy, guint keyval, guint sta
     FcitxIMContext* context =  FCITX_IM_CONTEXT(user_data);
     FcitxKeyEventType tp = (FcitxKeyEventType) type;
     GdkEventKey* event = _create_gdk_event(context, keyval, state, tp);
-    event->state |= KEY_IGNORED_MASK;
+    event->state |= FcitxKeyState_IgnoredMask;
     gdk_event_put((GdkEvent *)event);
     gdk_event_free((GdkEvent *)event);
 }
@@ -1054,16 +1056,16 @@ static gboolean
 _get_boolean_env(const gchar *name,
                  gboolean defval)
 {
-    const gchar *value = g_getenv(name);
+    const char *value = getenv(name);
 
     if (value == NULL)
         return defval;
 
-    if (g_strcmp0(value, "") == 0 ||
-            g_strcmp0(value, "0") == 0 ||
-            g_strcmp0(value, "false") == 0 ||
-            g_strcmp0(value, "False") == 0 ||
-            g_strcmp0(value, "FALSE") == 0)
+    if (strcmp(value, "") == 0 ||
+        strcmp(value, "0") == 0 ||
+        strcmp(value, "false") == 0 ||
+        strcmp(value, "False") == 0 ||
+        strcmp(value, "FALSE") == 0)
         return FALSE;
 
     return TRUE;
