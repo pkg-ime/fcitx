@@ -27,7 +27,7 @@ QT4_LIBDIR=$(shell if [ -f /usr/lib/pkgconfig/QtCore.pc ]; then \
 
 override_dh_auto_configure:
 	dh_auto_configure -- \
-	    -DLIB_INSTALL_DIR=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) \
+	    -DLIB_INSTALL_DIR=/usr/lib/$(DEB_HOST_MULTIARCH) \
 	    -DENABLE_CAIRO=ON \
 	    -DENABLE_DBUS=ON \
 	    -DENABLE_PANGO=ON \
