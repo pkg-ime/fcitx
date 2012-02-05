@@ -1,8 +1,16 @@
-fcitx (1:4.2.0-1) UNRELEASED; urgency=low
+fcitx (1:4.2.0-1) unstable; urgency=low
 
-  * New upstream release.
+  * New upstream release:
+    - New API, with global context support.
+    - Allow first input method to be in Inactive status.
+    - Decrease memory usage of table engine and pinyin engine.
+    - Runtime replacement of existing instance.
+    - Improved table engine.
+  * Full Multi-Arch support:
+    - Co-installable libraries and IM Modules.
+    - Build-time dynamic Multi-Arch path and markup detection.
 
- -- Aron Xu <aron@debian.org>  Sat, 04 Feb 2012 11:45:53 +0800
+ -- Aron Xu <aron@debian.org>  Sun, 05 Feb 2012 15:51:12 +0800
 
 fcitx (1:4.1.2-6) unstable; urgency=low
 
