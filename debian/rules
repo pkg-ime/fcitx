@@ -1,5 +1,6 @@
 #!/usr/bin/make -f
 include debian/variables.mk
+include debian/control.mk
 %:
 	dh $@
 override_dh_auto_configure: gen_control
@@ -19,5 +20,3 @@ override_dh_makeshlibs:
 	dh_makeshlibs -pfcitx-libs
 override_dh_strip:
 	dh_strip --dbg-package=fcitx-dbg
-gen_control:
-	include debian/control.mk
