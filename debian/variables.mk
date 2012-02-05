@@ -28,21 +28,3 @@ QT4_LIBDIR=$(shell if [ -f /usr/lib/pkgconfig/QtCore.pc ]; \
 QT4_MA=$(shell if [ -f /usr/lib/pkgconfig/QtCore.pc ]; \
     then echo 0; \
     else echo 1;  fi)
-
-ifeq ("$(GTK2_MA)","1")
-        GTK2_ACT=sed -i 's/@GTK2_MA@/Multi-Arch: same/g' debian/control
-else
-        GTK2_ACT=sed -i '/@GTK2_MA@/d' debian/control
-endif
-
-ifeq ("$(GTK3_MA)","1")
-        GTK3_ACT=sed -i 's/@GTK3_MA@/Multi-Arch: same/g' debian/control
-else
-        GTK3_ACT=sed -i '/@GTK3_MA@/d' debian/control
-endif
-
-ifeq ("$(QT4_MA)","1")
-        QT4_ACT=sed -i 's/@QT4_MA@/Multi-Arch: same/g' debian/control
-else
-        QT4_ACT=sed -i '/@QT4_MA@/d' debian/control
-endif
