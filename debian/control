@@ -40,9 +40,9 @@ Package: fcitx-bin
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: fcitx-data, fcitx-modules
-Suggests: fcitx (>= 1:4.1.2)
-Replaces: fcitx (<< 1:4.1.2)
-Breaks: fcitx (<< 1:4.1.2)
+Suggests: fcitx (>= 1:4.2.0)
+Replaces: fcitx (<< 1:4.2.0)
+Breaks: fcitx (<< 1:4.2.0)
 Description: Flexible Input Method Framework - essential binaries
  Fcitx is a input method framework with extension support, which provides
  an interface for entering characters of different scripts in applications
@@ -62,9 +62,9 @@ Package: fcitx-data
 Architecture: all
 Depends: ${misc:Depends}
 Recommends: fcitx-bin
-Suggests: fcitx (>= 1:4.1.2)
-Replaces: fcitx (<< 1:4.1.2)
-Breaks: fcitx (<< 1:4.1.2)
+Suggests: fcitx (>= 1:4.2.0)
+Replaces: fcitx (<< 1:4.2.0)
+Breaks: fcitx (<< 1:4.2.0)
 Multi-arch: foreign
 Description: Flexible Input Method Framework - essential data files
  Fcitx is a input method framework with extension support, which provides
@@ -86,9 +86,9 @@ Section: libs
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Suggests: fcitx (>= 1:4.1.2)
-Replaces: fcitx (<< 1:4.1.2)
-Breaks: fcitx (<< 1:4.1.2)
+Suggests: fcitx (>= 1:4.2.0)
+Replaces: fcitx (<< 1:4.2.0)
+Breaks: fcitx (<< 1:4.2.0)
 Description: Flexible Input Method Framework - library files
  Fcitx is a input method framework with extension support, which provides
  an interface for entering characters of different scripts in applications
@@ -109,8 +109,8 @@ Package: fcitx-libs-dev
 Architecture: any
 Section: libdevel
 Depends: ${misc:Depends}, fcitx-libs (= ${binary:Version})
-Replaces: fcitx (<< 1:4.1.2)
-Breaks: fcitx (<< 1:4.1.2)
+Replaces: fcitx (<< 1:4.2.0)
+Breaks: fcitx (<< 1:4.2.0)
 Description: Flexible Input Method Framework - library development files
  Fcitx is a input method framework with extension support, which provides
  an interface for entering characters of different scripts in applications
@@ -130,8 +130,8 @@ Section: debug
 Priority: extra
 Depends: ${misc:Depends}, fcitx-libs (= ${binary:Version})
 Provides: fcitx-libs-dbg
-Replaces: fcitx (<< 1:4.1.2), fcitx-libs-dbg
-Breaks: fcitx (<< 1:4.1.2), fcitx-libs-dbg
+Replaces: fcitx (<< 1:4.2.0), fcitx-libs-dbg
+Breaks: fcitx (<< 1:4.2.0), fcitx-libs-dbg
 Description: Flexible Input Method Framework - debugging symbols
  Fcitx is a input method framework with extension support, which provides
  an interface for entering characters of different scripts in applications
@@ -149,8 +149,8 @@ Package: fcitx-ui-kimpanel
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-module-dbus
 Recommends: kdebase-bin
-Replaces: fcitx (<< 1:4.1.2)
-Breaks: fcitx (<< 1:4.1.2)
+Replaces: fcitx (<< 1:4.2.0)
+Breaks: fcitx (<< 1:4.2.0)
 Suggests: plasma-widgets-addons
 Description: Flexible Input Method Framework - KIMPanel user interface
  Fcitx is a input method framework with extension support, which provides
@@ -171,9 +171,9 @@ Description: Flexible Input Method Framework - KIMPanel user interface
 Package: fcitx-ui-classic
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-module-x11
-Recommends: fcitx (>= 1:4.1.2), zenity
-Replaces: fcitx (<< 1:4.1.2)
-Breaks: fcitx (<< 1:4.1.2)
+Recommends: fcitx (>= 1:4.2.0), zenity
+Replaces: fcitx (<< 1:4.2.0)
+Breaks: fcitx (<< 1:4.2.0)
 Description: Flexible Input Method Framework - Classic user interface
  Fcitx is a input method framework with extension support, which provides
  an interface for entering characters of different scripts in applications
@@ -273,10 +273,10 @@ Description: Flexible Input Method Framework - QT 4 IM Module frontend
 Package: fcitx-pinyin
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx-bin,
-  fcitx-data (>= 1:4.1.2), fcitx-modules
-Recommends: fcitx (>= 1:4.1.2)
-Replaces: fcitx (<< 1:4.1.2)
-Breaks: fcitx (<< 1:4.1.2)
+  fcitx-data (>= 1:4.2.0), fcitx-modules
+Recommends: fcitx (>= 1:4.2.0)
+Replaces: fcitx (<< 1:4.2.0)
+Breaks: fcitx (<< 1:4.2.0)
 Description: Flexible Input Method Framework - classic Pinyin engine
  Fcitx is a input method framework with extension support, which provides
  an interface for entering characters of different scripts in applications
@@ -294,9 +294,9 @@ Description: Flexible Input Method Framework - classic Pinyin engine
 
 Package: fcitx-qw
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx (>= 1:4.1.2)
-Replaces: fcitx (<< 1:4.1.2)
-Breaks: fcitx (<< 1:4.1.2)
+Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx (>= 1:4.2.0)
+Replaces: fcitx (<< 1:4.2.0)
+Breaks: fcitx (<< 1:4.2.0)
 Description: Flexible Input Method Framework - QuWei engine
  Fcitx is a input method framework with extension support, which provides
  an interface for entering characters of different scripts in applications
@@ -312,9 +312,9 @@ Description: Flexible Input Method Framework - QuWei engine
 
 Package: fcitx-table
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx (>= 1:4.1.2), fcitx-pinyin (>= 1:4.1.2)
-Replaces: fcitx (<< 1:4.1.2)
-Breaks: fcitx (<< 1:4.1.2)
+Depends: ${shlibs:Depends}, ${misc:Depends}, fcitx (>= 1:4.2.0), fcitx-pinyin (>= 1:4.2.0)
+Replaces: fcitx (<< 1:4.2.0)
+Breaks: fcitx (<< 1:4.2.0)
 Description: Flexible Input Method Framework - table engine
  Fcitx is a input method framework with extension support, which provides
  an interface for entering characters of different scripts in applications
@@ -487,10 +487,10 @@ Description: Flexible Input Method Framework - Ziranma table
 Package: fcitx-modules
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Recommends: fcitx (>= 1:4.1.2), fcitx-module-vk, fcitx-module-x11, 
+Recommends: fcitx (>= 1:4.2.0), fcitx-module-vk, fcitx-module-x11, 
  fcitx-module-dbus
-Replaces: fcitx (<< 1:4.1.2)
-Breaks: fcitx (<< 1:4.1.2)
+Replaces: fcitx (<< 1:4.2.0)
+Breaks: fcitx (<< 1:4.2.0)
 Description: Flexible Input Method Framework - core modules
  Fcitx is a input method framework with extension support, which provides
  an interface for entering characters of different scripts in applications
@@ -554,8 +554,8 @@ Package: fcitx-tools
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Suggests: fcitx
-Replaces: fcitx (<< 1:4.0.0)
-Breaks: fcitx (<< 1:4.0.0)
+Replaces: fcitx (<< 1:4.2.0)
+Breaks: fcitx (<< 1:4.2.0)
 Description: Flexible Input Method Framework - various tools
  Fcitx is a input method framework with extension support, which provides
  an interface for entering characters of different scripts in applications
