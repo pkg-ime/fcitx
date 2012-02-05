@@ -20,7 +20,9 @@ endif
 
 gen_control:
 	cp debian/control.in debian/control
-	for i in GTK2_ACT GTK3_ACT QT4_ACT; do $($$i); done
+	$(GTK2_ACT)
+	$(GTK3_ACT)
+	$(QT4_ACT)
 	sed 's/@GTK2_LIBDIR@/$(GTK2_LIBDIR)/g' \
 	    debian/fcitx-frontend-gtk2.install.in > \
 	    debian/fcitx-frontend-gtk2.install
