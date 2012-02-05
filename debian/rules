@@ -7,23 +7,30 @@ CXXFLAGS += $(CPPFLAGS)
 	dh $@
 
 DEB_BUILD_MULTIARCH=$(shell dpkg-architecture -qDEB_BUILD_MULTIARCH)
-GTK2_LIBDIR=$(shell if [ -f /usr/lib/pkgconfig/gtk+-2.0.pc ]; then \
-		    	echo "usr\/lib"; \
-		    else \
-		    	echo "usr\/lib\/$(DEB_BUILD_MULTIARCH)"; \
-		    fi)
 
-GTK3_LIBDIR=$(shell if [ -f /usr/lib/pkgconfig/gtk+-3.0.pc ]; then \
-		    	echo "usr\/lib"; \
-		    else \
-		    	echo "usr\/lib\/$(DEB_BUILD_MULTIARCH)"; \
-		    fi)
+$(shell if [ -f /usr/lib/pkgconfig/gtk+-2.0.pc ]; then \
+	GTK2_MA=0; \
+	GTK2_LIBDIR="usr\/lib"; \
+    else \
+	GTK2_MA=1; \
+	GTK2_LIBDIR="usr\/lib\/$(DEB_BUILD_MULTIARCH)"; \
+    fi)
 
-QT4_LIBDIR=$(shell if [ -f /usr/lib/pkgconfig/QtCore.pc ]; then \
-		    	echo "usr\/lib"; \
-		    else \
-		    	echo "usr\/lib\/$(DEB_BUILD_MULTIARCH)"; \
-		    fi)
+$(shell if [ -f /usr/lib/pkgconfig/gtk+-3.0.pc ]; then \
+	GTK3_MA=0; \
+	GTK3_LIBDIR="usr\/lib"; \
+    else \
+	GTK3_MA=1; \
+	GTK3_LIBDIR="usr\/lib\/$(DEB_BUILD_MULTIARCH)"; \
+    fi)
+
+$(shell if [ -f /usr/lib/pkgconfig/QtCore.pc ]; then \
+	QT4_MA=0; \
+	QT4_LIBDIR="usr\/lib"; \
+    else \
+	QT4_MA=1; \
+	QT4_LIBDIR="usr\/lib\/$(DEB_BUILD_MULTIARCH)"; \
+    fi)
 
 override_dh_auto_configure:
 	dh_auto_configure -- \
@@ -44,7 +51,7 @@ override_dh_strip:
 	dh_strip --dbg-package=fcitx-dbg
 
 override_dh_install:
-	sed "s/GTK2_LIBDIR/$(GTK2_LIBDIR)/g" debian/fcitx-frontend-gtk2.install.in >debian/fcitx-frontend-gtk2.install
-	sed "s/GTK3_LIBDIR/$(GTK3_LIBDIR)/g" debian/fcitx-frontend-gtk3.install.in >debian/fcitx-frontend-gtk3.install
-	sed "s/QT4_LIBDIR/$(QT4_LIBDIR)/g" debian/fcitx-frontend-qt4.install.in >debian/fcitx-frontend-qt4.install
+	sed "s/@GTK2_LIBDIR@/$(GTK2_LIBDIR)/g" debian/fcitx-frontend-gtk2.install.in > debian/fcitx-frontend-gtk2.install
+	sed "s/@GTK3_LIBDIR@/$(GTK3_LIBDIR)/g" debian/fcitx-frontend-gtk3.install.in > debian/fcitx-frontend-gtk3.install
+	sed "s/@QT4_LIBDIR@/$(QT4_LIBDIR)/g" debian/fcitx-frontend-qt4.install.in > debian/fcitx-frontend-qt4.install
 	dh_install

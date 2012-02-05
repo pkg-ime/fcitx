@@ -1,1 +1,1 @@
-GTK3_LIBDIR/gtk-3.0/*/immodules/im-fcitx.so
+@GTK3_LIBDIR@/gtk-3.0/*/immodules/im-fcitx.so
