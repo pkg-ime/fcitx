@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 include debian/variables.mk
-include debian/control.mk
+include debian/gencontrol.mk
 %:
 	dh $@
 override_dh_auto_configure: gen_control
