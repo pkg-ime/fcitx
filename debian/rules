@@ -2,10 +2,7 @@
 include debian/variables.mk
 %:
 	dh $@
-override_dh_auto_configure:
-	sed "s/@GTK2_LIBDIR@/$(GTK2_LIBDIR)/g" debian/fcitx-frontend-gtk2.install.in > debian/fcitx-frontend-gtk2.install
-	sed "s/@GTK3_LIBDIR@/$(GTK3_LIBDIR)/g" debian/fcitx-frontend-gtk3.install.in > debian/fcitx-frontend-gtk3.install
-	sed "s/@QT4_LIBDIR@/$(QT4_LIBDIR)/g" debian/fcitx-frontend-qt4.install.in > debian/fcitx-frontend-qt4.install
+override_dh_auto_configure: gen_control
 	dh_auto_configure -- \
 	    -DLIB_INSTALL_DIR=/usr/lib/$(DEB_HOST_MULTIARCH) \
 	    -DENABLE_CAIRO=ON \
@@ -22,3 +19,5 @@ override_dh_makeshlibs:
 	dh_makeshlibs -pfcitx-libs
 override_dh_strip:
 	dh_strip --dbg-package=fcitx-dbg
+gen_control:
+	include debian/control.mk
